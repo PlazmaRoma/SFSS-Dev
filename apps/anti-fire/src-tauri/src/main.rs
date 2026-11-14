@@ -123,7 +123,7 @@ fn fit_size(wanted: (f64, f64), min: (f64, f64), area: (f64, f64)) -> (f64, f64)
 
 /// Левый верхний угол окна по центру рабочей области, в физических пикселях. Если окно
 /// больше области, угол прижимается к её началу: заголовок не уходит за край экрана.
-#[cfg_attr(target_os = "macos", allow(dead_code))]
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 fn center_in(area_pos: (i32, i32), area_size: (u32, u32), window: (u32, u32)) -> (i32, i32) {
     let x = area_pos.0 + (area_size.0 as i32 - window.0 as i32).max(0) / 2;
     let y = area_pos.1 + (area_size.1 as i32 - window.1 as i32).max(0) / 2;
@@ -131,8 +131,10 @@ fn center_in(area_pos: (i32, i32), area_size: (u32, u32), window: (u32, u32)) ->
 }
 
 /// Центр окна. На macOS — силами системы, `NSWindow center`: она сама учитывает Док с любой
-/// стороны, меню и выбранный экран. На Linux и Windows ставим сами, по рабочей области
-/// монитора, на котором окно открылось.
+/// стороны, меню и выбранный экран. На Linux — силами GTK: место считается при показе окна,
+/// вместе с рамкой, которую рисует оконный менеджер. Наш расчёт до показа там промахивался:
+/// у скрытого окна ещё нет рамки, и под XWayland окно вставало не по центру. На Windows ставим
+/// сами, по рабочей области монитора, на котором окно открылось.
 fn center(window: &tauri::WebviewWindow) -> tauri::Result<()> {
     #[cfg(target_os = "macos")]
     {
@@ -143,7 +145,12 @@ fn center(window: &tauri::WebviewWindow) -> tauri::Result<()> {
             let _: () = unsafe { msg_send![ns_window, center] };
         }
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
+    {
+        use gtk::prelude::GtkWindowExt;
+        window.gtk_window()?.set_position(gtk::WindowPosition::Center);
+    }
+    #[cfg(target_os = "windows")]
     {
         let monitor = match window.current_monitor()? {
             Some(monitor) => Some(monitor),

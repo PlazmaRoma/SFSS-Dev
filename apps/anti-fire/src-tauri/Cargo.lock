@@ -45,6 +45,7 @@ dependencies = [
 name = "anti-fire"
 version = "1.0.0"
 dependencies = [
+ "gtk",
  "objc2",
  "tauri",
  "tauri-build",
