@@ -3,61 +3,106 @@
 Горение в невесомости по данным NASA: NASA Space Apps 2026, задача «Flame in Freefall»,
 команда TwinByte.
 
-Здесь весь проект в одном репозитории:
+- **SFSS** — сервис, он работает в фоне. Считает скорость горения капли топлива по составу
+  атмосферы и отвечает на вопросы только по отчётам NASA, со ссылкой на страницу. К нему
+  подключается любая программа: по HTTP API или командой `sfss` в терминале.
+- **Anti-Fire** — рабочая программа на SFSS. Один экран: расчёт, импорт CSV, вопросы к отчётам
+  и терминал.
+- **SFSS Playground** — площадка, чтобы посмотреть идею и поиграться. Идёт вместе с сервисом:
+  `sfss playground`.
 
-| Папка | Что это |
-|---|---|
-| [`sfss/`](sfss/) | **SFSS**, основная программа. Сервис работает в фоне, даёт API и команду `sfss`. Считает скорость горения капли топлива по составу атмосферы и отвечает на вопросы только по отчётам NASA, со ссылкой на страницу |
-| [`sfss/playground/`](sfss/playground/) | **SFSS Playground**, площадка, чтобы посмотреть идею и поиграться. Идёт в комплекте с сервисом и открывается командой `sfss playground` |
-| [`apps/anti-fire/`](apps/anti-fire/) | **Anti-Fire**, рабочая программа на SFSS. Один экран: расчёт, импорт CSV, вопросы к отчётам и терминал |
-
-Anti-Fire и Площадка — клиенты SFSS по HTTP. Своя программа подключается к SFSS так же:
-[`sfss/docs/INTEGRATION.md`](sfss/docs/INTEGRATION.md), пример —
-[`sfss/examples/telemetry_monitor.py`](sfss/examples/telemetry_monitor.py).
+Всё работает на одном компьютере, без сети после установки.
 
 ## Установка
 
+Нужен только git. Python, библиотеки, модель поиска и Anti-Fire установщик ставит сам, без
+прав администратора. Без нейросети это около 400 МБ загрузки.
+
+### macOS
+
 ```bash
-git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git
-cd SFSS-Dev
-./install.sh          # Windows: powershell -ExecutionPolicy Bypass -File install.ps1
+git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git ~/SFSS-Dev
+cd ~/SFSS-Dev && ./install.sh
 ```
 
-Нужен только git. Установщик сам ставит Python, библиотеки и модель поиска (около 400 МБ без
-нейросети), программу Anti-Fire и команду `sfss`, находит LM Studio или Ollama и запускает
-проверку. Права администратора не нужны. Удалить всё: `./install.sh --uninstall`.
+Anti-Fire — в «Программах». Удалить всё: `cd ~/SFSS-Dev && ./install.sh --uninstall`.
+Подробно: [`docs/install/macos.md`](docs/install/macos.md).
+
+### Linux
 
 ```bash
-sfss status
-sfss predict --o2 0.30 --psi 8.2
-sfss ask "Как гелий в атмосфере влияет на горение?"
-sfss playground
+git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git ~/SFSS-Dev
+cd ~/SFSS-Dev && ./install.sh
 ```
 
-Полная инструкция по трём системам, нейросеть, сборка из исходников и что делать при сбоях:
-**[`INSTALL.md`](INSTALL.md)**.
+Anti-Fire — в меню программ или командой `anti-fire`, нужен WebKitGTK 4.1. Удалить всё:
+`cd ~/SFSS-Dev && ./install.sh --uninstall`. Подробно: [`docs/install/linux.md`](docs/install/linux.md).
 
-## Тесты
+### Windows
+
+В PowerShell:
+
+```powershell
+git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git $HOME\SFSS-Dev
+cd $HOME\SFSS-Dev; powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+Anti-Fire — в меню «Пуск», команда `sfss` — в новом окне PowerShell. Удалить всё:
+`powershell -ExecutionPolicy Bypass -File install.ps1 -Uninstall`.
+Подробно: [`docs/install/windows.md`](docs/install/windows.md).
+
+### Нейросеть
+
+Ответы на вопросы пишет Ministral 3B в [LM Studio](https://lmstudio.ai) или
+[Ollama](https://ollama.com) на этом же компьютере. Установщик находит их и предлагает скачать
+модель, около 3 ГБ. Без нейросети работает всё остальное: расчёт, CSV, Площадка.
+
+## Как пользоваться
 
 ```bash
-cd sfss && uv pip install --python .venv/bin/python pytest && .venv/bin/python -m pytest -q   # сервис
-npm test && npm run typecheck                     # Площадка и Anti-Fire, из корня
+sfss status                                   # что запущено
+sfss predict --o2 0.30 --psi 8.2              # скорость горения при 30 % кислорода и 8,2 psi
+sfss predict --csv sfss/examples/runs.csv     # таблица условий целиком
+sfss ask "How does helium in the atmosphere affect combustion?"
+sfss playground                               # Площадка в браузере
+sfss stop                                     # остановить сервис
+sfss help                                     # все команды
+```
+
+Своя программа подключается к SFSS по HTTP: [`sfss/docs/INTEGRATION.md`](sfss/docs/INTEGRATION.md),
+справочник — [`sfss/docs/API.md`](sfss/docs/API.md), пример стороннего ПО —
+[`sfss/examples/telemetry_monitor.py`](sfss/examples/telemetry_monitor.py).
+
+## Что где лежит
+
+| Папка | Что внутри |
+|---|---|
+| [`sfss/`](sfss/) | сервис: код, тесты, данные NASA, модель расчёта, готовый индекс, документация в `sfss/docs` |
+| [`sfss/playground/`](sfss/playground/) | исходники Площадки; собранная лежит в `sfss/app/static/playground` |
+| [`apps/anti-fire/`](apps/anti-fire/) | Anti-Fire: страница, окно на Tauri, готовые сборки в `release/` |
+| [`docs/install/`](docs/install/) | установка и удаление по системам |
+| `install.sh`, `install.ps1` | установщики: macOS и Linux, Windows |
+
+Общий код Площадки и Anti-Fire лежит в `sfss/playground/src/shared`, Anti-Fire берёт его как
+`@sfss`. Зависимости Node одни на обе программы (npm workspaces).
+
+## Для разработчиков
+
+```bash
+cd sfss && ../.tools/uv pip install --python .venv/bin/python pytest && .venv/bin/python -m pytest -q   # сервис
+npm ci && npm test && npm run typecheck                                    # Площадка и Anti-Fire
 npm run page -w anti-fire && cd apps/anti-fire/src-tauri && cargo test     # окно Anti-Fire
 ```
 
-## Как устроено
+Если uv уже есть в `PATH`, вместо `../.tools/uv` можно просто `uv`.
 
-- Сервис: [`sfss/README.md`](sfss/README.md), карта кода
+- Площадка собирается в один HTML внутри сервиса: `bash sfss/scripts/update_playground.sh`.
+  Собранный файл лежит в git, поэтому сервису Node не нужен.
+- Anti-Fire из исходников: `bash apps/anti-fire/build.sh`. Готовые сборки под три системы
+  собирает GitHub Actions, workflow `release`.
+- Как устроен сервис: [`sfss/README.md`](sfss/README.md), карта кода
   [`sfss/docs/CODEMAP.md`](sfss/docs/CODEMAP.md), решения
-  [`sfss/docs/ARCHITECTURE.md`](sfss/docs/ARCHITECTURE.md), справочник API
-  [`sfss/docs/API.md`](sfss/docs/API.md).
-- Площадка собирается в один HTML внутри сервиса:
-  `bash sfss/scripts/update_playground.sh`. Собранный файл лежит в git, поэтому для
-  работы `sfss` Node не нужен.
-- Общий код Площадки и Anti-Fire лежит в `sfss/playground/src/shared`, Anti-Fire берёт его
-  как `@sfss`. Зависимости Node одни на обе программы (npm workspaces).
-- Отчёты NASA, датасеты, обученная модель и готовый индекс лежат в `sfss/data`. Модель поиска
-  (ONNX, 130 МБ) скачивается при установке. Готовые сборки Anti-Fire — в `apps/anti-fire/release`.
+  [`sfss/docs/ARCHITECTURE.md`](sfss/docs/ARCHITECTURE.md).
 
 Раньше проект жил в двух репозиториях: `PlazmaRoma/Anti-Fire_backend_MVP` (сервис) и
 `heyyAzamat/space-fire-security-software` (интерфейс). История работы осталась там.

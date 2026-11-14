@@ -6,7 +6,7 @@
 #   bash apps/anti-fire/build.sh --install    macOS: собрать и положить в /Applications
 #
 # Rust скрипт ставит сам, в ~/.cargo, без sudo. Node 22+ нужен заранее.
-# На Linux до сборки нужны системные библиотеки, см. INSTALL.md.
+# На Linux до сборки нужны системные библиотеки, см. docs/install/linux.md.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"

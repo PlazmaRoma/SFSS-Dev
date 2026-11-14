@@ -117,17 +117,21 @@ def download(model_dir: Path, show_progress: bool = True) -> None:
                 response.raise_for_status()
                 total = int(response.headers.get("content-length", 0))
                 done = 0
+                shown = -1
                 for chunk in response.iter_bytes(1 << 16):
                     out.write(chunk)
                     done += len(chunk)
-                    if show_progress and total:
-                        percent = done * 100 // total
+                    percent = done * 100 // total if total else 0
+                    # Строка обновляется только при новом проценте: в логе без
+                    # терминала иначе были бы тысячи одинаковых строк
+                    if show_progress and total and percent != shown:
+                        shown = percent
                         print(
                             f"\r    {name}: {done >> 20} of {total >> 20} MB, {percent}%",
                             end="", file=sys.stderr, flush=True,
                         )
             if show_progress:
-                print(file=sys.stderr)
+                print(file=sys.stderr, flush=True)
             if _sha256(Path(temp)) != expected:
                 raise RuntimeError(f"{name}: checksum mismatch, download again")
             os.replace(temp, target)
@@ -141,7 +145,7 @@ if __name__ == "__main__":
 
     folder = get_settings().embedding_dir
     if model_ready(folder) and all(_sha256(folder / n) == s for n, (_, s) in FILES.items()):
-        print(f"    already on disk: {folder}")
+        print(f"    already on disk: {folder}", file=sys.stderr)
     else:
         download(folder)
-        print(f"    downloaded: {folder}")
+        print(f"    downloaded: {folder}", file=sys.stderr)

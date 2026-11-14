@@ -22,3 +22,7 @@ strip = true
 # новой загрузки нет.
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
+
+# Центр окна на Linux ставит GTK (gtk_window_set_position). gtk уже приходит с Tauri.
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
