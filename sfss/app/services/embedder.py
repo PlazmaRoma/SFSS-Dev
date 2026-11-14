@@ -123,7 +123,7 @@ def download(model_dir: Path, show_progress: bool = True) -> None:
                     if show_progress and total:
                         percent = done * 100 // total
                         print(
-                            f"\r  {name}: {done >> 20} из {total >> 20} МБ, {percent}%",
+                            f"\r    {name}: {done >> 20} of {total >> 20} MB, {percent}%",
                             end="", file=sys.stderr, flush=True,
                         )
             if show_progress:
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     folder = get_settings().embedding_dir
     if model_ready(folder) and all(_sha256(folder / n) == s for n, (_, s) in FILES.items()):
-        print(f"Модель поиска уже на диске: {folder}")
+        print(f"    already on disk: {folder}")
     else:
         download(folder)
-        print(f"Модель поиска скачана: {folder}")
+        print(f"    downloaded: {folder}")

@@ -54,7 +54,7 @@ def test_percent_instead_of_fraction_is_an_error():
 
 
 def test_gases_over_one_is_an_error():
-    with pytest.raises(cli.CliError, match="больше единицы"):
+    with pytest.raises(cli.CliError, match="more than 1"):
         cli.atmosphere_params(parse("--o2", "0.70", "--he", "0.50"))
 
 
@@ -219,7 +219,7 @@ def test_ask_prints_stream_and_sources(run_dir, monkeypatch, capsys):
     assert sent["language"] == "ru"
     out = capsys.readouterr().out
     assert "Пламя гаснет." in out
-    assert "[1] NTRS-1, стр. 4" in out
+    assert "[1] NTRS-1, p. 4" in out
 
 
 def test_ask_language_follows_the_question():
@@ -271,7 +271,7 @@ def test_stop_does_not_kill_a_reused_pid(run_dir, capsys):
     cli.state_path().write_text(json.dumps({"pid": os.getpid(), "host": "127.0.0.1", "port": 8000}))
     assert cli.main(["stop"]) == 0
     assert not cli.state_path().exists()
-    assert "не запущен" in capsys.readouterr().out
+    assert "not running" in capsys.readouterr().out
 
 
 def test_start_refuses_a_busy_port(run_dir, capsys):
@@ -280,7 +280,7 @@ def test_start_refuses_a_busy_port(run_dir, capsys):
         busy.listen()
         port = busy.getsockname()[1]
         assert cli.main(["start", "--port", str(port)]) == cli.EXIT_ERROR
-    assert "занят" in capsys.readouterr().err
+    assert "is taken" in capsys.readouterr().err
     assert not cli.state_path().exists()
 
 
@@ -362,6 +362,6 @@ def test_model_state_unknown_on_other_servers(monkeypatch):
 
 def test_describe_model_warns_about_huge_context():
     health = {"model": "m", "model_loaded": True, "model_context_length": 262144, "model_context_limit": 8192}
-    assert "своп" in cli.describe_model(health)
+    assert "swapping" in cli.describe_model(health)
     health = {"model": "m", "model_loaded": False}
     assert "sfss load" in cli.describe_model(health)

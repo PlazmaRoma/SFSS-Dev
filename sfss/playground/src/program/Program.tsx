@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Atmosphere, Dashboard, Health, Lang, PredictResponse } from "../shared/types";
+import type { Atmosphere, Dashboard, Health, PredictResponse } from "../shared/types";
 import { BASELINE, HABITAT } from "../shared/data/habitat";
 import type { MaterialKey } from "../shared/lib/bass";
 import {
@@ -18,6 +18,7 @@ import { RoomView } from "./RoomView";
 import { Explain } from "./Explain";
 import { ModelQuality } from "./ModelQuality";
 import "../shared/app.css";
+import { useLang } from "../shared/lib/lang";
 
 /** Программа: рабочий стол по базе.
  *
@@ -33,7 +34,7 @@ const initialAtmospheres = () =>
   Object.fromEntries(HABITAT.map((m) => [m.id, { ...m.atmosphere }])) as Record<string, Atmosphere>;
 
 export default function Program() {
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLang] = useLang();
   const [online, setOnline] = useState(false);
   const [health, setHealth] = useState<Health>(offlineHealth);
   const [dashboard, setDashboard] = useState<Dashboard>(offlineDashboard);

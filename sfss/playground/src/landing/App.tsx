@@ -1,15 +1,15 @@
-import { useRef, useState } from "react";
-import type { Lang } from "../shared/types";
+import { useRef } from "react";
 import { HeroCanvas } from "./HeroCanvas";
 import { Landing } from "./Landing";
 import { TopBar } from "../shared/TopBar";
 import { Footer } from "./Footer";
 import "../shared/app.css";
+import { useLang } from "../shared/lib/lang";
 
 /** Лендинг. Сам рабочий стол переехал в отдельную сборку (app.html):
  *  это и есть «программа», которую скачивают кнопкой внизу страницы. */
 export default function App() {
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLang] = useLang();
   const heroProgress = useRef(0);
   const stageBottom = useRef(0);
 

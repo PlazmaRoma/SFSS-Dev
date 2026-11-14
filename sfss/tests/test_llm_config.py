@@ -427,7 +427,7 @@ def daemon_off(monkeypatch, settings):
 def test_cli_runtime_without_daemon_writes_file(daemon_off, capsys):
     assert cli.main(["config", "runtime", "ollama", "--port", "11500"]) == 0
     output = capsys.readouterr().out
-    assert "сработает при sfss start" in output
+    assert "takes effect on sfss start" in output
     assert "Ollama, localhost:11500" in output
     assert "OLLAMA_CONTEXT_LENGTH" in output
     assert load_config(daemon_off).runtime.port == 11500
@@ -454,7 +454,7 @@ def test_cli_reset_without_daemon(daemon_off, capsys):
 def test_cli_show_without_daemon(daemon_off, capsys):
     assert cli.main(["config"]) == 0
     output = capsys.readouterr().out
-    assert "сохранённые настройки" in output
+    assert "saved settings" in output
     assert "LM Studio, localhost:1234" in output
 
 
@@ -467,7 +467,7 @@ def test_cli_explicit_address_does_not_fall_back_to_file(daemon_off, capsys):
 @pytest.mark.parametrize("command", [["config", "runtime"], ["config", "model"]])
 def test_cli_nothing_to_change(daemon_off, capsys, command):
     assert cli.main(command) == 1
-    assert "Укажите" in capsys.readouterr().err
+    assert "Say what to change" in capsys.readouterr().err
 
 
 def test_cli_goes_through_daemon_when_it_runs(monkeypatch, capsys):
@@ -493,5 +493,5 @@ def test_cli_goes_through_daemon_when_it_runs(monkeypatch, capsys):
     assert cli.main(["config", "runtime", "ollama"]) == 0
     assert sent == {"method": "PATCH", "path": "/v1/llm/config", "body": {"runtime": {"kind": "ollama"}}}
     output = capsys.readouterr().out
-    assert "отвечает" in output
-    assert "нет у рантайма" in output
+    assert "answering" in output
+    assert "not in the runtime" in output
