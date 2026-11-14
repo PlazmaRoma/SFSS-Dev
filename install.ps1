@@ -265,5 +265,5 @@ Done. SFSS is installed and running.
     sfss stop                        stop the service
     install.ps1 -Uninstall           remove everything
 
-Details: INSTALL.md
+Details: docs/install/windows.md
 "@

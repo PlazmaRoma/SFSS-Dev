@@ -8,7 +8,7 @@
 #   ./install.sh --uninstall  remove everything this script installed
 #
 # Python and libraries come through uv: one file, no admin rights, and it downloads
-# Python itself if needed. Safe to run again. Windows: install.ps1. Details: INSTALL.md.
+# Python itself if needed. Safe to run again. Windows: install.ps1. Details: docs/install.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -323,5 +323,5 @@ Done. SFSS is installed and running.
     sfss stop                        stop the service
     ./install.sh --uninstall         remove everything
 
-Details: INSTALL.md
+Details: docs/install/macos.md, docs/install/linux.md
 EOF

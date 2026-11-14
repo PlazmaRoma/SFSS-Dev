@@ -47,8 +47,8 @@ const TEXT = {
     en: "Stop the service and unload the model from memory",
   },
   serviceNotFound: {
-    ru: "Команда sfss не найдена. Установите её: sfss/docs/INTEGRATION.md",
-    en: "The sfss command was not found. Install it: sfss/docs/INTEGRATION.md",
+    ru: "Команда sfss не найдена. Установите SFSS: ./install.sh в репозитории, docs/install",
+    en: "The sfss command was not found. Install SFSS: ./install.sh in the repository, docs/install",
   },
   serviceStillUp: {
     ru: "SFSS всё ещё отвечает: он запущен не командой sfss. Остановите его там, где запускали.",
