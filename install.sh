@@ -214,6 +214,8 @@ if [ -z "$NO_APP" ]; then
       hdiutil detach -quiet "$MOUNT" || true
       APP_STATE="$MAC_APP"
       note "$MAC_APP"
+    else
+      note "skipped"
     fi
   elif [ "$(uname -m)" = "x86_64" ]; then
     TGZ="$RELEASE/Anti-Fire-linux-x86_64.tar.gz"
@@ -236,10 +238,15 @@ Terminal=false
 DESKTOP
       APP_STATE="$BIN/anti-fire, also in the applications menu"
       note "$APP_STATE"
-      if command -v ldconfig >/dev/null && ! ldconfig -p 2>/dev/null | grep -q 'libwebkit2gtk-4.1'; then
+      # Без трубы в grep -q: с pipefail проверка проваливалась как раз тогда, когда
+      # grep находил строку и закрывал трубу раньше, чем писатель допечатает
+      libraries="$( (ldconfig -p || /sbin/ldconfig -p) 2>/dev/null || true)"
+      if [ -n "$libraries" ] && [[ "$libraries" != *libwebkit2gtk-4.1* ]]; then
         note "The window needs the WebKitGTK 4.1 library:"
         note "    Fedora: sudo dnf install webkit2gtk4.1    Ubuntu: sudo apt install libwebkit2gtk-4.1-0"
       fi
+    else
+      note "skipped"
     fi
   else
     note "no ready build for $(uname -m). Build it: bash apps/anti-fire/build.sh"
@@ -260,7 +267,9 @@ if [ -z "$NO_LLM" ]; then
 
   if [ -n "$LMS" ]; then
     note "found LM Studio: $LMS"
-    if "$LMS" ls 2>/dev/null | grep -qi "$MODEL_ID"; then
+    # Список целиком в переменную, без «| grep -q»: см. проверку WebKitGTK выше
+    models="$("$LMS" ls 2>/dev/null | tr '[:upper:]' '[:lower:]' || true)"
+    if [[ "$models" == *"$MODEL_ID"* ]]; then
       note "model $MODEL_ID is already downloaded"; LLM_STATE="LM Studio, $MODEL_ID"
     elif ask "Download Ministral 3B, about 3 GB?"; then
       if [ "$OS-$(uname -m)" = "Darwin-arm64" ]; then source_url="$MODEL_MLX"; else source_url="$MODEL_GGUF"; fi
@@ -272,7 +281,8 @@ if [ -z "$NO_LLM" ]; then
   elif [ -n "$OLLAMA" ]; then
     note "found Ollama: $OLLAMA"
     have_model=""
-    if "$OLLAMA" list 2>/dev/null | grep -q "^$MODEL_OLLAMA"; then
+    models="$("$OLLAMA" list 2>/dev/null || true)"
+    if [[ $'\n'"$models" == *$'\n'"$MODEL_OLLAMA"* ]]; then
       note "model $MODEL_OLLAMA is already downloaded"; have_model=1
     elif ask "Download $MODEL_OLLAMA, about 3 GB?"; then
       if "$OLLAMA" pull "$MODEL_OLLAMA"; then have_model=1; else note "download failed. By hand: ollama pull $MODEL_OLLAMA"; fi

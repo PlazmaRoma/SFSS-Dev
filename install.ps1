@@ -207,6 +207,7 @@ if (-not $NoApp) {
         $AppState = "$Exe, also in the Start menu"
         Note $AppState
     }
+    else { Note "skipped" }
 }
 
 # --- 8. Нейросеть ------------------------------------------------------------
