@@ -75,7 +75,10 @@ jobs:
         working-directory: sfss
         run: |
           if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=.venv/Scripts/python.exe; fi
-          UV="$(command -v uv || ls ../.tools/uv ../.tools/uv.exe 2>/dev/null | head -1)"
+          UV="$(command -v uv || true)"
+          for candidate in ../.tools/uv ../.tools/uv.exe; do
+            if [ -z "$UV" ] && [ -x "$candidate" ]; then UV="$candidate"; fi
+          done
           "$UV" pip install --python "$PY" --quiet pytest
           "$PY" -m pytest -q
 

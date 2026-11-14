@@ -1,4 +1,4 @@
-# Установка SFSS и Anti-Fire на Windows из клона репозитория.
+﻿# Установка SFSS и Anti-Fire на Windows из клона репозитория.
 #
 #   powershell -ExecutionPolicy Bypass -File install.ps1              поставить и проверить
 #   powershell -ExecutionPolicy Bypass -File install.ps1 -Yes         не задавать вопросов
