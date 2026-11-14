@@ -1,379 +1,412 @@
-# Карта кода — что где лежит и зачем
+# Code map: what is where and why
 
-Документ на случай «открыл проект через месяц и ничего не помню».
-Здесь по каждому файлу: что он делает, зачем существует и что в нём
-неочевидного. Как работают механизмы целиком — в
-[`ARCHITECTURE.md`](ARCHITECTURE.md), справочник по эндпоинтам — в
-[`API.md`](API.md).
+For the "opened the project a month later and remember nothing" case. For every file: what it
+does, why it exists and what is not obvious about it. The code itself has no comments, so the
+explanations live here. How the mechanisms work as a whole: [`ARCHITECTURE.md`](ARCHITECTURE.md);
+the endpoint reference: [`API.md`](API.md).
 
-## С чего начать чтение
+## Where to start reading
 
-Если нужно вспомнить проект за пять минут, в таком порядке:
+To recall the project in five minutes, in this order:
 
-1. `app/main.py` — 32 строки, видно все эндпоинты сразу
-2. `app/config.py` — все настройки в одном месте
-3. `app/routers/predict.py` → `app/services/ml_service.py` — самая короткая
-   сквозная цепочка от HTTP до модели
+1. `app/main.py`: every endpoint at a glance
+2. `app/config.py`: every setting in one place
+3. `app/routers/predict.py` → `app/services/ml_service.py`: the shortest path from HTTP to the
+   model
 
 ---
 
-## Дерево
+## Tree
 
 ```
-app/                      веб-сервис
-├── __init__.py           пустой
-├── main.py               точка входа, сборка приложения
-├── cli.py                команда sfss: демон и обращения к нему из терминала
-├── security.py           кто имеет доступ: эта машина, ключ, Origin страницы
-├── static/playground/    Площадка одним HTML, собирается из playground/ скриптом scripts/update_playground.sh
-├── config.py             все настройки
-├── dependencies.py       создание сервисов (по одному экземпляру на процесс)
-├── models/schemas.py     формат запросов и ответов
-├── routers/              HTTP-слой: разбор запроса и коды ошибок
+app/                      the web service
+├── __init__.py           empty
+├── main.py               entry point, assembling the app
+├── cli.py                the sfss command: the daemon and calls to it from a terminal
+├── security.py           who has access: this machine, a key, the page Origin
+├── static/playground/    the Playground as one HTML file, built from playground/ by scripts/update_playground.sh
+├── config.py             all settings
+├── dependencies.py       creating services (one instance per process)
+├── models/schemas.py     request and response formats
+├── routers/              the HTTP layer: parsing requests and error codes
 │   ├── health.py
 │   ├── llm.py
 │   ├── dashboard.py
 │   ├── query.py
 │   ├── predict.py
 │   ├── ingest.py
-│   └── documents.py      список отчётов, загрузка PDF, страница как PDF
-└── services/             вся логика, без единого упоминания HTTP
-    ├── rag_service.py       поиск по документам
-    ├── keyword_search.py    поиск по словам (BM25) и слияние с векторным
-    ├── llm_service.py       обращение к локальной модели
-    ├── llm_config.py        настройки нейросети: рантайм и модель, data/llm.json
-    ├── llm_runtime.py       LM Studio и Ollama: состояние, загрузка, запуск сервера
-    ├── ml_service.py        предсказание скорости горения
-    ├── dashboard_service.py сводка для фронта
-    ├── ingest_service.py    разбор PDF и CSV
-    └── document_service.py  файлы корпуса: что есть, что добавить, какая страница
+│   └── documents.py      report list, PDF upload, a page as a PDF
+└── services/             all logic, without a single mention of HTTP
+    ├── rag_service.py       search in the documents
+    ├── embedder.py          the search model in ONNX
+    ├── vector_store.py      chunks and vectors on disk
+    ├── keyword_search.py    keyword search (BM25) and fusion with vector search
+    ├── llm_service.py       calls to the local language model
+    ├── llm_config.py        model settings: runtime and model, data/llm.json
+    ├── llm_runtime.py       LM Studio and Ollama: state, loading, starting the server
+    ├── ml_service.py        burning rate prediction
+    ├── dashboard_service.py summary for front ends
+    ├── ingest_service.py    parsing PDF and CSV
+    └── document_service.py  corpus files: what is there, adding, which page
 
-scripts/                  офлайн-задачи, запускаются руками
-├── ingest_documents.py   индексация документов
-├── build_flex_dataset.py сборка датасета FLEX (используется для обучения)
-├── build_bass_dataset.py сборка датасета BASS-II (в обучении не используется)
-└── train_model.py        обучение и честная оценка модели
+scripts/                  offline jobs, run by hand
+├── ingest_documents.py   indexing the documents
+├── build_flex_dataset.py building the FLEX dataset (used for training)
+├── build_bass_dataset.py building the BASS-II dataset (not used for training)
+├── train_model.py        training and an honest evaluation of the model
+└── update_playground.sh  building the Playground into app/static/playground
 
-examples/                 пример стороннего ПО на API: монитор атмосферы
-tests/                    pytest, работают без LM Studio и без модели поиска
-data/                     отчёты, датасеты и модель в git; индекс собирается на машине
-docs/                     документация
-playground/               исходники Площадки: React, сборка в app/static/playground
+examples/                 a third-party program on the API: an atmosphere monitor
+tests/                    pytest, run without a model runtime and without the search model
+data/                     reports, datasets, model and index in git
+docs/                     documentation
+playground/               Playground sources: React, built into app/static/playground
 ```
 
-**Главный принцип:** роутеры не содержат логики, сервисы не знают про HTTP.
-Поэтому сервисы можно вызывать из скриптов и подменять в тестах.
+**The main principle:** routers hold no logic, services know nothing about HTTP. So services can
+be called from scripts and replaced in tests.
 
 ---
 
-## app/ — веб-сервис
+## app/: the web service
 
-### `main.py` (84 строки)
+### `main.py`
 
-Создаёт приложение FastAPI и подключает четыре роутера. Здесь же CORS,
-открытый для всех источников, — чтобы фронт с другого порта мог обращаться.
+Creates the FastAPI app and plugs in the routers, each both without a prefix and under `/v1`.
+Also CORS (the allowed origins come from `security.py`), the `/playground` page and the warm-up at
+start: the keyword index, the search model and the fiery model load before the first request, so
+an open port means a ready service.
 
-Запуск: `uvicorn app.main:app --reload`
+Run: `uvicorn app.main:app --reload`
 
-### `config.py` (143 строки)
+### `config.py`
 
-Единственное место, где живут настройки. Читает `.env`, у всего есть значения
-по умолчанию, так что без `.env` сервис тоже поднимется.
+The only place settings live. Reads `.env`; everything has a default, so the service starts
+without `.env` too.
 
-Что здесь стоит знать:
+Worth knowing:
 
-| Настройка | Значение | На что влияет |
+| Setting | Value | What it affects |
 |---|---|---|
-| `lm_studio_base_url` | `http://localhost:1234/v1` | рантайм по умолчанию; `data/llm.json` важнее |
-| `lm_studio_model` | Ministral 3B (MLX) | модель по умолчанию; `data/llm.json` важнее |
-| `llm_config_path` | `data/llm.json` | что настроил человек: `sfss config`, `PATCH /v1/llm/config` |
-| `embedding_model` | `paraphrase-multilingual-MiniLM-L12-v2` | многоязычная: русский вопрос находит английский текст, но хуже английского |
-| `embedding_local_files_only` | `true` | не обращаться к Hugging Face при холодном старте |
-| `top_k` | 3 | сколько фрагментов уходит в промпт |
-| `hybrid_search` / `keyword_weight` | `true` / 1.5 | векторы + поиск по словам (ARCHITECTURE § 7.13) |
-| `translate_queries` | `true` | искать по английскому переводу русского вопроса (ARCHITECTURE § 7.11) |
-| `answer_ru_via_english` | `true` | русский ответ писать по-английски и переводить (ARCHITECTURE § 7.12) |
-| `chunk_size` / `chunk_overlap` | 500 / 50 | размер куска текста в **словах** |
-| `llm_system_prompt` | | инструкция «отвечай только по контексту» |
-| `llm_system_prompt_en` | | то же для английского ответа и русского через английский черновик |
+| `lm_studio_base_url` | `http://localhost:1234/v1` | the default runtime; `data/llm.json` takes precedence |
+| `lm_studio_model` | Ministral 3B (MLX) | the default model; `data/llm.json` takes precedence |
+| `llm_config_path` | `data/llm.json` | what a person configured: `sfss config`, `PATCH /v1/llm/config` |
+| `index_dir` | `data/index` | the ready index, in git |
+| `embedding_dir` | `data/embedding` | the search model, downloaded at installation |
+| `embedding_model` | `paraphrase-multilingual-MiniLM-L12-v2` | multilingual: a Russian question finds English text, though worse than an English one |
+| `top_k` | 3 | how many chunks go into the prompt |
+| `hybrid_search` / `keyword_weight` | `true` / 1.5 | vectors + keyword search (ARCHITECTURE § 7.13) |
+| `translate_queries` | `true` | search by the English translation of a Russian question (ARCHITECTURE § 7.11) |
+| `answer_ru_via_english` | `true` | write a Russian answer in English and translate it (ARCHITECTURE § 7.12) |
+| `chunk_size` / `chunk_overlap` | 500 / 50 | chunk size in **words** |
+| `llm_system_prompt` | | the "answer only from the context" instruction, in Russian |
+| `llm_system_prompt_en` | | the same for English answers and for Russian ones through an English draft |
+| `sfss_api_key` | none | needed only for access from other machines |
 
-Менять `embedding_model` без полной переиндексации нельзя — старые векторы
-несовместимы с новой моделью.
+`embedding_model` cannot change without a full re-index: old vectors are incompatible with a new
+model.
 
-`embedding_local_files_only=true` предполагает, что модель уже есть в кэше.
-Для первичной загрузки новой модели флаг временно отключается, после чего его
-нужно включить обратно.
+### `dependencies.py`
 
-Пока флаг включён, `apply_offline_mode` выставляет ещё и `HF_HUB_OFFLINE=1`.
-Одного `local_files_only` мало: `huggingface_hub` при сборке User-Agent раз в
-сутки ходит на huggingface.co за реестром «AI-агентов», и этот запрос флагом
-не отключается. Переменная читается библиотекой один раз при импорте, поэтому
-вызов стоит в `app/__init__.py`, раньше всех остальных импортов.
+Creates services through `@lru_cache`, one instance per process: the search model and the
+indexes must not be loaded per request. Tests replace these same functions with stubs through
+`app.dependency_overrides`.
 
-### `dependencies.py` (44 строки)
+### `security.py`
 
-Создаёт сервисы через `@lru_cache`, то есть по одному экземпляру на процесс.
+Who may call the API. Requests from this machine pass without a key; from other addresses a key
+is needed (`X-API-Key` or `Authorization: Bearer`). A page from a foreign Origin is not trusted
+even from this machine: otherwise any site open in the browser could drive the service. Trusted
+without a key: `localhost`, `127.0.0.1`, the Tauri window, an HTML file from disk, and whatever
+the `ALLOWED_ORIGINS` regular expression allows.
 
-Зачем: модель эмбеддингов весит сотни мегабайт и грузится несколько секунд.
-Создавать её на каждый запрос нельзя. Плюс в тестах эти же функции
-подменяются заглушками через `app.dependency_overrides`.
+### `cli.py`
 
-### `models/schemas.py` (270 строк)
+The `sfss` command. It computes nothing itself: `predict` and `ask` go to the daemon over the same
+API as any third-party program, so the command answers at once instead of loading models.
 
-Pydantic-схемы всех запросов и ответов. По сути — контракт API в виде кода:
-FastAPI сам проверяет входные данные и сам строит документацию в `/docs`.
+- `start` starts uvicorn as a background process with a log in `data/run/sfss.log` and waits for
+  `/v1/health`. On Unix the daemon gets its own session; on Windows a new process group without a
+  console window and, where the job allows it, leaves the terminal's job, so the service survives
+  closing an SSH session.
+- `stop` checks that the pid really belongs to our uvicorn (`ps`, or PowerShell on Windows) before
+  killing it: after a reboot the number could belong to someone else.
+- `predict` fills in nitrogen to make the mixture add up to one; `--csv` sends the table to
+  `/v1/predict/batch`.
+- `ask` reads `/v1/query/stream` and prints the text as it comes.
+- `config` changes settings through the daemon or, if it is off, in `data/llm.json`.
+- On Windows the output is switched to UTF-8: `mm²/s` and `×` would otherwise break `print`.
 
-Полное описание полей — в [`API.md`](API.md).
+### `models/schemas.py`
 
-### `routers/` — тонкие файлы
+Pydantic schemas of all requests and responses: the API contract as code. FastAPI validates input
+and builds the `/docs` page from them. Field descriptions are there too. Full description:
+[`API.md`](API.md).
 
-Каждый разбирает запрос, зовёт сервис и переводит исключения в коды HTTP.
-Логики здесь нет намеренно.
+### `routers/`: thin files
 
-| Файл | Эндпоинт | Что переводит в коды ошибок |
+Each parses the request, calls a service and turns exceptions into HTTP codes. No logic here on
+purpose.
+
+| File | Endpoint | What becomes an error code |
 |---|---|---|
-| `health.py` | `GET /health` | ничего, всегда 200 |
-| `llm.py` | `POST /v1/llm/load`, настройки `/v1/llm/config`, `/v1/llm/models` | модель не загрузилась → 503 с причиной; настройка не подошла → 422; идёт загрузка → 409 |
-| `dashboard.py` | `GET /dashboard` | ничего, деградирует мягко |
-| `query.py` | `POST /query` | любая ошибка LM Studio → 503 (не 500: это внешняя зависимость) |
-| | `POST /query/stream` | то же потоком NDJSON; ошибка посреди ответа — событием `error` |
-| `predict.py` | `POST /predict` | модель не обучена → 503, неизвестный параметр или признак без значения по умолчанию → 422 |
-| `ingest.py` | `POST /ingest` | ничего |
+| `health.py` | `GET /health` | nothing, always 200 |
+| `llm.py` | `POST /v1/llm/load`, `/v1/llm/config`, `/v1/llm/models` | the model did not load → 503 with the reason; a setting does not fit → 422; loading in progress → 409 |
+| `dashboard.py` | `GET /dashboard` | nothing, it degrades softly |
+| `query.py` | `POST /query` | any runtime error → 503 (not 500: an external dependency) |
+| | `POST /query/stream` | the same as an NDJSON stream; an error mid-answer is an `error` event |
+| `predict.py` | `POST /predict`, `/v1/predict/batch` | model not trained → 503; an unknown parameter or a feature without a default → 422 |
+| `documents.py` | `/v1/documents` | a scan without text or not a PDF → 422; the name exists → 409; too large → 413 |
+| `ingest.py` | `POST /ingest` | nothing |
 
 ---
 
-## app/services/ — логика
+## app/services/: the logic
 
 ### `rag_service.py`
 
-Поиск по документам: свой индекс (`vector_store.py`) и модель поиска в ONNX
-(`embedder.py`). Модель грузится при первом вопросе или на прогреве, поэтому
-счёт, список отчётов и поиск по словам работают и без неё.
+Search in the documents: our own index (`vector_store.py`) and the search model in ONNX
+(`embedder.py`). The model loads on the first question or at warm-up, so counting, the report list
+and keyword search work without it.
 
-- `retrieve()` — гибридный поиск: 20 ближайших по векторам и 20 лучших по
-  словам, слияние, затем `top_k`; с `filters` — только векторы. Возвращает
-  фрагменты вместе с `doc_id` и номером страницы
-- `keyword_index()` — индекс BM25 по всей коллекции; строится при прогреве,
-  пересобирается, если изменилось число чанков
-- `count()` — сколько чанков в базе
-- `ping()` — есть ли индекс
-- `warm_up()` — загрузить модель поиска заранее
+- `retrieve()`: hybrid search, the 20 nearest by vectors and the 20 best by keywords, fused, then
+  `top_k`; with `filters`, vectors only. Returns the chunks with `doc_id` and page number
+- `keyword_index()`: a BM25 index over the whole index; built at warm-up, rebuilt when the number
+  of chunks changes
+- `count()`: how many chunks are indexed
+- `ping()`: whether the index exists
+- `warm_up()`: load the search model in advance
 
-Если коллекция пуста, возвращается пустой список и пишется предупреждение
-в лог — это не ошибка.
+An empty index returns an empty list and a log warning: not an error.
 
 ### `embedder.py`
 
-Модель поиска `paraphrase-multilingual-MiniLM-L12-v2` в ONNX, int8: onnxruntime и
-tokenizers вместо PyTorch и sentence-transformers. Средний вектор токенов, как в
-sentence-transformers; векторы совпадают с прежними на 99,65 % и выше по косинусу.
-`python -m app.services.embedder` скачивает модель с закреплённой ревизией и проверкой
-sha256 в `data/embedding`. Почему так — ARCHITECTURE § 7.23.
+The search model `paraphrase-multilingual-MiniLM-L12-v2` in ONNX, int8: onnxruntime and tokenizers
+instead of PyTorch and sentence-transformers. The mean of token vectors, as in
+sentence-transformers; the vectors match the previous ones to 99.65 % or better by cosine.
+`python -m app.services.embedder` downloads the model with a pinned revision and a sha256 check
+into `data/embedding`. Why: ARCHITECTURE § 7.23.
 
 ### `vector_store.py`
 
-Фрагменты и векторы в двух файлах: `data/index/chunks.jsonl` и `vectors.npy`. Поиск —
-точный перебор по косинусу, на 1131 фрагменте это миллисекунды. Методы `get`, `query`,
-`upsert`, `delete`, `count` повторяют то, чем сервис пользовался у коллекции Chroma, и
-фильтр `where` в том же виде. Запись атомарная.
+Chunks and vectors in two files: `data/index/chunks.jsonl` and `vectors.npy`. Search is an exact
+cosine scan; on 1131 chunks it takes milliseconds. The `get`, `query`, `upsert`, `delete` and
+`count` methods repeat what the service used from a Chroma collection, with the `where` filter in
+the same form. Writes are atomic.
 
-### `keyword_search.py` (65 строк)
+### `keyword_search.py`
 
-Без зависимостей, чистые функции — тестируются без модели поиска.
+No dependencies, pure functions: tested without the search model.
 
-- `KeywordIndex` — BM25 по фрагментам; служебные слова вопроса («how», «does»)
-  отбрасываются
-- `fuse()` — reciprocal rank fusion двух списков с весом для поиска по словам
+- `KeywordIndex`: BM25 over the chunks; question stop words ("how", "does") are dropped
+- `fuse()`: reciprocal rank fusion of two lists with a weight for keyword search
 
-Зачем и с какими цифрами — ARCHITECTURE § 7.13.
+Why and with which numbers: ARCHITECTURE § 7.13.
 
-### `llm_service.py` (509 строк)
+### `llm_service.py`
 
-Обращение к нейросети. Клиент — библиотека `openai`, но с `base_url` на рантайм:
-LM Studio и Ollama поднимают API, совместимый с OpenAI, поэтому никакого отдельного
-SDK не нужно и наружу ничего не уходит. То, чего в этом API нет (состояние, загрузка,
-запуск сервера), живёт в `llm_runtime.py`. Настройки меняются на ходу: `update_config`
-выгружает прежнюю модель и подменяет клиент.
+Calls to the language model. The client is the `openai` library, but with `base_url` pointing to
+the runtime: LM Studio and Ollama serve an OpenAI-compatible API, so no separate SDK is needed and
+nothing leaves the machine. What that API lacks (state, loading, starting the server) lives in
+`llm_runtime.py`. Settings change on the fly: `update_config` unloads the previous model and swaps
+the client.
 
-- `search_query()` — текст для поиска: русский вопрос переводит на английский
-  через LM Studio со схемой ответа JSON, английский возвращает как есть; при
-  любом сбое — исходный вопрос
-- `build_context()` — склеивает найденные фрагменты в блоки вида
-  `[NTRS-20000030678, стр. N]` + текст: номер отчёта без хвоста имени файла,
-  для `language="en"` — `p. N`. Заголовок модель копирует в ссылки ответа
-- `generate_stream()` — то же, что `generate()`, но событиями `stage` и
-  `delta`; русский перевод вынимается из потока JSON классом `JsonStringStream`
-- `translate_answer()` — английский ответ на русский, тоже со схемой JSON;
-  `None`, если не вышло
-- `generate()` — для `language="ru"` пишет ответ по-английски и переводит, при
-  сбое перевода отвечает по-русски напрямую; сам вызов модели — в `_answer()`:
-  системный промпт с требованием отвечать только по контексту,
-  `temperature=0.2` для воспроизводимости; если передан `language`, в конец
-  промпта добавляется инструкция из `LANGUAGE_INSTRUCTIONS`
+- `search_query()`: the search text. A Russian question is translated into English through the
+  runtime with a JSON answer schema; an English one is returned as is; on any failure, the original
+  question
+- `build_context()`: joins the found chunks into blocks like `[NTRS-20000030678, стр. N]` + text:
+  the report number without the file name tail, `p. N` for `language="en"`. The model copies this
+  header into the answer's references
+- `generate_stream()`: the same as `generate()`, but as `stage` and `delta` events; the Russian
+  translation is pulled out of the JSON stream by `JsonStringStream`
+- `translate_answer()`: an English answer into Russian, also with a JSON schema; `None` if it
+  failed
+- `generate()`: for `language="ru"` writes the answer in English and translates it, and answers
+  in Russian directly if the translation fails. The model call itself is `_answer()`: a system
+  prompt requiring answers only from the context, `temperature=0.2` for reproducibility; with a
+  `language`, the instruction from `LANGUAGE_INSTRUCTIONS` is appended to the prompt
 
-Важная деталь: если фрагментов не нашлось, функция сразу возвращает «нет
-данных» (на языке запроса), не обращаясь к модели. Экономит минуту ожидания.
+An important detail: if no chunks were found, it returns "no data" (in the question language) at
+once, without calling the model. That saves a minute of waiting.
 
-Инструкция о языке живёт здесь, а не в вопросе: вопрос уходит в поиск, и
-приписка к нему меняет найденные страницы (ARCHITECTURE § 7.10).
+The language instruction lives here, not in the question: the question goes to search, and an
+addition to it changes the pages found (ARCHITECTURE § 7.10).
 
-### `ml_service.py` (297 строк)
+### `llm_config.py` and `llm_runtime.py`
 
-Предсказание. Модель называется `fiery`, лежит в `data/models/fiery.joblib`.
+`llm_config.py` keeps what a person configured in `data/llm.json`, merges it with `.env`, validates
+changes and rejects models banned by the rules (§ 7.18). `llm_runtime.py` knows each runtime: is it
+answering, which models it has, how to load and unload a model and how to start its server (`lms`
+for LM Studio, `ollama serve` and `keep_alive` for Ollama). It looks for the commands in standard
+places too, because the daemon does not start from a shell and `PATH` may lack them.
 
-- `_load()` — ленивая загрузка при первом запросе; если файла нет, кидает
-  `ModelNotTrainedError` с текстом, какую команду запустить
-- `resolve()` — дополняет запрос значениями из `FEATURE_DEFAULTS` и запоминает,
-  какие подставлены; на неизвестное имя параметра кидает ошибку, а не молчит
-- `_vectorize()` — собирает `DataFrame` **с именами колонок**, а не numpy-массив:
-  модель обучалась на именованных колонках, и без имён sklearn ругается на
-  несовпадение схемы
-- `_score()` — переводит предсказание в `risk_score` 0..1, нормируя по
-  диапазону обучающей выборки, и отдаёт исходную величину отдельно
-- `_build_chart()` — 20 точек «риск в зависимости от кислорода» для графика
+### `ml_service.py`
 
-В `fiery.joblib` лежит не голая модель, а словарь: сама модель, список
-признаков **в правильном порядке**, тип задачи, имя цели и её диапазон.
-Порядок признаков критичен — если он разойдётся с обучением, предсказания
-будут молча неверными.
+Prediction. The model is called `fiery` and lives in `data/models/fiery.joblib`.
 
-### `dashboard_service.py` (127 строк)
+- `_load()`: lazy loading on the first request; without the file it raises
+  `ModelNotTrainedError` with the command to run
+- `resolve()`: completes the request with values from `FEATURE_DEFAULTS` and remembers which ones
+  were filled in; an unknown parameter name raises an error instead of being ignored
+- `_vectorize()`: builds a `DataFrame` **with column names**, not a numpy array: the model was
+  trained on named columns, and without names sklearn complains about a schema mismatch
+- `_score()`: turns the prediction into a 0..1 `risk_score` over the training range and returns
+  the raw value separately
+- `_build_chart()`: 20 points of "risk versus oxygen" for a chart
 
-Собирает в один ответ то, что фронт рисует при загрузке: точки экспериментов
-FLEX из `data/processed/flex.csv`, качество модели и состав корпуса.
+`fiery.joblib` holds a dictionary, not a bare model: the model, the feature list **in the right
+order**, the task type, the target name and its range. Feature order is critical: if it differs
+from training, predictions are silently wrong.
 
-Ничего не считает на лету. Метрики и важность признаков берутся **из артефакта
-модели**, куда их кладёт `train_model.py`. Зашивать их в код нельзя: после
-переобучения они бы соврали, а заметить это было бы невозможно.
+### `dashboard_service.py`
 
-Деградирует мягко: нет датасета — `rows: 0`, нет модели — `trained: false`,
-нет индекса — `chunks: 0`. Эндпоинт в любом случае отвечает 200, и фронт
-по этим полям решает, какие панели показывать.
+Gathers what a front end draws on load into one response: FLEX experiment points from
+`data/processed/flex.csv`, model quality and corpus contents.
 
-### `ingest_service.py` (209 строк)
+It computes nothing on the fly. Metrics and feature importance come **from the model artifact**,
+where `train_model.py` puts them. They must not be hard-coded: after retraining they would lie,
+and nobody would notice.
 
-Разбор файлов из `data/raw`.
+It degrades softly: no dataset → `rows: 0`, no model → `trained: false`, no index → `chunks: 0`.
+The endpoint always answers 200, and a front end decides from these fields which panels to show.
 
-- PDF → текст постранично через `pypdf` → куски по ~500 слов с перекрытием 50 →
-  запись в индекс с метаданными `doc_id`, `source`, `page`. Именно отсюда
-  берутся ссылки на страницы в ответах `/query`
-- CSV → чистка через pandas → `data/processed/<имя>.csv`
+### `ingest_service.py`
 
-ID куска детерминирован: `{doc_id}-p{страница}-c{номер}-{хеш}`. Перед записью
-прежние куски того же файла удаляются, поэтому повторная индексация не плодит
-дубли, даже если текст извлёкся иначе.
+Parsing files from `data/raw`.
 
-`detect_shift()` и `shift_text()` чинят PDF, у которых pypdf из-за шрифтов без
-ToUnicode отдаёт текст со сдвигом кодов символов (так был сломан FLEX-отчёт
-`NTRS-20120015928`). Сдвиг находится автоматически, подробности — ARCHITECTURE § 11, п. 7.
+- PDF → text per page through `pypdf` → chunks of about 500 words with an overlap of 50 → into the
+  index with `doc_id`, `source`, `page` metadata. That is where the page references in `/query`
+  answers come from
+- CSV → cleaning with pandas → `data/processed/<name>.csv`
 
-PDF без текстового слоя (скан-картинка) даёт ноль кусков и предупреждение
-в лог. OCR не подключён.
+The chunk id is deterministic: `{doc_id}-p{page}-c{number}-{hash}`. Before writing, the previous
+chunks of the same file are removed, so re-indexing does not create duplicates even when the text
+is extracted differently.
 
----
+`detect_shift()` and `shift_text()` repair PDFs whose fonts lack ToUnicode, where pypdf returns
+text with shifted character codes (that is how the FLEX report `NTRS-20120015928` was broken). The
+shift is found automatically: a normal English text has 20-30 % stop words, a shifted one has none,
+so the shift that brings stop words back wins. Details: ARCHITECTURE § 11, item 7.
 
-## scripts/ — запускаются руками
+A PDF without a text layer (a scanned image) gives zero chunks and a log warning. There is no OCR.
 
-### `ingest_documents.py` (39 строк)
+### `document_service.py`
 
-Обёртка над `IngestService` для запуска из терминала. Делает то же, что
-`POST /ingest`, но удобнее: видно прогресс, есть флаг `--force`.
-
-### `build_flex_dataset.py` (148 строк) — **используется для обучения**
-
-Вытаскивает таблицу тестов FLEX из PDF-отчёта `NTRS-20150023456.pdf`
-(страницы 26-34) регулярным выражением и собирает
-`data/processed/flex.csv`: 273 опыта по сжиганию капель топлива на МКС.
-
-Что даёт: состав атмосферы, давление, начальный диаметр капли как признаки;
-скорость горения, диаметр погасания, время горения как измеренные результаты.
-
-Неочевидное: колонка `condition` — код условий среды, выделенный из
-идентификатора вида `C14M101`. Опыты с одним кодом проводились подряд при
-одной атмосфере, поэтому независимыми строками не являются и при оценке
-должны попадать в один фолд.
-
-### `build_bass_dataset.py` (382 строки) — **в обучении не используется**
-
-Собирает датасет BASS-II, соединяя два источника: таблицу экспериментов с
-сайта NASA PSI (числа) и Приложение A отчёта `NTRS-20210011385` (исход опыта,
-которого в таблице с сайта нет).
-
-Самая заковыристая часть проекта, и в итоге модель на этих данных не строится:
-целевая переменная оказалась отражением протокола опыта, а не свойств
-материала (подробно — `ARCHITECTURE.md`, раздел 7.7). Файл оставлен, потому
-что данные пригодятся, если появятся измеренные пределы.
-
-Что в нём полезного и переиспользуемого:
-
-- соединение таблицы с PDF по паре «номер теста + номер образца» — одного
-  номера теста мало, идентификатор `O2` неотличим от формулы кислорода
-- пересчёт показаний приборов в скорость потока по калибровочной таблице,
-  с привязкой кривой к дню опыта
-- разбор описаний образцов в числовые признаки: `100-µm`, `1/4 in`, `2 cm wide`
-
-### `train_model.py` (339 строк)
-
-Обучение и, что важнее, **честная оценка**. Умеет обе задачи — регрессию и
-классификацию, выбирает по типу целевой колонки.
-
-Почему это не пять строк на `train_test_split`: наивная оценка на таких данных
-завышает качество. В скрипте поэтому:
-
-- **групповая кросс-валидация** (`--group`) — строки одной группы не расходятся
-  между обучением и тестом, иначе модель «угадывает» по памяти
-- **baseline рядом с метрикой** — для классификации доля самого частого класса,
-  для регрессии константа-среднее. Без этого число нечитаемо
-- **`--exclude`** — колонки, которые нельзя брать в признаки: измеренные
-  результаты опыта дали бы утечку целевой переменной
-- **импьютер** внутри пайплайна — пропуски в данных нормальны (у плёнки нет
-  диаметра), но KMeans их не переносит
-- **`--dry-run`** — посчитать качество, не перезаписывая модель
-
-Команда, которой обучена текущая модель, — в [`../README.md`](../README.md).
+The corpus files: the report list with chunk counts, adding an uploaded PDF (with size, type and
+text checks, then indexing), and cutting out one page as a separate PDF for the page viewer. A
+`doc_id` is only ever compared with file names from the folder and never used to build a path,
+so a request cannot reach a file outside `data/raw`.
 
 ---
 
-## tests/ (2332 строки)
+## scripts/: run by hand
 
-Одиннадцать файлов, 151 тест, проходят за доли секунды.
+### `ingest_documents.py`
 
-`conftest.py` подменяет все три сервиса заглушками через
-`app.dependency_overrides`. Поэтому тесты **не требуют ни LM Studio, ни
-модели поиска, ни обученной модели** — проверяется контракт HTTP, а не интеграция.
+A wrapper around `IngestService` for the terminal. Does the same as `POST /ingest`, but handier:
+you see the result and there is a `--force` flag.
 
-Запуск: `pytest`
+### `build_flex_dataset.py`: **used for training**
 
-Живую связку с настоящей моделью и данными эти тесты не проверяют — для этого
-есть ручная процедура в [`SMOKE-TEST.md`](SMOKE-TEST.md).
+Extracts the FLEX test table from the PDF report `NTRS-20150023456.pdf` (pages 26-34) with a
+regular expression and builds `data/processed/flex.csv`: 273 fuel droplet combustion experiments
+on the ISS.
+
+What it provides: atmosphere composition, pressure and initial droplet diameter as features;
+burning rate, extinction diameter and burn time as measured results.
+
+Not obvious: the `condition` column is the environment code extracted from an id like `C14M101`.
+Experiments with one code were run back to back in one atmosphere, so they are not independent
+rows and must fall into the same fold in evaluation.
+
+### `build_bass_dataset.py`: **not used for training**
+
+Builds the BASS-II dataset by joining two sources: the experiment table from the NASA PSI website
+(numbers) and Appendix A of report `NTRS-20210011385` (the outcome, missing from the website
+table).
+
+The trickiest part of the project, and in the end no model is built on this data: the target
+turned out to reflect the experiment protocol, not the material properties (details:
+`ARCHITECTURE.md`, section 7.7). The file stays because the data will be useful if measured limits
+appear.
+
+What is useful and reusable in it:
+
+- joining the table with the PDF on the "test number + sample number" pair: the test number alone
+  is not enough, the id `O2` is indistinguishable from the oxygen formula
+- converting instrument readings into flow speed with the calibration table, matching the curve
+  to the day of the experiment
+- parsing sample descriptions into numeric features: `100-µm`, `1/4 in`, `2 cm wide`
+
+### `train_model.py`
+
+Training and, more importantly, **an honest evaluation**. It handles both tasks, regression and
+classification, chosen by the type of the target column.
+
+Why it is not five lines of `train_test_split`: a naive evaluation on such data overstates the
+quality. So the script has:
+
+- **grouped cross-validation** (`--group`): rows of one group never split between training and
+  test, otherwise the model "guesses" from memory
+- **a baseline next to the metric**: the share of the most frequent class for classification, a
+  constant mean for regression. Without it the number is unreadable
+- **`--exclude`**: columns that must not be features: measured experiment results would leak the
+  target
+- **an imputer** inside the pipeline: missing values are normal (a film has no diameter), but
+  KMeans cannot handle them
+- **`--dry-run`**: measure the quality without overwriting the model
+
+The command that trained the current model is in [`../README.md`](../README.md).
+
+### `update_playground.sh`
+
+Builds the Playground from `playground/` with Vite and inlines script and styles into one HTML file
+in `app/static/playground`. The built file is in git, so the service needs no Node.
 
 ---
 
-## data/ — почти всё в git
+## tests/
 
-| Каталог | Что внутри |
+242 tests in a couple of seconds.
+
+`conftest.py` replaces the services with stubs through `app.dependency_overrides`. So the tests
+**need neither a model runtime, nor the search model, nor a trained model**: they check the HTTP
+contract, not the integration. `test_installers.py` checks the installers for things that break
+silently on someone else's machine: the BOM in `install.ps1`, Unix line endings in `install.sh`,
+the same pinned versions in both.
+
+Run: `pytest`
+
+These tests do not check the live chain with the real model and data: for that there is the manual
+procedure in [`SMOKE-TEST.md`](SMOKE-TEST.md).
+
+---
+
+## data/: almost everything in git
+
+| Folder | Contents |
 |---|---|
-| `data/raw/` | исходники: 16 PDF отчётов NASA, таблицы PSI в CSV |
-| `data/processed/` | собранные датасеты: `flex.csv`, `bass_ii.csv` |
-| `data/index/` | индекс: 1131 фрагмент и их векторы, 3,5 МБ |
-| `data/embedding/` | модель поиска, качается при установке, не в git |
-| `data/models/` | `fiery.joblib` и `fiery_clusters.joblib` |
+| `data/raw/` | sources: 16 NASA report PDFs, PSI tables in CSV |
+| `data/processed/` | built datasets: `flex.csv`, `bass_ii.csv` |
+| `data/index/` | the index: 1131 chunks and their vectors, 3.5 MB |
+| `data/embedding/` | the search model, downloaded at installation, not in git |
+| `data/models/` | `fiery.joblib` and `fiery_clusters.joblib` |
 
-В git лежат `raw/`, `processed/`, `models/` и `index/`, около 145 МБ: самый большой файл
-47 МБ, лимит GitHub 100 МБ. Готовый индекс избавляет установку от минуты индексации. Модель
-поиска весит 113 МБ и в git не помещается: её качает установщик. `data/run/` и
-`data/llm.json` — состояние демона и настройки человека, их в git нет.
+`raw/`, `processed/`, `models/` and `index/` are in git, about 145 MB: the largest file is 47 MB,
+under GitHub's 100 MB limit. The ready index saves installation a minute of indexing. The search
+model is 113 MB and does not fit into git: the installer downloads it. `data/run/` and
+`data/llm.json` are the daemon state and a person's settings, not in git.
 
 ---
 
-## Что почитать дальше
+## Further reading
 
-| Вопрос | Где ответ |
+| Question | Where |
 |---|---|
-| Как запустить сервер | [`../README.md`](../README.md) |
-| Как проверить руками, что всё работает | [`SMOKE-TEST.md`](SMOKE-TEST.md) |
-| Какие поля у эндпоинта | [`API.md`](API.md) |
-| Почему устроено именно так | [`ARCHITECTURE.md`](ARCHITECTURE.md), раздел 7 — журнал решений |
-| Что известно про ограничения | [`ARCHITECTURE.md`](ARCHITECTURE.md), раздел 11 |
-| Что уже пробовали и не сработало | [`ARCHITECTURE.md`](ARCHITECTURE.md), раздел 12 — тупики |
-| Что просили изначально | [`anti-fire-backend-mvp.md`](anti-fire-backend-mvp.md) |
+| How to start the server | [`../README.md`](../README.md) |
+| How to check by hand that everything works | [`SMOKE-TEST.md`](SMOKE-TEST.md) |
+| Which fields an endpoint has | [`API.md`](API.md) |
+| Why it is built this way | [`ARCHITECTURE.md`](ARCHITECTURE.md), section 7, the decision log |
+| Known limitations | [`ARCHITECTURE.md`](ARCHITECTURE.md), section 11 |
+| What was tried and did not work | [`ARCHITECTURE.md`](ARCHITECTURE.md), section 12, dead ends |
+| What was asked for originally | [`anti-fire-backend-mvp.md`](anti-fire-backend-mvp.md) |
