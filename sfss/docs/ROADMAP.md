@@ -1,187 +1,179 @@
-# Требования после созвона с организаторами
+# Requirements after the call with the organisers
 
-Запись созвона не сделана, поэтому источник здесь — голосовые Романа, записанные
-сразу после него. Статусы на 2026-11-09: всё перечисленное влито в `main` бэкенда и в
-`roman(main)` фронта, кроме трёх правок Anti-Fire от 11-09 в разделе «Сделано после
-просмотра».
+The call was not recorded, so the source here is Roman's voice notes made right after it. Statuses
+as of 2026-11-15. Pull request numbers before 14 November refer to the two earlier repositories:
+back end PlazmaRoma/Anti-Fire_backend_MVP, front end heyyAzamat/space-fire-security-software.
+From 14 November everything is in PlazmaRoma/SFSS-Dev.
 
-## Источники
+## Sources
 
-| Голосовое | О чём | Текст |
+| Voice note | About | Text |
 |---|---|---|
-| 1 | приложение — это плейграунд, суть в фоне | расшифровка Романа, ниже |
-| 2 | бэкенд как основная программа, демон, русский язык | расшифровка Романа, ниже |
-| 3 | отдельная лаконичная программа, стороннее ПО, подача | расшифровка Романа, ниже |
-| 4 | повтор старых тезисов | не расшифровывалось: по словам Романа, полезного нет |
-| Презентация | правила сдачи, критерии, сроки | снимки экрана от Романа, ниже; других материалов нет |
+| 1 | the app is a playground, the substance is in the background | Roman's transcript, below |
+| 2 | the back end as the main program, a daemon, the Russian language | Roman's transcript, below |
+| 3 | a separate laconic program, third-party software, delivery | Roman's transcript, below |
+| 4 | repeating old points | not transcribed: according to Roman, nothing useful |
+| Presentation | submission rules, criteria, deadlines | Roman's screenshots, below; no other material |
 
-Записей панели Игоря нет.
+There are no recordings of Igor's panel.
 
-## Правила организаторов
+## Organisers' rules
 
-Новое на 2026-11-01. Источник — шесть снимков презентации организаторов и слова Романа о
-запрете.
+New as of 2026-11-01. Source: six screenshots of the organisers' presentation and Roman's words
+about the ban.
 
-**Сроки.** Хакатон 14–15 ноября 2026. Питч и локальное судейство 15 ноября: 3 минуты
-питч, 2 минуты вопросы. **Проект надо отправить на сайте до 15 ноября, 23:59 по местному
-времени**, даже если получена локальная награда: иначе нет глобального судейства. Для
-глобальной премии нужен хотя бы один challenge NASA: у нас Flame in Freefall.
+**Deadlines.** The hackathon runs 14–15 November 2026. Pitch and local judging on 15 November:
+3 minutes of pitch, 2 minutes of questions. **The project must be submitted on the website by
+15 November, 23:59 local time**, even after a local award: otherwise there is no global judging.
+A global prize needs at least one NASA challenge: ours is Flame in Freefall.
 
-**Запрет китайских ИИ.** Регламент переписан на ходу и запрещает их в любом виде. Прежнее
-решение «локальная модель не считается» (`ARCHITECTURE.md` § 7.15) отменено, см. § 7.18.
+**Ban on Chinese AI.** The rules were rewritten on the fly and ban them in any form. The earlier
+decision "a local model does not count" (`ARCHITECTURE.md` § 7.15) is cancelled, see § 7.18.
 
-| Правило | Как у нас | Статус |
+| Rule | How we meet it | Status |
 |---|---|---|
-| Никаких китайских ИИ | ответы на Ministral 3B, готовые ответы Площадки пересняты | сделано |
-| Созданное с ИИ не содержит фирменный стиль NASA: логотипы, флаги, обозначения миссий | эмблема убрана из подвала лендинга, в Anti-Fire и `sfss` её не было | сделано |
-| Указать, где и как использован ИИ | `SUBMISSION.md`, раздел об ИИ | черновик, дополнить Роману |
-| Перечислить все данные, ресурсы, инструменты, включая код, текст и изображения | `SUBMISSION.md` | черновик |
-| Страница сдачи: что делает, как работает, преимущества, чего хотим достичь, инструменты | `SUBMISSION.md` | черновик |
-| Слайды: команда, имена участников, задача, изображение проекта, опыт пользователя, как открытые данные делают решение возможным | план слайдов в `DEMO.md` | слайдов нет, делает команда |
-| Питч 3 минуты | `DEMO.md`, сценарий со слайдами | прогона не было |
+| No Chinese AI | answers by Ministral 3B, the Playground's recorded answers redone | done |
+| AI-made content contains no NASA branding: logos, flags, mission insignia | the emblem was removed from the landing footer; Anti-Fire and `sfss` never had it | done |
+| State where and how AI was used | `SUBMISSION.md`, the AI section | draft, Roman to complete |
+| List all data, resources and tools, including code, text and images | `SUBMISSION.md` | draft |
+| Submission page: what it does, how it works, advantages, goals, tools | `SUBMISSION.md` | draft |
+| Slides: team, member names, challenge, project image, user experience, how open data makes the solution possible | slide plan in `DEMO.md` | no slides yet, the team makes them |
+| A 3-minute pitch | `DEMO.md`, a script with slides | one run-through, not from a clean reboot |
 
-**Критерии: одни и те же на всех этапах.**
+**Criteria: the same at every stage.**
 
-| Критерий | Чем отвечаем | Слабое место |
+| Criterion | Our answer | Weak spot |
 |---|---|---|
-| Влияние (Impact) | любое ПО станции может спросить, опаснее ли атмосфера, и получить ответ по отчётам | модель считает только капли топлива, не материалы |
-| Креативность (Creativity) | сервис для подключения вместо ещё одной панели; монитор, который сам поднимает тревогу | монитор на вымышленной телеметрии |
-| Обоснованность (Validity) | кросс-валидация по условиям, R² 0.65, ссылка на страницу у каждого ответа; простота проверяется тремя задачами | проверки на человеке не было |
-| Актуальность (Relevance) | данные NASA в основе: модель на 259 опытах FLEX, ответы только по 16 отчётам | |
-| Презентация (Presentation) | сценарий на 3 минуты, одна фраза, ограничения названы сразу | прогона не было, прошлый раз подача была слабой |
+| Impact | any station software can ask whether the atmosphere is more dangerous and get an answer from the reports | the model covers fuel droplets only, not materials |
+| Creativity | a service to connect to instead of yet another panel; a monitor that raises the alarm itself | the monitor runs on made-up telemetry |
+| Validity | cross-validation by condition, R² 0.65, a page reference on every answer | no test with a real user |
+| Relevance | NASA data underneath: the model on 259 FLEX experiments, answers only from 16 reports | |
+| Presentation | a 3-minute script, one sentence, limitations stated up front | last time the delivery was weak |
 
-**Трактовка, которую стоит уточнить у организаторов.** На слайде запрещены «обозначения
-миссий» в созданном контенте. Мы считаем, что речь о знаках и нашивках, поэтому текстовые
-названия опытов (FLEX, BASS-II) остаются: источники требуется называть. Логотип Space Apps
-в подвале лендинга оставлен как отметка участия, рядом стоит оговорка, что проект не связан
-с NASA.
+**An interpretation worth checking with the organisers.** The slide bans "mission insignia" in
+created content. We take it to mean emblems and patches, so the text names of experiments (FLEX,
+BASS-II) stay: sources must be named. The Space Apps logo stays in the landing footer as a mark
+of participation, next to a note that the project is not affiliated with NASA.
 
-## Требования
+## Requirements
 
-| № | Требование | Откуда | Где сделано | Статус |
+| # | Requirement | From | Where done | Status |
 |---|---|---|---|---|
-| 1 | Не выдавать приложение за готовое: сделать его плейграундом, площадкой для игр | 1, 2 | значок и подписи: фронт #6 | подписи есть |
-| 2 | Переименовать само приложение | 1 | SFSS Playground: фронт #6 | сделано |
-| 3 | Показывать, как может выглядеть конечная программа, а не выдавать себя за неё | 2 | подпись Площадки: фронт #6 | сделано |
-| 4 | Суть программы в бэкенде: он работает в фоне и всё вычисляет | 1, 2 | `sfss`: бэкенд #11 | сделано |
-| 5 | Полноценный демон с командами | 2 | `sfss start`, `stop`, `status`, `logs`: #11 | сделано; автозапуск launchd не делали |
-| 6 | Работа не только по API, но и через терминал | 2 | `sfss predict`, `ask`, `import`: #11, #12 | сделано |
-| 7 | Подключение по внешнему API, свои модули подключаются к бэкенду | 1, 2 | `/v1`, ключ доступа: #12 | сделано; с другой машины проверено только тестами |
-| 8 | Ответ на «где вводить данные, как импортировать?» | 1 | пакетный расчёт, загрузка PDF: #12 | сделано |
-| 9 | Нормальные инструкции | 2 | `INTEGRATION.md`, `DEMO.md`: #12, #13 | сделано |
-| 10 | Довести русский язык: главная задача на момент записи | 2 | бэкенд #4–#6, #10, #13 | сделано, ограничения ниже |
-| 11 | Отдельная полноценная программа, «как у NASA»: очень лаконичная, утилитарная, без передизайна. Вбил данные, получил ответ, спросил AI | 3 | Anti-Fire: фронт #5 | сделано; проверки на человеке не было |
-| 12 | Показать работу из стороннего ПО через API, в дополнение | 3 | `examples/telemetry_monitor.py`: #13 | сделано |
-| 13 | Уверенная подача без оверинжиниринга, площадку не выдавать за настоящую программу | 3 | `DEMO.md`: #13 | сценарий есть, прогона не было |
-| 14 | Площадка идёт вместе с основной программой | 3 | `sfss playground`: #13 | сделано |
+| 1 | Do not present the app as finished: make it a playground | 1, 2 | icon and labels: front #6 | labels in place |
+| 2 | Rename the app itself | 1 | SFSS Playground: front #6 | done |
+| 3 | Show what the final program could look like, not pretend to be it | 2 | Playground label: front #6 | done |
+| 4 | The substance is in the back end: it runs in the background and computes everything | 1, 2 | `sfss`: back end #11 | done |
+| 5 | A full daemon with commands | 2 | `sfss start`, `stop`, `status`, `logs`: #11 | done; no launchd autostart |
+| 6 | Work not only over the API but from a terminal too | 2 | `sfss predict`, `ask`, `import`: #11, #12 | done |
+| 7 | Connection over an external API; your own modules plug into the back end | 1, 2 | `/v1`, access key: #12 | done; from another machine tested only by tests |
+| 8 | An answer to "where do I enter data, how do I import?" | 1 | batch calculation, PDF upload: #12 | done |
+| 9 | Proper instructions | 2 | `INTEGRATION.md`, `DEMO.md`, install guides per system | done |
+| 10 | Finish the Russian language: the main task at the time | 2 | back end #4–#6, #10, #13 | done, limitations below |
+| 11 | A separate full program "like NASA's": very laconic, utilitarian, no over-design. Enter data, get an answer, ask the AI | 3 | Anti-Fire: front #5 | done; no test with a real user |
+| 12 | Show third-party software working through the API, as an extra | 3 | `examples/telemetry_monitor.py`: #13 | done |
+| 13 | Confident delivery without over-engineering; do not present the playground as the real program | 3 | `DEMO.md`: #13 | script ready |
+| 14 | The Playground ships with the main program | 3 | `sfss playground`: #13 | done |
 
-В голосовом 2 фраза о русском языке записана как «дома довести»; похоже, это
-«до ума довести».
+In voice note 2 the phrase about Russian was transcribed as "finish at home"; it is probably
+"finish properly".
 
-## Что решено позже и отличается от голосовых
+## Decided later, different from the voice notes
 
-В голосовом 2 «SFSS получается плейграунд». При согласовании плана Роман решил иначе:
+Voice note 2 says "SFSS becomes a playground". When agreeing on the plan Roman decided otherwise:
 
-- **`sfss`** — основная программа: демон, API, команды. Площадка идёт с ней в комплекте.
-- **Anti-Fire** — отдельная программа «как у NASA».
-- **Площадка** — старая программа, теперь SFSS Playground.
-- **AI не отдельный режим.** В голосовом 3 «переключиться в режим AI»; после разбора
-  панели Игоря решили, что AI всегда открыт и не спрятан за кнопками.
+- **`sfss`** is the main program: daemon, API, commands. The Playground ships with it.
+- **Anti-Fire** is a separate program "like NASA's".
+- **The Playground** is the old program, now SFSS Playground.
+- **AI is not a separate mode.** Voice note 3 says "switch to AI mode"; after looking at Igor's
+  panel we decided the AI is always open and not hidden behind buttons.
 
-Подробнее: `ARCHITECTURE.md` § 7.16, § 7.17.
+Details: `ARCHITECTURE.md` § 7.16, § 7.17.
 
-## Сделано после просмотра
+## Done after review
 
-Роман смотрел программы сам и присылал замечания голосом. Номера PR: бэкенд
-PlazmaRoma/Anti-Fire_backend_MVP, фронт heyyAzamat/space-fire-security-software.
+Roman looked at the programs himself and sent comments by voice.
 
-| Дата | Замечание | Что сделано | PR | Статус |
+| Date | Comment | What was done | PR | Status |
 |---|---|---|---|---|
-| 11-01 | Anti-Fire не может поднять модель, а в Bionic нет кнопки «загрузить» | сервис сам поднимает LM Studio и грузит модель с контекстом 8192; кнопка и `sfss load` | бэкенд #14, фронт #7 | влито |
-| 11-01 | Нет команды выгрузить модель | `sfss unload`, `unload` в терминале, `POST /v1/llm/unload` | бэкенд #14, фронт #7 | влито |
-| 11-01 | Терминал перекрывает программу, тянуть его неудобно | терминал тянется мышью и упирается в заголовок таблицы | фронт #7 | влито |
-| 11-01 | Неочевидно сворачивать чаты, чаты не удалить, таблица «Данные» ломается | «← К расчёту» и Esc, удаление чатов, своя прокрутка у каждой колонки | фронт #7 | влито |
-| 11-01 | Программа поздно замечает выгруженную модель | опрос раз в 2 с и при возврате в окно | фронт #7 | влито |
-| 11-01 | Язык программы от системы или переключателем | RU/EN слева вверху, по умолчанию язык системы | фронт #7 | влито |
-| 11-01 | В русском ответе битая формула | формулы, потерянные при извлечении из PDF, до модели не доходят | бэкенд #14 | влито; замер на 9 ответах |
-| 11-02 | SFSS приходится искать в Мониторинге системы | Anti-Fire запускает и останавливает SFSS на этой машине | бэкенд #15, фронт #8 | влито |
-| 11-02 | Настраивать подключение к нейросети, порт LM Studio или Ollama | `sfss config`, окно «Настройки AI» в Anti-Fire и на Площадке, `config` в терминале | бэкенд #16, фронт #9 | влито; Ollama не проверялась на настоящей |
-| 11-04 | На Площадке вопрос к AI спрятан во вкладке | вопрос всегда на экране, справа; вкладки ушли под комнату | бэкенд #17, фронт #10 | влито |
-| 11-04 | Площадка не прокручивается до конца, а на узком окне вовсе | один экран только при окне от 1241 × 700, иначе обычная прокрутка | бэкенд #17, фронт #10 | влито |
-| 11-05 | Предложения по дизайну Площадки, Роман выбрал все три | пояснение «это площадка» в шапке вместо отдельной строки; модули одной полосой; подписи под ползунками коротко в строке с названием | бэкенд #17, фронт #10 | влито |
-| 11-09 | В Anti-Fire прокручивается интерфейс, хотя всё помещается в окно | прокрутка страницы и пружина macOS отключены, прокручиваются только части | бэкенд #18, фронт #11 | влито |
-| 11-09 | Кнопка «Загрузить» непонятна | «Загрузить модель», «Выгрузить модель», «Перезагрузить модель» | бэкенд #18, фронт #11 | влито |
-| 11-09 | После «Запустить SFSS» прогрев печатается только после прогрева | вывод `sfss` в терминале построчно, по ходу команды | бэкенд #18, фронт #11 | влито |
-| 11-14 | Пояснение в шапке Площадки обрезается и выглядит странно | пояснение убрано: название и так «SFSS Playground», объяснение про SFSS осталось на лендинге | эта ветка `roman(playground-header)`, фронт #13 | в PR |
+| 11-01 | Anti-Fire cannot bring up the model, and Bionic has no "load" button | the service starts LM Studio itself and loads the model with context 8192; a button and `sfss load` | back end #14, front #7 | merged |
+| 11-01 | No command to unload the model | `sfss unload`, `unload` in the terminal, `POST /v1/llm/unload` | back end #14, front #7 | merged |
+| 11-01 | The terminal covers the program and is awkward to drag | the terminal is dragged with the mouse and stops at the table header | front #7 | merged |
+| 11-01 | Collapsing chats is not obvious, chats cannot be deleted, the "Data" table breaks | "← Back to calculation" and Esc, deleting chats, each column scrolls on its own | front #7 | merged |
+| 11-01 | The program notices an unloaded model late | polling every 2 s and on returning to the window | front #7 | merged |
+| 11-01 | Program language from the system or a switch | RU/EN at the top left | front #7 | merged |
+| 11-01 | A broken formula in a Russian answer | formulas lost in PDF extraction no longer reach the model | back end #14 | merged; measured on 9 answers |
+| 11-02 | SFSS has to be found in Activity Monitor | Anti-Fire starts and stops SFSS on this machine | back end #15, front #8 | merged |
+| 11-02 | Configure the model connection, the LM Studio or Ollama port | `sfss config`, the "AI settings" window in Anti-Fire and the Playground, `config` in the terminal | back end #16, front #9 | merged |
+| 11-04 | On the Playground the AI question is hidden in a tab | the question is always on screen, on the right; the tabs moved under the room | back end #17, front #10 | merged |
+| 11-04 | The Playground does not scroll to the end, and not at all in a narrow window | one screen only in a window from 1241 × 700, otherwise normal scrolling | back end #17, front #10 | merged |
+| 11-05 | Design suggestions for the Playground; Roman chose all three | the "this is a playground" note in the header; modules in one strip; short slider hints on the name line | back end #17, front #10 | merged |
+| 11-09 | Anti-Fire's interface scrolls although everything fits in the window | page scrolling and the macOS bounce are off; only parts scroll | back end #18, front #11 | merged |
+| 11-09 | The "Load" button is unclear | "Load model", "Unload model", "Reload model" | back end #18, front #11 | merged |
+| 11-09 | After "Start SFSS" the warm-up is printed only after the warm-up | `sfss` output in the terminal line by line, as the command runs | back end #18, front #11 | merged |
+| 11-14 | The Playground header note gets cut off and looks odd | the note is removed: the name already says "SFSS Playground" | back end #20, front #13 | merged |
+| 11-14 | One repository is needed for the submission | SFSS-Dev: `sfss/` with the Playground, `apps/anti-fire/` | SFSS-Dev, first commit | merged |
+| 11-14 | Anti-Fire opens left of centre; the O₂ field is selected at start | the window fits the work area and is centred by the system; no autofocus | SFSS-Dev #1 | merged |
+| 11-14 | An installer for `sfss` and the programs | `install.sh`, `install.ps1`, builds for three systems in GitHub Actions | SFSS-Dev #2 | merged |
+| 11-14 | Installation is painfully slow, on Windows it seems to hang | search on ONNX and an own index instead of PyTorch and ChromaDB, uv instead of pip, ready Anti-Fire builds: 330 MB instead of 1.7 GB | SFSS-Dev #3 | merged |
+| 11-15 | Everything English by default; the chosen language is remembered | installers, `sfss`, Anti-Fire and the Playground in English by default | SFSS-Dev #3 | merged |
+| 11-15 | On Windows the installation breaks off at LM Studio | `lms ls` without turning stderr into an error; checked live on Windows 10 | SFSS-Dev #3, #4 | in PR #4 |
+| 11-15 | On Fedora the window buttons do not work, the window is white for a long time, not centred | XWayland and no DMA-BUF under Wayland; GTK centres the window; checked live on Fedora 44 | SFSS-Dev #4 | in PR #4 |
+| 11-15 | Install and removal instructions per system | `README.md` and `docs/install/` | SFSS-Dev #4 | in PR #4 |
+| 11-15 | `main` in English, a Russian version kept | the `dev(ru)` branch; documentation in English, no comments in the code | SFSS-Dev #5 | in progress |
 
-## Что осталось
+## What is left
 
-**Русский язык.** Весь конвейер прогнан на восьми темах и ловушке с Ministral 3B и финальным
-словарём. Что осталось, записано в `ARCHITECTURE.md` § 7.18: неточные термины, редкий ответ
-без ссылки, лишняя пометка в отказе. Подпись ссылки бывает «с.» или «p.».
+**Russian.** The whole pipeline was run on eight topics and a trap with Ministral 3B and the final
+glossary. What remains is in `ARCHITECTURE.md` § 7.18: imprecise terms, a rare answer without a
+reference, an extra note in a refusal. The reference label is sometimes "с." or "p.".
 
-**Отложено Романом:** установщик через `sh install` для `sfss` и программ.
+**Not tested:** answers through a real Ollama (ARCHITECTURE § 7.21: translation with a JSON schema
+and how long the model stays in memory). On Fedora the installer found Ollama, but no model was
+downloaded: the machine's video card cannot run it.
 
-**Не проверено:** Ollama на настоящей установке (ARCHITECTURE § 7.21: перевод со схемой JSON
-и сколько модель держится в памяти); запуск SFSS из Anti-Fire при настоящем сбое, например
-занятом порте.
+**For Roman:**
 
-**За Романом:**
+- give Anti-Fire to someone who has not seen it;
+- run the pitch twice from a clean reboot;
+- make the slides and complete `SUBMISSION.md`: names, AI used by the other members.
 
-- скачать Ollama и проверить её, когда будет время;
-- удалить из LM Studio модели Qwen: в настройках они скрыты, но лежат на диске;
-- дать Anti-Fire человеку, который её не видел, и открыть приложение самому;
-- дважды прогнать питч с чистой перезагрузки;
-- собрать слайды и дополнить `SUBMISSION.md`: имена, ИИ у остальных участников.
+**An idea without a decision.** Voice note 3 names OpenCode as an example: chats, and then an IDE
+opens. Anti-Fire has chats, and a terminal instead of an IDE. No separate IDE was made.
 
-**Идея без решения.** В голосовом 3 как пример назван OpenCode: чаты, а затем открывается
-IDE. В Anti-Fire есть чаты, а вместо IDE терминал. Отдельно IDE не делали.
+## Voice note transcripts
 
-## Текст голосовых
+Roman's transcripts, translated, without timestamps. A digression about a past project is
+shortened.
 
-Расшифровка Романа, без отметок времени. Отступление о прошлом проекте сокращено.
+**Voice note 1.** "We should probably also rename the app itself and make it a playground. That
+is, not present it as something finished, but make it a playground. Because if we present it as
+an app, they will ask: where do I enter data, where is this, where is that, how do I import
+something. And we say: here is a program that runs in the background, you can call it. You plug
+your own modules into the program, into the back end. I will probably redo this ten more times,
+and that is fine."
 
-**Голосовое 1.** «Ещё, наверное, надо будет переименовать само приложение, сделать его
-именно плейграундом. То есть не выдавать его как что-то готовое, а вот именно сделать
-его как плейграунд. То есть если мы это представим как приложение, то скажут: а где
-данные вводить, где это, где то, как что-то импортировать. А мы такие: вот у нас есть
-программа, которая работает там в фоне, можно к ней обращаться. То есть вы свои модули
-к программе, к бэкенду подключаете. Вот. Скорее всего, я это потом ещё переделаю
-10 раз, это нормально.»
+**Voice note 2.** "Yes, it should probably be a playground, because making a finished program
+that does things by ready-made standards is rather bad: we need our program to be just a thing
+that shows what the final program could look like. Ours is just a playground. Literally SFSS
+becomes a playground, because the substance of the program is in the back end. That is where the
+main program lives, the one to call, the one that computes everything. And we need proper
+instructions. We need a connection over an external API. Probably a full daemon with commands
+you can call. Not only over the API, apparently, also from a terminal. It is complicated. But the
+main task now is to solve the Russian language problem, because I had not even thought about it
+before. I use English as my default. It did not occur to me that people would talk to the model in
+Russian too. So I need to finish the Russian language properly."
 
-**Голосовое 2.** «Нужно будет, да, это сделать в виде, скорее всего, плейграунда, потому
-что делать готовую программу, которая по готовым меркам делает вещи, это достаточно
-плохо, потому что нам надо, чтобы наша программа была просто штукой, которая вот
-показывает, как может выглядеть конечная программа. А у нас это просто такая площадка
-для игр. Буквально SFSS получается плейграунд, потому что сама суть программы лежит
-именно в бэкенде. Именно там основная прога лежит, к которой нужно будет обращаться,
-которая будет всё вычислять. И надо будет нормальные инструкции сделать. Подключение
-по API внешнему надо будет сделать. Скорее всего, поднимать прям демон полноценный,
-с командами, к которым можно будет обращаться. Короче, там не только по API, походу,
-придётся делать, там ещё придётся и через терминал, чтобы можно было. Короче, это
-сложно. Но сейчас главная задача — это закрыть проблему с русским языком, потому что
-до этого я даже об этом не думал. Я английским языком пользуюсь как базовым. Я даже не
-задумывался о том, что по-русски тоже будут общаться с нейронкой. Это значит, что мне
-нужно и русский язык дома довести.»
-
-**Голосовое 3.** «И смотри, скорее всего, помимо плейграунда, просто примерах, где можно
-поиграться, нужно будет прям полноценную прогу сделать, которая будет выглядеть как
-какая-то прям научная штука, то есть без вот этого бесконечного фронтенда, без вот этого
-супер передизайна, чтобы это была просто программа, в которую можно было просто вбить
-данные и получить ответ. Потом переключиться, допустим, в режим AI и там вопрос задать,
-чтобы это была очень лаконичная штука. Могу сделать, например, OpenCode, допустим, когда
-у тебя есть чаты, а потом ты заходишь, у тебя там, допустим, IDE-шка открывается. Прям та
-же тема, если тут сразу всё готово и можно побаловаться, то мы можем сделать отдельный ещё
-пример, просто показать, что вот как бы это могло работать в настоящей программе NASA, как
-мы вообще об этом думаем. В принципе, то есть Playground будет идти вместе с основной
-программой, а именно то, что мы можем к бэкенду подключить, это мы можем отдельно придумать
-штуковину, куда можно показать, как она вот реально, в натуре, с API-шкой может работать
-сторонняя программа обеспечения. Это как будто тоже надо показать, это будет в дополнение
-идти. […] Ещё проблема была в позиционировании, […] всё было не очень уверенно и прям вяло
-было. Ещё потому что у нас там овердизайн был, всё было слишком сложно, опять же, надо
-ориентироваться на то, что было у Игоря. Если мы покажем нашу огромную неудобную площадку,
-скажем, что это реальная программа, нам скажут: это неудобно, почему нельзя так, почему
-нельзя так. Лучше сделать именно как площадку, что вот вы можете здесь поиграться, а вот
-это прям полноценное программное обеспечение, которое вот мы думаем, что так бы NASA и
-сделали, которое очень лаконично, очень утилитарно сделано, и это сразу понравится, вообще
-ничего лишнего делать не надо будет.»
+**Voice note 3.** "And look, besides the playground, the examples to play with, we probably need a
+full program that looks like a real scientific thing: without this endless front end, without
+this super redesign, just a program where you enter data and get an answer. Then switch, say, to
+AI mode and ask a question, so it is very laconic. I could make something like OpenCode, where you
+have chats and then an IDE opens. Same idea: if everything here is ready to play with, we can make
+one more example, to show how it could work in a real NASA program, how we think about it at all.
+So the Playground ships with the main program, and separately we can come up with a thing that
+shows how third-party software really works with the API. That needs showing too, as an extra.
+[…] Another problem was positioning […], it was not confident and quite sluggish. Also because we
+over-designed, everything was too complicated; again, we should look at what Igor had. If we show
+our huge inconvenient playground and say it is a real program, they will say: this is
+inconvenient, why not this, why not that. Better to make it a playground, where you can play, and
+then this full software, which we think is how NASA would do it, very laconic, very utilitarian,
+and it will be liked straight away, nothing extra needed."
