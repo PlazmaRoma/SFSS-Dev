@@ -1,103 +1,156 @@
 #!/usr/bin/env bash
-# Установка SFSS на macOS и Linux из клона репозитория.
+# Установка SFSS и Anti-Fire на macOS и Linux из клона репозитория.
 #
 #   ./install.sh              поставить и проверить
 #   ./install.sh --yes        не задавать вопросов, на всё отвечать «да»
 #   ./install.sh --no-llm     не трогать нейросеть
-#   ./install.sh --uninstall  убрать установку (клон и данные NASA остаются)
+#   ./install.sh --no-app     не ставить программу Anti-Fire
+#   ./install.sh --uninstall  убрать всё, что поставил этот скрипт
 #
-# Повторный запуск безопасен: готовые шаги пропускаются. Windows: install.ps1.
+# Python и библиотеки ставит uv: один файл, без прав администратора, Python сам
+# скачивает, если его нет. Повторный запуск безопасен. Windows: install.ps1.
 # Подробности: INSTALL.md.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 SFSS="$ROOT/sfss"
 VENV="$SFSS/.venv"
+PY="$VENV/bin/python"
+TOOLS="$ROOT/.tools"
 BIN="$HOME/.local/bin"
 LINK="$BIN/sfss"
+RELEASE="$ROOT/apps/anti-fire/release"
+PYTHON_VERSION="3.12"
+UV_VERSION="0.12.5"
 MODEL_ID="ministral-3-3b-instruct-2512"
 MODEL_MLX="https://huggingface.co/mlx-community/Ministral-3-3B-Instruct-2512-4bit"
 MODEL_GGUF="https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF"
 MODEL_OLLAMA="ministral-3:3b"
+OS="$(uname -s)"
 
-YES=""; NO_LLM=""; UNINSTALL=""
+YES=""; NO_LLM=""; NO_APP=""; UNINSTALL=""
 for arg in "$@"; do
   case "$arg" in
     --yes|-y) YES=1 ;;
     --no-llm) NO_LLM=1 ;;
+    --no-app) NO_APP=1 ;;
     --uninstall) UNINSTALL=1 ;;
-    -h|--help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Неизвестный параметр: $arg. Справка: ./install.sh --help" >&2; exit 2 ;;
   esac
 done
 
-step() { printf '\n→ %s\n' "$1"; }
-note() { printf '  %s\n' "$1"; }
+STEP=0
+step() { STEP=$((STEP + 1)); printf '\n[%s] %s\n' "$STEP" "$1"; }
+note() { printf '    %s\n' "$1"; }
 fail() { printf '\nОшибка: %s\n' "$1" >&2; exit 1; }
 
 ask() {
   # «да» по умолчанию; без терминала (CI, конвейер) и без --yes отвечаем «нет»
   [ -n "$YES" ] && return 0
   [ -t 0 ] || return 1
-  printf '  %s [Д/н] ' "$1"
+  printf '    %s [Д/н] ' "$1"
   read -r answer
   case "$answer" in ""|д|Д|да|Да|y|Y|yes) return 0 ;; *) return 1 ;; esac
 }
 
+to_trash() {
+  # macOS: в Корзину, чтобы можно было вернуть. На Linux общей Корзины нет: удаляем
+  if [ "$OS" = "Darwin" ]; then
+    local name ext=""; name="$(basename "$1")"
+    case "$name" in *.app) ext=".app"; name="${name%.app}" ;; esac
+    mkdir -p "$HOME/.Trash"
+    mv "$1" "$HOME/.Trash/$name $(date +%Y-%m-%d\ %H.%M.%S)$ext"
+  else
+    rm -rf "$1"
+  fi
+}
+
 link_is_ours() { [ -L "$LINK" ] && [ "$(readlink "$LINK")" = "$VENV/bin/sfss" ]; }
+
+LINUX_APP="$HOME/.local/share/anti-fire"
+LINUX_DESKTOP="$HOME/.local/share/applications/anti-fire.desktop"
+MAC_APP="/Applications/Anti-Fire.app"
 
 # --- Удаление ----------------------------------------------------------------
 
 if [ -n "$UNINSTALL" ]; then
   step "Останавливаю SFSS"
   if [ -x "$VENV/bin/sfss" ]; then "$VENV/bin/sfss" stop || true; else note "не установлен"; fi
+
   step "Убираю команду sfss"
   if link_is_ours; then rm "$LINK"; note "удалена $LINK"
   elif [ -e "$LINK" ]; then note "$LINK ведёт в другую установку, не трогаю"
   else note "её и не было"; fi
-  step "Убираю окружение, индекс и состояние демона"
-  rm -rf "$VENV" "$SFSS/data/chroma" "$SFSS/data/run" "$SFSS"/*.egg-info
-  printf '\nГотово. Остались: клон в %s, отчёты NASA, модель расчёта, sfss/.env и настройки нейросети.\n' "$ROOT"
-  note "Модель поиска в ~/.cache/huggingface и нейросеть в LM Studio или Ollama не тронуты."
+
+  step "Убираю окружение, модель поиска и состояние демона"
+  if [ -x "$TOOLS/uv" ]; then
+    # uv ставил этот скрипт, значит его кэш и скачанный Python тоже наши
+    "$TOOLS/uv" cache clean >/dev/null 2>&1 || true
+    "$TOOLS/uv" python uninstall --all >/dev/null 2>&1 || true
+    note "кэш uv и скачанный им Python удалены"
+  fi
+  rm -rf "$VENV" "$SFSS/data/embedding" "$SFSS/data/run" "$SFSS/data/chroma" "$TOOLS" "$SFSS"/*.egg-info
+  note "готово"
+
+  step "Убираю Anti-Fire"
+  found=""
+  if [ "$OS" = "Darwin" ]; then
+    pkill -f "$MAC_APP/Contents/MacOS/anti-fire" 2>/dev/null || true
+    for path in "$MAC_APP" "$HOME/Library/Caches/org.twinbyte.antifire" "$HOME/Library/WebKit/org.twinbyte.antifire"; do
+      if [ -e "$path" ]; then to_trash "$path"; note "в Корзине: $path"; found=1; fi
+    done
+  else
+    pkill -f "$LINUX_APP/anti-fire" 2>/dev/null || true
+    for path in "$LINUX_APP" "$LINUX_DESKTOP" "$BIN/anti-fire" "$HOME/.local/share/org.twinbyte.antifire" "$HOME/.cache/org.twinbyte.antifire"; do
+      if [ -e "$path" ] || [ -L "$path" ]; then rm -rf "$path"; note "удалено: $path"; found=1; fi
+    done
+  fi
+  [ -n "$found" ] || note "её и не было"
+
+  OLD_MODEL="$HOME/.cache/huggingface/hub/models--sentence-transformers--paraphrase-multilingual-MiniLM-L12-v2"
+  if [ -d "$OLD_MODEL" ]; then
+    step "Модель поиска от прежней версии"
+    note "осталось 470 МБ: $OLD_MODEL"
+    if ask "Удалить?"; then rm -rf "$OLD_MODEL"; note "удалена"; fi
+  fi
+
+  printf '\nГотово. Остались: клон в %s, отчёты NASA, индекс, sfss/.env и настройки нейросети.\n' "$ROOT"
+  note "Нейросеть в LM Studio или Ollama не тронута: её удаляют там же."
   exit 0
 fi
 
-# --- 1. Python ---------------------------------------------------------------
+printf 'Установка SFSS из %s\n' "$ROOT"
 
-step "Ищу Python 3.10 или новее"
-PYTHON=""
-for candidate in python3 python3.14 python3.13 python3.12 python3.11 python3.10 python3.15; do
-  if command -v "$candidate" >/dev/null 2>&1 \
-    && "$candidate" -c 'import sys; sys.exit(sys.version_info < (3, 10))' 2>/dev/null; then
-    PYTHON="$(command -v "$candidate")"; break
-  fi
-done
-if [ -z "$PYTHON" ]; then
-  case "$(uname -s)" in
-    Darwin) hint="https://www.python.org/downloads/ или: brew install python" ;;
-    *) hint="Fedora: sudo dnf install python3   Ubuntu: sudo apt install python3 python3-venv" ;;
-  esac
-  fail "Python 3.10+ не найден. Поставьте его и запустите установку снова. $hint"
-fi
-note "$("$PYTHON" --version), $PYTHON"
+# --- 1. uv -------------------------------------------------------------------
 
-# --- 2. Окружение ------------------------------------------------------------
+step "Установщик пакетов uv"
+UV="$(command -v uv || true)"
+[ -z "$UV" ] && [ -x "$TOOLS/uv" ] && UV="$TOOLS/uv"
+if [ -z "$UV" ]; then
+  note "скачиваю uv $UV_VERSION, около 20 МБ, в $TOOLS"
+  # UV_UNMANAGED_INSTALL: только в эту папку, файлы оболочки и PATH не трогаются
+  if command -v curl >/dev/null; then fetch="curl -LsSf"; else fetch="wget -qO-"; fi
+  $fetch "https://astral.sh/uv/$UV_VERSION/install.sh" | env UV_UNMANAGED_INSTALL="$TOOLS" sh >/dev/null \
+    || fail "uv не скачался. Проверьте сеть и запустите установку снова."
+  UV="$TOOLS/uv"
+fi
+note "$("$UV" --version)"
 
-step "Ставлю SFSS и его библиотеки (первый раз несколько минут)"
-if [ ! -x "$VENV/bin/python" ]; then
-  "$PYTHON" -m venv "$VENV" \
-    || fail "Не создалось окружение. На Ubuntu нужен пакет: sudo apt install python3-venv"
+# --- 2. Python и библиотеки --------------------------------------------------
+
+step "Python $PYTHON_VERSION и библиотеки SFSS, около 100 МБ"
+if [ -x "$PY" ] && ! "$PY" -c "import sys; sys.exit(sys.version_info[:2] != (3, 12))" 2>/dev/null; then
+  note "окружение от другой версии Python, пересоздаю"
+  rm -rf "$VENV"
 fi
-PIP_ARGS=(--quiet --disable-pip-version-check)
-# На Linux pip по умолчанию берёт PyTorch с CUDA: это около 2 ГБ, а считаем на процессоре
-[ "$(uname -s)" = "Linux" ] && PIP_ARGS+=(--extra-index-url https://download.pytorch.org/whl/cpu)
-PIP_LOG="$(mktemp)"
-if ! { "$VENV/bin/python" -m pip install "${PIP_ARGS[@]}" --upgrade pip \
-    && "$VENV/bin/python" -m pip install "${PIP_ARGS[@]}" -e "$SFSS"; } >"$PIP_LOG" 2>&1; then
-  tail -20 "$PIP_LOG" >&2
-  fail "Библиотеки не поставились. Проверьте сеть. Если pip пишет о конфликте версий, поставьте Python 3.12: под самый новый Python библиотек может ещё не быть. Весь вывод: $PIP_LOG"
+if [ ! -x "$PY" ]; then
+  # Если Python 3.12 на машине нет, uv скачает его сам, около 20 МБ
+  "$UV" venv --python "$PYTHON_VERSION" "$VENV" \
+    || fail "Не создалось окружение Python. Проверьте сеть и запустите установку снова."
 fi
-rm -f "$PIP_LOG"
+"$UV" pip install --python "$PY" -e "$SFSS" \
+  || fail "Библиотеки не поставились. Проверьте сеть и запустите установку снова: скачанное не пропадёт."
 note "готово: $VENV"
 
 # --- 3. Настройки ------------------------------------------------------------
@@ -108,41 +161,19 @@ else cp "$SFSS/.env.example" "$SFSS/.env"; note "создан sfss/.env"; fi
 
 # --- 4. Модель поиска --------------------------------------------------------
 
-step "Модель поиска по отчётам"
-load_embeddings() {
-  ( cd "$SFSS" && "$VENV/bin/python" -c '
-from app.config import get_settings
-from sentence_transformers import SentenceTransformer
-settings = get_settings()
-SentenceTransformer(settings.embedding_model, local_files_only=settings.embedding_local_files_only)
-print(settings.embedding_model)' ) 2>/dev/null
-}
-if name="$(load_embeddings)"; then
-  note "$name уже на диске"
-else
-  note "скачиваю с Hugging Face, около 470 МБ, один раз"
-  # Сервис работает без сети, поэтому скачивание разрешается только здесь
-  name="$(EMBEDDING_LOCAL_FILES_ONLY=false HF_HUB_OFFLINE=0 load_embeddings)" \
-    || fail "Модель поиска не скачалась. Проверьте сеть и запустите установку снова."
-  note "$name скачана"
-fi
+step "Модель поиска по отчётам, 130 МБ, один раз"
+( cd "$SFSS" && "$PY" -m app.services.embedder ) \
+  || fail "Модель поиска не скачалась. Проверьте сеть и запустите установку снова."
 
 # --- 5. Индекс ---------------------------------------------------------------
 
 step "Индекс по отчётам NASA"
-chunks() {
-  ( cd "$SFSS" && "$VENV/bin/python" -c '
-from app.dependencies import get_rag_service
-print(get_rag_service().count())' ) 2>/dev/null || echo 0
-}
-count="$(chunks)"
-if [ "${count:-0}" -gt 0 ] 2>/dev/null; then
-  note "уже собран: $count фрагментов"
+if [ -f "$SFSS/data/index/chunks.jsonl" ]; then
+  note "готовый, из репозитория"
 else
-  note "собираю, около минуты"
-  ( cd "$SFSS" && "$VENV/bin/python" scripts/ingest_documents.py >/dev/null 2>&1 ) \
-    || fail "Индекс не собрался. Запустите вручную: cd sfss && .venv/bin/python scripts/ingest_documents.py"
-  note "собран: $(chunks) фрагментов"
+  note "его нет в папке, собираю, около минуты"
+  ( cd "$SFSS" && "$PY" scripts/ingest_documents.py >/dev/null 2>&1 ) \
+    || fail "Индекс не собрался. Вручную: cd sfss && .venv/bin/python scripts/ingest_documents.py"
 fi
 
 # --- 6. Команда sfss ---------------------------------------------------------
@@ -165,7 +196,58 @@ case ":$PATH:" in
     ;;
 esac
 
-# --- 7. Нейросеть ------------------------------------------------------------
+# --- 7. Anti-Fire ------------------------------------------------------------
+
+APP_STATE="пропущена"
+if [ -z "$NO_APP" ]; then
+  step "Программа Anti-Fire"
+  if [ "$OS" = "Darwin" ]; then
+    DMG="$(ls "$RELEASE"/Anti-Fire-macos-*.dmg 2>/dev/null | head -1 || true)"
+    if [ -z "$DMG" ]; then
+      note "готовой сборки в $RELEASE нет. Собрать: bash apps/anti-fire/build.sh --install"
+    elif ask "Поставить Anti-Fire в «Программы»?"; then
+      MOUNT="$(mktemp -d)"
+      hdiutil attach -nobrowse -readonly -quiet -mountpoint "$MOUNT" "$DMG" || fail "Не открылся $DMG"
+      pkill -f "$MAC_APP/Contents/MacOS/anti-fire" 2>/dev/null || true
+      # Старая версия уходит в Корзину: копировать поверх нельзя, файлы смешаются
+      if [ -e "$MAC_APP" ]; then to_trash "$MAC_APP"; note "прежняя версия в Корзине"; fi
+      ditto "$MOUNT/Anti-Fire.app" "$MAC_APP"
+      hdiutil detach -quiet "$MOUNT" || true
+      APP_STATE="$MAC_APP"
+      note "$MAC_APP"
+    fi
+  elif [ "$(uname -m)" = "x86_64" ]; then
+    TGZ="$RELEASE/Anti-Fire-linux-x86_64.tar.gz"
+    if [ ! -f "$TGZ" ]; then
+      note "готовой сборки в $RELEASE нет. Собрать: bash apps/anti-fire/build.sh"
+    elif ask "Поставить Anti-Fire в ~/.local/share/anti-fire?"; then
+      rm -rf "$LINUX_APP"; mkdir -p "$LINUX_APP" "$(dirname "$LINUX_DESKTOP")"
+      tar -xzf "$TGZ" -C "$LINUX_APP" --strip-components=1
+      cp "$ROOT/apps/anti-fire/src-tauri/icons/128x128.png" "$LINUX_APP/icon.png"
+      ln -sf "$LINUX_APP/anti-fire" "$BIN/anti-fire"
+      cat > "$LINUX_DESKTOP" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Anti-Fire
+Comment=Горение в невесомости: расчёт и отчёты NASA, клиент SFSS
+Exec=$LINUX_APP/anti-fire
+Icon=$LINUX_APP/icon.png
+Categories=Science;Education;
+Terminal=false
+DESKTOP
+      APP_STATE="$BIN/anti-fire, есть в меню программ"
+      note "$APP_STATE"
+      if command -v ldconfig >/dev/null && ! ldconfig -p 2>/dev/null | grep -q 'libwebkit2gtk-4.1'; then
+        note "Для окна нужна библиотека WebKitGTK 4.1:"
+        note "    Fedora: sudo dnf install webkit2gtk4.1    Ubuntu: sudo apt install libwebkit2gtk-4.1-0"
+      fi
+    fi
+  else
+    note "готовой сборки под $(uname -m) нет. Собрать: bash apps/anti-fire/build.sh"
+  fi
+fi
+
+# --- 8. Нейросеть ------------------------------------------------------------
 
 LLM_STATE="пропущена"
 if [ -z "$NO_LLM" ]; then
@@ -182,7 +264,7 @@ if [ -z "$NO_LLM" ]; then
     if "$LMS" ls 2>/dev/null | grep -qi "$MODEL_ID"; then
       note "модель $MODEL_ID уже скачана"; LLM_STATE="LM Studio, $MODEL_ID"
     elif ask "Скачать Ministral 3B, около 3 ГБ?"; then
-      if [ "$(uname -s)-$(uname -m)" = "Darwin-arm64" ]; then source_url="$MODEL_MLX"; else source_url="$MODEL_GGUF"; fi
+      if [ "$OS-$(uname -m)" = "Darwin-arm64" ]; then source_url="$MODEL_MLX"; else source_url="$MODEL_GGUF"; fi
       if "$LMS" get "$source_url" --yes; then LLM_STATE="LM Studio, $MODEL_ID"
       else note "не скачалась. Вручную: lms get $source_url"; LLM_STATE="LM Studio без модели"; fi
     else
@@ -190,13 +272,14 @@ if [ -z "$NO_LLM" ]; then
     fi
   elif [ -n "$OLLAMA" ]; then
     note "найдена Ollama: $OLLAMA"
+    have_model=""
     if "$OLLAMA" list 2>/dev/null | grep -q "^$MODEL_OLLAMA"; then
       note "модель $MODEL_OLLAMA уже скачана"; have_model=1
     elif ask "Скачать $MODEL_OLLAMA, около 3 ГБ?"; then
       if "$OLLAMA" pull "$MODEL_OLLAMA"; then have_model=1; else note "не скачалась. Вручную: ollama pull $MODEL_OLLAMA"; fi
     fi
     "$VENV/bin/sfss" config runtime ollama >/dev/null
-    if [ -n "${have_model:-}" ]; then
+    if [ -n "$have_model" ]; then
       "$VENV/bin/sfss" config model "$MODEL_OLLAMA" >/dev/null
       LLM_STATE="Ollama, $MODEL_OLLAMA"
     else
@@ -211,22 +294,25 @@ if [ -z "$NO_LLM" ]; then
   fi
 fi
 
-# --- 8. Проверка -------------------------------------------------------------
+# --- 9. Проверка -------------------------------------------------------------
 
 step "Запускаю и проверяю"
 "$VENV/bin/sfss" start || fail "SFSS не запустился. Причина в логе: $VENV/bin/sfss logs"
-"$VENV/bin/sfss" predict --o2 0.30 --psi 8.2 | sed 's/^/  /' \
+"$VENV/bin/sfss" predict --o2 0.30 --psi 8.2 | sed 's/^/    /' \
   || fail "Расчёт не ответил. Лог: $VENV/bin/sfss logs"
 
 cat <<EOF
 
-Готово. SFSS установлен и работает. Нейросеть: $LLM_STATE.
+Готово. SFSS установлен и работает.
+    Anti-Fire:  $APP_STATE
+    Нейросеть:  $LLM_STATE
 
-  sfss status                      что запущено
-  sfss predict --o2 0.30 --psi 8.2 расчёт
-  sfss ask "Как гелий в атмосфере влияет на горение?"
-  sfss playground                  Площадка в браузере
-  sfss stop                        остановить
+    sfss status                      что запущено
+    sfss predict --o2 0.30 --psi 8.2 расчёт
+    sfss ask "Как гелий в атмосфере влияет на горение?"
+    sfss playground                  Площадка в браузере
+    sfss stop                        остановить
+    ./install.sh --uninstall         удалить всё
 
-Программа Anti-Fire и остальное: INSTALL.md
+Подробности: INSTALL.md
 EOF

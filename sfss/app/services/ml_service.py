@@ -40,7 +40,7 @@ FEATURE_DEFAULTS: dict[str, float] = {
     "fuel_methanol": 1.0,
 }
 
-TRAINING_DATASET = "flex.parquet"
+TRAINING_DATASET = "flex.csv"
 GASES = ("oxygen_level", "n2", "co2", "he")
 # Запас на округление долей в запросе
 GAS_SUM_TOLERANCE = 0.01
@@ -204,7 +204,7 @@ class MLService:
             path = self.settings.processed_dir / TRAINING_DATASET
             self._ranges = {}
             try:
-                frame = pd.read_parquet(path)
+                frame = pd.read_csv(path)
             except Exception as exc:
                 logger.warning("Диапазоны обучения недоступны: %s", exc)
                 return self._ranges

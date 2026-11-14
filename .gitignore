@@ -10,6 +10,8 @@ build/
 # sfss: секреты, состояние демона и то, что собирается на машине
 sfss/.env
 sfss/data/chroma/
+sfss/data/embedding/
+.tools/
 sfss/data/run/
 sfss/data/llm.json
 

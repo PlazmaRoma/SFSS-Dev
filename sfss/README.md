@@ -165,12 +165,12 @@ curl -s localhost:1234/api/v0/models   # состояние всех модел�
 ## Тесты
 
 ```bash
-.venv/bin/pip install pytest      # один раз
+uv pip install --python .venv/bin/python pytest      # один раз; uv из PATH или ../.tools/uv
 .venv/bin/python -m pytest -q
 ```
 
-235 тестов, проходят за несколько секунд. Сервисы подменены заглушками, поэтому
-**ни LM Studio, ни ChromaDB для тестов не нужны**.
+238 тестов, проходят за пару секунд. Сервисы подменены заглушками, поэтому
+**ни LM Studio, ни модель поиска для тестов не нужны**.
 
 ---
 
@@ -178,25 +178,22 @@ curl -s localhost:1234/api/v0/models   # состояние всех модел�
 
 Обычно не нужно — всё уже готово. Команды на случай, если данные потерялись.
 
-**Установка окружения:**
+**Установка окружения:** `../install.sh` из корня репозитория, или вручную:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -e .
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python -e .
+.venv/bin/python -m app.services.embedder     # модель поиска, 130 МБ
 ```
 
-**Переиндексация документов** (`data/raw/` → векторная база):
+**Переиндексация документов** (`data/raw/` → `data/index/`). Готовый индекс лежит в git,
+пересобирать его нужно, только если поменялись отчёты или модель поиска, около 40 секунд:
 
 ```bash
-.venv/bin/python scripts/ingest_documents.py
+.venv/bin/python scripts/ingest_documents.py --force
 ```
 
-Полный сброс индекса — обязателен при смене модели эмбеддингов, старые векторы
-несовместимы с новой моделью:
-
-```bash
-rm -rf data/chroma && .venv/bin/python scripts/ingest_documents.py
-```
+Новый индекс закоммитить: `data/index/chunks.jsonl` и `vectors.npy`.
 
 **Пересборка датасета и обучение модели:**
 
@@ -204,7 +201,7 @@ rm -rf data/chroma && .venv/bin/python scripts/ingest_documents.py
 .venv/bin/python scripts/build_flex_dataset.py
 
 .venv/bin/python scripts/train_model.py \
-    --dataset data/processed/flex.parquet \
+    --dataset data/processed/flex.csv \
     --target burn_rate_mm2s --group condition \
     --exclude d_extinction_mm burn_time_s
 ```
@@ -224,16 +221,12 @@ rm -rf data/chroma && .venv/bin/python scripts/ingest_documents.py
 ```
 LM_STUDIO_BASE_URL=http://localhost:1234/v1
 LM_STUDIO_MODEL=ministral-3-3b-instruct-2512
-CHROMA_DB_PATH=./data/chroma
 EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
-EMBEDDING_LOCAL_FILES_ONLY=true
 ```
 
-`EMBEDDING_LOCAL_FILES_ONLY=true` запрещает проверки Hugging Face при старте:
-веса уже лежат в локальном кэше, поэтому сеть для обычной работы не нужна.
-Заодно он включает `HF_HUB_OFFLINE=1`, если эта переменная не задана явно.
-Если меняете модель и её ещё нет на машине, временно выставьте `false`, один
-раз запустите сервис для загрузки, затем верните `true`.
+Модель поиска лежит в `data/embedding`, индекс — в `data/index`. Сеть для работы не нужна:
+модель скачивается один раз при установке, с закреплённой версией и проверкой контрольной
+суммы (`app/services/embedder.py`).
 
 ---
 
@@ -241,7 +234,7 @@ EMBEDDING_LOCAL_FILES_ONLY=true
 
 Все критерии готовности MVP из ТЗ закрыты:
 
-- [x] `/health` отвечает при поднятых LM Studio и ChromaDB
+- [x] `/health` отвечает при поднятых LM Studio и индексе
 - [x] документы проиндексированы — **1131 чанк из 16 отчётов NASA**,
       `/query` отвечает со ссылками на страницы
 - [x] датасет обработан, `/predict` даёт не-заглушечный результат —

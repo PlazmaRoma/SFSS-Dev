@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(_: FastAPI):
     """Прогрев тяжёлых зависимостей до приёма первого запроса.
 
-    Модель эмбеддингов грузится лениво и стоит около 12 секунд. Без прогрева
+    Модель поиска грузится лениво и стоит около полутора секунд. Без прогрева
     эту задержку платил первый же запрос, и фронт, опрашивающий /health,
     принимал сервер за зависший. С прогревом дольше стартует uvicorn, зато
     отвечает он честно: раз порт открыт — сервис готов.
@@ -31,12 +31,13 @@ async def lifespan(_: FastAPI):
     if settings.warmup_on_startup:
         started = time.perf_counter()
         try:
-            get_rag_service().count()
-            logger.info("Прогрев: модель эмбеддингов готова")
             get_rag_service().keyword_index()
             logger.info("Прогрев: индекс поиска по словам построен")
+            get_rag_service().warm_up()
+            logger.info("Прогрев: модель поиска готова")
         except Exception as exc:
-            logger.warning("Прогрев ChromaDB не удался: %s", exc)
+            # Без модели поиска расчёт и Площадка работают, вопросы — нет
+            logger.warning("Поиск по отчётам не готов: %s", exc)
         try:
             get_ml_service()._load()
             logger.info("Прогрев: модель fiery загружена")

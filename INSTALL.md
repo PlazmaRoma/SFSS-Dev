@@ -1,31 +1,10 @@
 # Установка
 
 Ставятся две вещи. **SFSS** — сервис, он считает и отвечает; без него ничего не работает.
-**Anti-Fire** — программа с окном, клиент сервиса; ставится по желанию.
-
-| | macOS | Linux | Windows |
-|---|---|---|---|
-| SFSS | `./install.sh` | `./install.sh` | `install.ps1` |
-| Anti-Fire | `.dmg` | `tar.gz` | `zip` |
-| Проверено | вживую, с чистой установки | в GitHub Actions, Ubuntu | только в GitHub Actions, без нейросети |
-
-## 1. Что должно стоять заранее
-
-- **git** и **Python 3.10 или новее**.
-  - macOS: [python.org](https://www.python.org/downloads/) или `brew install python`. Системный
-    Python 3.9 не подойдёт, установщик его пропустит и скажет об этом.
-  - Fedora: `sudo dnf install python3 git`. Ubuntu: `sudo apt install python3 python3-venv git`.
-  - Windows: [python.org](https://www.python.org/downloads/), при установке отметить
-    «Add python.exe to PATH».
-- **Около 3 ГБ на диске** и сеть на время установки: библиотеки и модель поиска (470 МБ).
-  После установки сервис работает без сети.
-- **Для ответов на вопросы** — [LM Studio](https://lmstudio.ai) или [Ollama](https://ollama.com).
-  Без них работает всё остальное: расчёт, CSV, Площадка.
-
-## 2. SFSS
+**Anti-Fire** — программа с окном, клиент сервиса. Обе ставит один скрипт.
 
 ```bash
-git clone https://github.com/PlazmaRoma/SFSS-Dev.git
+git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git
 cd SFSS-Dev
 ./install.sh
 ```
@@ -33,29 +12,56 @@ cd SFSS-Dev
 Windows, в PowerShell:
 
 ```powershell
-git clone https://github.com/PlazmaRoma/SFSS-Dev.git
+git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git
 cd SFSS-Dev
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-Установщик сам:
+Нужен только **git**. Python ставить не надо: установщик скачает его сам, если на машине нет
+версии 3.12. Права администратора не нужны.
 
-1. находит Python и создаёт окружение `sfss/.venv`;
-2. ставит библиотеки;
-3. скачивает модель поиска по отчётам;
-4. собирает индекс по 16 отчётам NASA, около минуты;
-5. даёт команду `sfss`: ссылка в `~/.local/bin`, на Windows — `%LOCALAPPDATA%\sfss\bin`;
-6. ищет LM Studio или Ollama и предлагает скачать нейросеть Ministral 3B, около 3 ГБ;
-7. запускает сервис и делает один расчёт.
+| | macOS | Linux | Windows |
+|---|---|---|---|
+| Установка | `./install.sh` | `./install.sh` | `install.ps1` |
+| Anti-Fire | в «Программы» | `~/.local/share/anti-fire`, ярлык в меню | `%LOCALAPPDATA%\Programs\Anti-Fire`, ярлык в «Пуске» |
+| Проверено | вживую, с чистой установки | в GitHub Actions, Ubuntu | в GitHub Actions |
 
-Первая установка идёт около десяти минут, почти всё время — скачивание. Повторный запуск
-безопасен: готовые шаги пропускаются.
+## 1. Что скачивается
+
+| Что | Объём | Откуда |
+|---|---|---|
+| Репозиторий: код, 16 отчётов NASA, готовый индекс, модель расчёта, Anti-Fire | около 150 МБ | GitHub |
+| uv — установщик пакетов, если его ещё нет | около 20 МБ | astral.sh |
+| Python 3.12, если его нет | около 20 МБ | через uv |
+| Библиотеки SFSS, 56 пакетов | около 100 МБ, на диске 330 МБ | через uv |
+| Модель поиска по отчётам | 130 МБ | Hugging Face |
+| Нейросеть Ministral 3B, по желанию | около 3 ГБ | через LM Studio или Ollama |
+
+Без нейросети это около 400 МБ, на быстром соединении несколько минут. После установки сеть не
+нужна. Если связь оборвалась, запустите установку снова: скачанное не пропадёт, готовые шаги
+пропускаются.
+
+## 2. Что делает установщик
+
+Шаги пронумерованы на экране, у каждой загрузки видно, сколько осталось.
+
+1. Находит или скачивает uv, в папку `.tools` внутри клона. Файлы оболочки не трогает.
+2. Ставит Python 3.12 и библиотеки в `sfss/.venv`.
+3. Создаёт `sfss/.env` с настройками по умолчанию.
+4. Скачивает модель поиска в `sfss/data/embedding`.
+5. Индекс по отчётам уже готов, он лежит в репозитории.
+6. Даёт команду `sfss`: ссылка в `~/.local/bin`, на Windows — `%LOCALAPPDATA%\sfss\bin`.
+7. Ставит Anti-Fire из готовой сборки в `apps/anti-fire/release`. Старая версия на macOS
+   уходит в Корзину.
+8. Ищет LM Studio или Ollama и предлагает скачать нейросеть.
+9. Запускает сервис и делает один расчёт.
 
 | Параметр | Что делает |
 |---|---|
 | `--yes` (`-Yes`) | не задаёт вопросов |
 | `--no-llm` (`-NoLlm`) | не трогает нейросеть |
-| `--uninstall` (`-Uninstall`) | убирает установку |
+| `--no-app` (`-NoApp`) | не ставит Anti-Fire |
+| `--uninstall` (`-Uninstall`) | убирает всё, что поставил |
 
 Если установщик пишет, что папки `~/.local/bin` нет в `PATH`, добавьте в `~/.zshrc` или
 `~/.bashrc` строку, которую он напечатал, и откройте новый терминал. На Windows новый
@@ -70,7 +76,8 @@ sfss playground
 ```
 
 Ожидается: 1131 фрагмент в индексе, скорость горения 0.676 мм²/с, в 1,33 раза быстрее
-обычного воздуха; в браузере открывается Площадка.
+обычного воздуха; в браузере открывается Площадка. Anti-Fire открывается из «Программ», меню
+или «Пуска» и сам находит команду `sfss`.
 
 ## 3. Нейросеть
 
@@ -100,17 +107,24 @@ sfss config model ministral-3:3b
 
 ## 4. Anti-Fire
 
-Готовые файлы лежат в [Releases](https://github.com/PlazmaRoma/SFSS-Dev/releases).
+Установщик ставит готовую сборку из `apps/anti-fire/release`: Rust и Node для этого не нужны.
 
-- **macOS.** Открыть `.dmg`, перетащить Anti-Fire в «Программы». Первый запуск: правый клик →
-  «Открыть», потому что сборка без подписи Apple.
-- **Linux.** Распаковать `tar.gz` и запустить `./Anti-Fire/anti-fire`. Нужен WebKitGTK 4.1:
+| Система | Файл | Куда ставится |
+|---|---|---|
+| macOS, Intel и Apple Silicon | `Anti-Fire-macos-universal.dmg` | «Программы» |
+| Linux x86_64 | `Anti-Fire-linux-x86_64.tar.gz` | `~/.local/share/anti-fire`, команда `anti-fire`, ярлык в меню |
+| Windows x64 | `Anti-Fire-windows-x64.zip` | `%LOCALAPPDATA%\Programs\Anti-Fire`, ярлык в «Пуске» |
+
+- **Linux:** окну нужен WebKitGTK 4.1. Установщик проверит и подскажет команду:
   `sudo dnf install webkit2gtk4.1` или `sudo apt install libwebkit2gtk-4.1-0`.
-- **Windows.** Распаковать `zip` и открыть `Anti-Fire.exe`. SmartScreen: «Подробнее» →
-  «Выполнить в любом случае».
+- **Windows:** нужен WebView2, в Windows 10 и 11 он уже есть. SmartScreen может предупредить
+  о неизвестном издателе: «Подробнее» → «Выполнить в любом случае».
+
+Сборки без подписи Apple и Microsoft. Из клона на macOS приложение открывается сразу; если
+скачать `.dmg` отдельно через браузер, первый запуск — правый клик → «Открыть».
 
 Программа сама находит команду `sfss`, поэтому кнопки «Запустить SFSS» и «Остановить SFSS»
-работают сразу после шага 2.
+работают сразу после установки.
 
 ### Сборка из исходников
 
@@ -128,23 +142,29 @@ sudo dnf install webkit2gtk4.1-devel gtk3-devel librsvg2-devel libappindicator-g
 sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev   # Ubuntu
 ```
 
-Сборку под все три системы делает GitHub Actions: вкладка Actions → `release` → Run workflow.
-Файлы появятся в артефактах запуска, а по тегу `v*` — в Releases.
+Готовые файлы для `apps/anti-fire/release` собирает GitHub Actions под все три системы:
+вкладка Actions → `release` → Run workflow. Файлы появятся в артефактах запуска, а по тегу
+`v*` — и в Releases.
 
 ## 5. Удаление
 
 ```bash
-./install.sh --uninstall
+./install.sh --uninstall                                   # macOS, Linux
+powershell -ExecutionPolicy Bypass -File install.ps1 -Uninstall   # Windows
 ```
 
-Убирает демон, команду `sfss`, окружение и индекс. Остаются клон, отчёты NASA и `sfss/.env`.
-Модель поиска лежит в `~/.cache/huggingface`, нейросеть — в LM Studio или Ollama: их удаляют
-там же. Anti-Fire на macOS — перетащить из «Программ» в Корзину.
+Останавливает сервис и убирает всё, что поставил установщик: команду `sfss`, окружение
+Python, модель поиска, uv из `.tools`, Anti-Fire вместе с её кэшем и ярлыками. На macOS
+Anti-Fire уходит в Корзину. Остаются клон с отчётами NASA и индексом, `sfss/.env` и
+настройки нейросети. Если на машине осталась модель поиска от прежней версии SFSS
+(470 МБ в `~/.cache/huggingface`), установщик предложит удалить и её.
+
+Нейросеть в LM Studio или Ollama не трогается: она может быть нужна не только SFSS.
 
 ## 6. Тесты
 
 ```bash
-cd sfss && .venv/bin/pip install pytest && .venv/bin/python -m pytest -q   # сервис
+cd sfss && ../.tools/uv pip install --python .venv/bin/python pytest && .venv/bin/python -m pytest -q   # сервис; или uv из PATH
 npm ci && npm test && npm run typecheck                                    # Площадка и Anti-Fire
 npm run page -w anti-fire && cd apps/anti-fire/src-tauri && cargo test     # окно Anti-Fire
 ```
@@ -153,10 +173,9 @@ npm run page -w anti-fire && cd apps/anti-fire/src-tauri && cargo test     # о�
 
 | Что видно | Что делать |
 |---|---|
-| «Python 3.10+ не найден» | поставить Python из раздела 1 и запустить установку снова |
+| «uv не скачался» | проверить сеть; за прокси uv ставится вручную: https://docs.astral.sh/uv/ |
 | `sfss: command not found` | открыть новый терминал; проверить `PATH`, см. раздел 2 |
 | «Порт 8000 занят» | `sfss start --port 8010` |
-| pip пишет о конфликте версий | Python слишком новый, библиотек под него ещё нет: поставить Python 3.12 и запустить установку снова |
 | «Модель поиска не скачалась» | проверить сеть и запустить установку снова, она продолжит с этого шага |
 | Нейросеть «не отвечает» | открыть LM Studio один раз или `ollama serve`; затем `sfss load` |
 | Anti-Fire: «Команда sfss не найдена» | сначала установить SFSS, раздел 2 |
@@ -165,7 +184,7 @@ npm run page -w anti-fire && cd apps/anti-fire/src-tauri && cargo test     # о�
 
 ## 8. Что не проверено
 
-- **Windows вживую.** Установщик и сервис проверяются только в GitHub Actions, без нейросети.
-  Запасной путь — WSL и тот же `./install.sh`.
-- **Anti-Fire на Linux и Windows** собран в GitHub Actions, на настоящих машинах не запускался.
+- **Windows и Linux вживую.** Установка, сервис, Anti-Fire и удаление проверяются в GitHub
+  Actions на чистых машинах, без нейросети. Окно Anti-Fire там не открывается.
+- **Скачивание нейросети установщиком** на чистой машине: на машине разработки модель уже была.
 - **Ollama** на настоящей установке: поддержка проверена тестами и на имитации её API.

@@ -18,13 +18,14 @@ Anti-Fire и Площадка — клиенты SFSS по HTTP. Своя про
 ## Установка
 
 ```bash
-git clone https://github.com/PlazmaRoma/SFSS-Dev.git
+git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git
 cd SFSS-Dev
 ./install.sh          # Windows: powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-Установщик ставит сервис, собирает индекс, даёт команду `sfss`, находит LM Studio или Ollama
-и запускает проверку. Нужны только git и Python 3.10+. Дальше:
+Нужен только git. Установщик сам ставит Python, библиотеки и модель поиска (около 400 МБ без
+нейросети), программу Anti-Fire и команду `sfss`, находит LM Studio или Ollama и запускает
+проверку. Права администратора не нужны. Удалить всё: `./install.sh --uninstall`.
 
 ```bash
 sfss status
@@ -33,17 +34,13 @@ sfss ask "Как гелий в атмосфере влияет на горени
 sfss playground
 ```
 
-Anti-Fire: готовые файлы под macOS, Linux и Windows в
-[Releases](https://github.com/PlazmaRoma/SFSS-Dev/releases), сборка из исходников —
-`bash apps/anti-fire/build.sh --install`.
-
-Полная инструкция по трём системам, нейросеть, удаление и что делать при сбоях:
+Полная инструкция по трём системам, нейросеть, сборка из исходников и что делать при сбоях:
 **[`INSTALL.md`](INSTALL.md)**.
 
 ## Тесты
 
 ```bash
-cd sfss && .venv/bin/pip install pytest && .venv/bin/python -m pytest -q   # сервис
+cd sfss && uv pip install --python .venv/bin/python pytest && .venv/bin/python -m pytest -q   # сервис
 npm test && npm run typecheck                     # Площадка и Anti-Fire, из корня
 npm run page -w anti-fire && cd apps/anti-fire/src-tauri && cargo test     # окно Anti-Fire
 ```
@@ -59,7 +56,8 @@ npm run page -w anti-fire && cd apps/anti-fire/src-tauri && cargo test     # о�
   работы `sfss` Node не нужен.
 - Общий код Площадки и Anti-Fire лежит в `sfss/playground/src/shared`, Anti-Fire берёт его
   как `@sfss`. Зависимости Node одни на обе программы (npm workspaces).
-- Отчёты NASA, датасеты и обученная модель лежат в `sfss/data`. Индекс собирается на машине.
+- Отчёты NASA, датасеты, обученная модель и готовый индекс лежат в `sfss/data`. Модель поиска
+  (ONNX, 130 МБ) скачивается при установке. Готовые сборки Anti-Fire — в `apps/anti-fire/release`.
 
 Раньше проект жил в двух репозиториях: `PlazmaRoma/Anti-Fire_backend_MVP` (сервис) и
 `heyyAzamat/space-fire-security-software` (интерфейс). История работы осталась там.

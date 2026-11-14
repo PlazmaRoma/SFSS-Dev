@@ -27,7 +27,7 @@ from app.services.rag_service import RagService
 
 logger = logging.getLogger(__name__)
 
-DATASET_FILE = "flex.parquet"
+DATASET_FILE = "flex.csv"
 # Значения, уходящие в JSON, держим в ASCII: кириллица здесь — данные для
 # чужого кода, а не текст для человека. Фронт сам решает, как их отрисовать
 # и на каком языке подписать.
@@ -93,7 +93,7 @@ class DashboardService:
             logger.warning("Нет %s — соберите его scripts/build_flex_dataset.py", path)
             return DatasetInfo(name="FLEX", source=DATASET_SOURCE, rows=0)
 
-        df = pd.read_parquet(path)
+        df = pd.read_csv(path)
         available = [c for c in POINT_COLUMNS if c in df.columns]
         frame = df[available].where(pd.notna(df[available]), None)
         points = [ExperimentPoint(**row) for row in frame.to_dict("records")]

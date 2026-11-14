@@ -25,7 +25,7 @@ from the Flame Extinguishment Experiment, стр. 26-34). Один ряд = од
 * `test_end` — исход (Extinction / Disruption / Completion), для классификации.
 
 Запуск: python scripts/build_flex_dataset.py
-Результат: data/processed/flex.parquet (+ .csv)
+Результат: data/processed/flex.csv
 """
 
 import argparse
@@ -119,7 +119,6 @@ def build(raw_dir: Path, out_dir: Path) -> pd.DataFrame:
     df = pd.concat([df, dummies], axis=1)
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(out_dir / "flex.parquet", index=False)
     df.to_csv(out_dir / "flex.csv", index=False)
     return df
 
@@ -141,7 +140,7 @@ def main() -> None:
                 "d_extinction_mm", "burn_rate_mm2s", "burn_time_s"):
         series = df[col]
         print(f"  {col:18} {series.notna().sum():>4} / {len(df)}  уникальных: {series.nunique():>4}")
-    print(f"\nСохранено в {args.out_dir}/flex.parquet")
+    print(f"\nСохранено в {args.out_dir}/flex.csv")
 
 
 if __name__ == "__main__":
