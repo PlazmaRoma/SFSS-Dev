@@ -1,0 +1,13 @@
+{
+ "baseline_standard_air": 0.5071276058201057,
+ "observed_min": 0.37535961640211646,
+ "observed_max": 0.7208882936507945,
+ "thresholds_ratio": {
+  "safe_below": 1.15,
+  "warn_below": 1.4
+ },
+ "thresholds_absolute": {
+  "safe_below": 0.5832,
+  "warn_below": 0.71
+ }
+}

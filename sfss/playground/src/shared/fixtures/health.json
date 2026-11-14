@@ -1,0 +1,7 @@
+{
+    "status": "ok",
+    "chroma": true,
+    "lm_studio": true,
+    "model": "ministral-3-3b-instruct-2512",
+    "indexed_documents": 1131
+}

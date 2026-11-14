@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+.pytest_cache/
+
+# sfss: секреты, состояние демона и то, что собирается на машине
+sfss/.env
+sfss/data/chroma/
+sfss/data/run/
+sfss/data/llm.json
+
+# Node и сборки фронта
+node_modules/
+dist/
+dist-*/
+*.tsbuildinfo
+*.log
+*.local
+
+# Tauri
+apps/anti-fire/src-tauri/target/
+apps/anti-fire/src-tauri/gen/
+
+# Система и редакторы
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.sw?

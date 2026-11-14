@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- В невесомости пламя горит шаром: без конвекции его нечему вытягивать вверх. -->
+  <rect width="64" height="64" fill="#070b14"/>
+  <defs>
+    <radialGradient id="f">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#48a9e8"/>
+      <stop offset="100%" stop-color="#264aa8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="26" fill="url(#f)" opacity="0.5"/>
+  <circle cx="32" cy="32" r="14" fill="url(#f)"/>
+</svg>

@@ -1,0 +1,370 @@
+{
+ "oxygen": {
+  "question": {
+   "en": "How does oxygen concentration affect flame spread in microgravity?",
+   "ru": "Как концентрация кислорода влияет на распространение пламени в невесомости?"
+  },
+  "en": {
+   "answer": "In microgravity, flame extinction occurs at **21% oxygen concentration** with helium dilution—making the flammable range narrower than other diluents ([NTRS-20000030678, p. 97])—and flame spread is observed at **as low as 17.5% oxygen concentration**, unlike normal gravity, where it starts at **19%** ([NTRS-20210011385, p. 58]). Flame spread rates increase with oxygen concentration in microgravity ([NTRS-20210011385, p. 58]).",
+   "sources": [
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 97,
+     "excerpt": "oxygen concentration. However, flame extinction occurred at 21% oxygen concenl]ation with He diluted atmosphere, which is the highest oxygen concentration with regard to the four types of diluent employed in this study. It implies that the flammable range in microgravity is the narrowest with He diluted atmosphere. One of the interesting result is that at 21% oxygen concentration, there occurred s…"
+    },
+    {
+     "doc_id": "NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-",
+     "page": 138,
+     "excerpt": "NASA/TM-20210011385 130 17. Chan, Ryan Lesley: Effect of Oxygen Concentration on Flame Spread Over Thin Fuels in Different Regimes: A Numerical Investigation. M.S. Thesis, San Diego State Univ., 2018. 18. Link, Shmuel, et al.: The Effect of Gravity on Flame Spread Over PMMA Cylinders. Sci. Rep., vol. 8, no. 120, 2018. 19. Carmignani, L.; Sato, S.; and Bhattacharjee, S.: Flame Spread Over Acrylic C…"
+    },
+    {
+     "doc_id": "NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-",
+     "page": 58,
+     "excerpt": "NASA/TM-20210011385 50 The most important result of the comparison is that of the minimum O2 concentration for flame spread in normal and microgravity. While in microgravity, flame spread was observed at O2 concentrations as low as 17.5 percent, in normal gravity, flame spread was not observed below 19 percent. This result is probably due to the lower opposed-flow velocity in the microgravity test…"
+    }
+   ]
+  },
+  "ru": {
+   "answer": "В условиях невесомости ([NTRS-20000030678, с. 97]), **происходит погасание пламени при более низких концентрациях кислорода, чем в нормальной гравитации**, с наименьшим диапазоном горючести, наблюдаемым при разбавлении атмосферы гелием (He). Стационарное распространение пламени при **21% кислорода** возможно только с разбавлением углекислым газом в условиях невесомости, что отличается от нормальной гравитации ([NTRS-20000030678, с. 97]).\n\nСкорости распространения пламени в условиях невесомости ([NTRS-20160000593, с. 15]) **увеличиваются при более высоких концентрациях кислорода**, если учитывать средние значения скорости потока — в отличие от нормальной гравитации, где они выше, но более стабильны. Тесты в невесомости показывают **отсутствие убывающей тенденции скорости распространения пламени в зависимости от диаметра образца** при 21% кислорода, что отличается от испытаний в 1g ([NTRS-20160000593, с. 15]). Предположение ([NTRS-20150008961, с. 1]), что испытания в нормальной гравитации консервативны, недействительно для вентилируемой невесомости.",
+   "sources": [
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 97,
+     "excerpt": "oxygen concentration. However, flame extinction occurred at 21% oxygen concenl]ation with He diluted atmosphere, which is the highest oxygen concentration with regard to the four types of diluent employed in this study. It implies that the flammable range in microgravity is the narrowest with He diluted atmosphere. One of the interesting result is that at 21% oxygen concentration, there occurred s…"
+    },
+    {
+     "doc_id": "NTRS-20150008961-Microgravity-Flammability-of-PMMA-Rods-in-Con",
+     "page": 1,
+     "excerpt": "spacecraft. The method is an upward flame propagation test initiated in a stagnant normal gravity environment and using a well-defined igniter flame at the bottom of a vertically mounted sample. A material passes this test if the vertical burn length is less than 15.2 cm (6 inches) and there is no evidence of transfer of burning debris. The material either passes or fails the test at a given atmos…"
+    },
+    {
+     "doc_id": "NTRS-20160000593",
+     "page": 15,
+     "excerpt": "Material Ignition and Suppression Test Flame spread rate as a function of sample diameter for both 1g and μg tests. 1g tests are in natural convection at 21% oxygen environments. Values for μg tests are averaged over flow velocity and oxygen concentration. There is a downward trend in flame spread rate as sample diameter increases for both the 1g and μg (microgravity) tests. 1g tests have higher f…"
+    }
+   ]
+  }
+ },
+ "pressure": {
+  "question": {
+   "en": "What happens to a flame at reduced atmospheric pressure?",
+   "ru": "Что происходит с пламенем при пониженном давлении?"
+  },
+  "en": {
+   "answer": "Peak temperatures rise slightly at reduced pressure due to less dissociation, but extinction diameter increases with lower oxygen concentration (e.g., 0.15 mole fraction) even in microgravity, showing **extinction through excessive radiative heat loss**—not buoyancy alone. [NTRS-20130014061, p. 2]\n\nAt pressures yielding finite extinction diameters in microgravity (e.g., 380 torr, 0.17 O₂), flames persist longer than in normal gravity at the same conditions—droplets burn to completion. [NTRS-20000030678, p. 10]",
+   "sources": [
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 50,
+     "excerpt": "presentresultsdemonstratethat theseeffectspersistfor high pressuresandfor binary fuels. The decreaseisjust asstrongwhenthereis stagedcombustionasfor purefuels. Themagnitudeof theeffectdoes,however,decreaseswith increasingpressure,asin Fig. 19. This is consistentwith adecreasein characteristicgas-phasediffusion lengthswith increasingpressure. Although the inverse dependence of diffusivities on pres…"
+    },
+    {
+     "doc_id": "NTRS-20130014061-Methanol-Droplet-Combustion-in-Oxygen-Inert-E",
+     "page": 2,
+     "excerpt": "extinguishes through excessive radiative heat loss, as predicted in the analysis of Chao et al. [8]. More recently Hicks et al. [9] studied the inﬂuence of carbon dioxide dilution on methanol droplet extinction for a ﬁxed oxygen concentration of 21% at one atmospheric pressure. They showed that the measured extinction diameter can be correlated well by a simpliﬁed theory that employs a critical Da…"
+    },
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 10,
+     "excerpt": "in the initial droplet size, at pressures that yielded finite extinction droplet diameters. In these cases, the flame around the larger droplet extinguished immediately (within 0.033 second or 1 video frame) after the smaller droplet disappeared. This again occurred for cases where a single envelope flame surrounded both droplets and where individual flames surrounded each droplet. Qualitatively,…"
+    }
+   ]
+  },
+  "ru": {
+   "answer": "При пониженном давлении в условиях невесомости **интенсивное свечение горения затрудняет визуализацию с обратной подсветкой** пожигающих капель при высоком давлении ([NTRS-20000030678, с. 54]).\n\nВ нормальной гравитации при пониженном давлении **течение под действием плавучести влияет на погасание** — пламя гаснет иначе, чем в условиях невесомости из-за остаточного субплавучего потока, даже при сниженном давлении ([NTRS-20000030678, с. 10]). В частности:\n- В условиях невесомости (например, в эксперименте JAMIC), пламя полностью сгорает при низкой концентрации кислорода (0,17 молярной доли) из-за отсутствия погасания под действием плавучести при сниженном давлении ([NTRS-20000030678, с. 10]).\n- При **0,15 молярной доли кислорода** пламя одиночной капли гаснет при конечном диаметре в условиях невесомости, тогда как в нормальной гравитации ([NTRS-20000030678, с. 10]).",
+   "sources": [
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 54,
+     "excerpt": "single droplet, and the pressure at which the burning lifetime of mixture takes minimum is higher than that of single droplet. (4) The increase of burning lifetime by interaction decreases as pressure increases for each fuel composition. Especially in high pressure, intense light emission from combustion obscures the backlight, so it is very hard to visualize burning droplet in high pressure. Thus…"
+    },
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 7,
+     "excerpt": "changes to the burning rate constant due to interactions. Also, the experimental results show that interactions are quite weak at L/D > 7. In this article, we examine droplet interactions under conditions that yield finite extinction diameters, and determine how droplet interactions affect the extinction process. Droplet burning was in normal and micro-gravity environments, and reduced pressure, a…"
+    },
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 10,
+     "excerpt": "in the initial droplet size, at pressures that yielded finite extinction droplet diameters. In these cases, the flame around the larger droplet extinguished immediately (within 0.033 second or 1 video frame) after the smaller droplet disappeared. This again occurred for cases where a single envelope flame surrounded both droplets and where individual flames surrounded each droplet. Qualitatively,…"
+    }
+   ]
+  }
+ },
+ "solids": {
+  "question": {
+   "en": "How do solid materials burn in microgravity compared to Earth?",
+   "ru": "Чем горение твёрдых материалов в невесомости отличается от земного?"
+  },
+  "en": {
+   "answer": "In microgravity with adequate ventilation, materials may burn more readily than on Earth under identical conditions (pressure, oxygen concentration, temperature) [NTRS-20160000593, p. 6]. This suggests the current 1-g testing method for space materials may need re-evaluation from a safety perspective.\n\n[Fundamental limits of flame spread and extinction in microgravity are studied at constant O₂ mole fractions, revealing differences from Earth’s 1-g buoyant flow conditions [NTRS-20160000593, p. 6].] The context does not specify *how* (e.g., flame intensity, spread rate) but implies microgravity may alter combustion behavior more than just flow speed alone. [Models built in microgravity’s simpler flows help refine Earth-based combustion models, but terrestrial flames may behave differently due to gravity effects [NTRS-20160000593, p. 5; NTRS-20140011099, p. 4].]",
+   "sources": [
+    {
+     "doc_id": "NTRS-20160000593",
+     "page": 6,
+     "excerpt": "Hypotheses ― Materials in microgravity, with adequate ventilation, may burn more readily compared to normal gravity with other conditions being identical (pressure, oxygen concentration, temperature, etc.) ― As a result, the 1-g test currently used by NASA to rate materials for space may need to be re-evaluated from a margin- of-safety point of view. ― Testing at constant O2 mole fractions permits…"
+    },
+    {
+     "doc_id": "NTRS-20160000593",
+     "page": 5,
+     "excerpt": "Science Applications ― Understanding of long-duration microgravity solid material burning and extinction ― Improved strategies for NASA spacecraft materials selection; link actual burn behavior in microgravity to Earth-based selection methods ― Improved combustion computational models used in the design of fire detection and suppression systems in microgravity and on Earth ― Validated detailed com…"
+    },
+    {
+     "doc_id": "NTRS-20140011099-Thickness-and-Fuel-Preheating-Effects-on-Mate",
+     "page": 4,
+     "excerpt": "Science Applications:  Understanding of long-duration microgravity solid material burning and extinction  Improved strategies for NASA spacecraft materials selection; link actual burn behavior in microgravity to Earth-based selection methods  Improved combustion computational models used in the design of fire detection and suppression systems in microgravity and on Earth  Validated detailed co…"
+    }
+   ]
+  },
+  "ru": {
+   "answer": "В условиях невесомости **течения, обусловленные плавучестью, ослаблены**, что изменяет поведение горения фаз твердого тела, включая сниженную зависимость от тепловой плавучести и изменения распространения пламени из-за изменённого переноса тепла (например, эффектов «срезания» сбоку материалов, таких как хлопок, на влияющие на последующий ПММА). [NTRS-20210022402, с. 4]",
+   "sources": [
+    {
+     "doc_id": "NTRS-20210022402-Topical-Solid-Fuel-Combustion-in-Partial-and-",
+     "page": 4,
+     "excerpt": "affects solid phase combustion via modification of the direction of buoyant forces (e.g., tilted samples) or through different thicknesses of fuels which exhibit steady thermally thin or acceleratory thermally thick behavior [32]. Solid phase materials are particularly affected by their surroundings in micro and partial gravity fires as the role of buoyancy is diminished and re-radiation between s…"
+    },
+    {
+     "doc_id": "NTRS-20160000593",
+     "page": 5,
+     "excerpt": "Science Applications ― Understanding of long-duration microgravity solid material burning and extinction ― Improved strategies for NASA spacecraft materials selection; link actual burn behavior in microgravity to Earth-based selection methods ― Improved combustion computational models used in the design of fire detection and suppression systems in microgravity and on Earth ― Validated detailed com…"
+    },
+    {
+     "doc_id": "NTRS-20140011099-Thickness-and-Fuel-Preheating-Effects-on-Mate",
+     "page": 4,
+     "excerpt": "Science Applications:  Understanding of long-duration microgravity solid material burning and extinction  Improved strategies for NASA spacecraft materials selection; link actual burn behavior in microgravity to Earth-based selection methods  Improved combustion computational models used in the design of fire detection and suppression systems in microgravity and on Earth  Validated detailed co…"
+    }
+   ]
+  }
+ },
+ "airflow": {
+  "question": {
+   "en": "What role does airflow velocity play in extinguishing a flame?",
+   "ru": "Какую роль играет скорость потока воздуха при гашении пламени?"
+  },
+  "en": {
+   "answer": "From [NTRS-20140011099, p. 2]:\nThe BASS experiments determined how airflow speeds up to **40 cm/s** affect flame appearance, growth, and **extinction**, particularly in opposed and concurrent flows. The BASS-II setup varied airflow from 3 to 20 cm/s, showing how opposed airflow impacts flame stability and spread rates.",
+   "sources": [
+    {
+     "doc_id": "NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-",
+     "page": 64,
+     "excerpt": "NASA/TM-20210011385 56 5.3 Experimental Setup and Summary The BASS–II hardware shown in Figure 5.1 comprises a small flow duct with an igniter and a small nozzle along with exchangeable fuel samples. The BASS–II flow duct is placed inside the Microgravity Science Glovebox (MSG) (255 L) (Ref. 5) onboard the International Space Station (ISS). A radiometer placed at the top measures the intensity of…"
+    },
+    {
+     "doc_id": "NTRS-20210022402-Topical-Solid-Fuel-Combustion-in-Partial-and-",
+     "page": 3,
+     "excerpt": "gas-phase chemical kinetic modeling with great vigor [24], relatively little work has appeared by comparison on systematic solid-phase kinetics. Specific to microgravity, there has been even less work, or application, of advanced solid-phase kinetic studies of materials. This is important as the rate of thermal degradation in the solid phase controls the release of flammable vapors. Although on Ea…"
+    },
+    {
+     "doc_id": "NTRS-20140011099-Thickness-and-Fuel-Preheating-Effects-on-Mate",
+     "page": 2,
+     "excerpt": "Approach: ♦ Microgravity combustion tests were performed aboard the International Space Station using the BASS (Burning and Suppression of Solids) hardware. ♦ The wind tunnel was installed in the Microgravity Science Glovebox which supplied power, imaging, and a level of containment. ♦ Fuel samples were mounted inside a small wind tunnel which could impose airflow speeds up to 40 cm/s. ♦ The effec…"
+    }
+   ]
+  },
+  "ru": {
+   "answer": "Скорость потока воздуха в условиях невесомости при проведении экспериментов по горению была изучена с целью определения её влияния на **погасание пламени**—в частности, как она влияет на появление, рост и **распространение пламени** в условиях различной конфигурации потоков (например, противоположного/параллельного) [NTRS-20140011099, с. 2] [NTRS-20160000593, с. 3]. Эксперименты варьировали скорость потока воздуха до **40 см/с** и фиксировали изменения в поведении пожара. [NTRS-20160000593, с. 3]",
+   "sources": [
+    {
+     "doc_id": "NTRS-20210022402-Topical-Solid-Fuel-Combustion-in-Partial-and-",
+     "page": 3,
+     "excerpt": "gas-phase chemical kinetic modeling with great vigor [24], relatively little work has appeared by comparison on systematic solid-phase kinetics. Specific to microgravity, there has been even less work, or application, of advanced solid-phase kinetic studies of materials. This is important as the rate of thermal degradation in the solid phase controls the release of flammable vapors. Although on Ea…"
+    },
+    {
+     "doc_id": "NTRS-20140011099-Thickness-and-Fuel-Preheating-Effects-on-Mate",
+     "page": 2,
+     "excerpt": "Approach: ♦ Microgravity combustion tests were performed aboard the International Space Station using the BASS (Burning and Suppression of Solids) hardware. ♦ The wind tunnel was installed in the Microgravity Science Glovebox which supplied power, imaging, and a level of containment. ♦ Fuel samples were mounted inside a small wind tunnel which could impose airflow speeds up to 40 cm/s. ♦ The effec…"
+    },
+    {
+     "doc_id": "NTRS-20160000593",
+     "page": 3,
+     "excerpt": "Approach ― Microgravity combustion tests were performed aboard the International Space Station. Active crew support for real-time “lab partner” operations. ― The wind tunnel was installed in the Microgravity Science Glovebox which supplied power, imaging, and a level of containment. ― Fuel samples were mounted inside a small wind tunnel which could impose airflow speeds up to 40 cm/s. ― Main varia…"
+    }
+   ]
+  }
+ },
+ "materials": {
+  "question": {
+   "en": "What did the BASS-II experiment find about burning solid fuels aboard the ISS?",
+   "ru": "Что эксперимент BASS-II показал о горении твёрдых материалов на МКС?"
+  },
+  "en": {
+   "answer": "The BASS-II experiment studied flame spread in microgravity using PMMA rods of varying diameters under different oxygen concentrations and low flow velocities—key spacecraft parameters. It aimed to understand flame spread mechanisms in microgravity by comparing ISS data with ground tests, focusing on effects like transverse curvature and low-pressure environments. The study used black PMMA (and limited clear PMMA) to analyze combustion behavior, with sensors like CSA-CP measuring O₂ and CO for completeness verification. [NTRS-20210011385, p. 55]\n\nThe experiment also introduced ambient O₂ levels as a variable via MSG dilution with N₂, using ground calibration models to adjust concentrations. [NTRS-20210011385, p. 9]",
+   "sources": [
+    {
+     "doc_id": "NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-",
+     "page": 55,
+     "excerpt": "NASA/TM-20210011385 47 4.0 Individual Principal Investigator Report: Fernandez-Pello 4.1 Opposed-Flame Spread Task The scientific objective of the Burning and Suppression Solids—II (BASS–II) opposed-flow flame spread test is to further understand the mechanisms controlling the spread of flames over the surface of solid combustible materials, particularly in a spacecraft environment. For this purpo…"
+    },
+    {
+     "doc_id": "NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-",
+     "page": 9,
+     "excerpt": "NASA/TM-20210011385 1 Burning and Suppression of Solids—II (BASS–II) Summary Report S andra L. Olson National Aeronautics and Space Administration Glenn Research Center Cleveland, Ohio 44135 P aul V. Ferkul Universities Space Research Association Cleveland, Ohio 44135 S ubrata Bhattacharjee and Fletcher J. Miller San Diego State University San Diego, California 92182 C arlos Fernandez-Pello and Sh…"
+    },
+    {
+     "doc_id": "NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-",
+     "page": 12,
+     "excerpt": "NASA/TM-20210011385 4 Figure 1.1.—Microgravity Science Glovebox Facility (MSG) working volume aboard the International Space Station (ISS) with the Burning and Suppression of Solids—II (BASS– II) experiment hardware installed. Working volume of MSG was diluted using ISS N2 gas. Compound Specific Analyzer-Combustion Products (O2 and CO) and Carbon Dioxide Monitor (CO2) sensors were used to obtain b…"
+    }
+   ]
+  },
+  "ru": {
+   "answer": "Эксперимент BASS-II показал, что твёрдые материалы горят по-разному в условиях невесомости—пламя образует **высшие соотношения монооксида углерода к диоксиду углерода**, чем на Земле, что создаёт более высокие риски ингаляции для космонавтов [NTRS-20170008723, с. 16].\n\nВ ходе эксперимента также было установлено, что **уровни кислорода в атмосфере, вентиляция и состав топлива** существенно влияют на эффективность горения в условиях невесомости [NTRS-20170008723, с. 16].\n\nПроведённые на стержнях испытания выявили **скорости распространения пламени и динамику переходов между термически тонкими и толстыми режимами горения**, при этом погасание пламени зависело от концентрации кислорода и скорости потока [NTRS-20150008961, с. 2].\nСтержни плавились под действием пламени, формируя нагревшиеся скопления (например, из ПММА и Делрина) в зоне застоя на концах [NTRS-20150008961, с. 2].",
+   "sources": [
+    {
+     "doc_id": "NTRS-20170008723-Annual-Highlights-of-Results-from-the-Interna",
+     "page": 16,
+     "excerpt": "12 Understanding combustion is crucial for both crew safety during future long-duration missions beyond low Earth orbit, and the safety of those on Earth. To advance space exploration efforts, testing how materials ignite and smolder in microgravity is essential for choosing everything for spacecraft design, from windowpanes to wire insulation, which will travel on longer- term missions to Mars or…"
+    },
+    {
+     "doc_id": "NTRS-20120015928-FLEX-A-Decisive-Step-Forward-in-NASA-s-Combus",
+     "page": 3,
+     "excerpt": "3 SLPSRA Division is realized on the orbiting laboratory of the International Space Station (ISS), the objectives of the work involve determining the effects of the absence of terrestrial gravity on systems of interest. These objectives include reducing risks of long duration space exploration and the specific purposes of basic and applied science research in life and physical sciences. NASA s Phy…"
+    },
+    {
+     "doc_id": "NTRS-20150008961-Microgravity-Flammability-of-PMMA-Rods-in-Con",
+     "page": 2,
+     "excerpt": "Sub Topic: Fire Research 2 or partial gravity conditions. Materials have sustained burning in microgravity at or below the flammability limits measured with the Test 1 protocol. What if materials are intrinsically more flammable in space than on earth, due to reduced convective cooling and yet adequate oxygen ventilation? As part of the Burning and Suppression –II (BASS-II) experiment, twenty-four…"
+    }
+   ]
+  }
+ },
+ "helium": {
+  "question": {
+   "en": "How does helium in the atmosphere affect combustion?",
+   "ru": "Как гелий в атмосфере влияет на горение?"
+  },
+  "en": {
+   "answer": "Helium increases thermal conductivity compared to carbon dioxide or nitrogen, which raises the combustion burning rate and shortens the burning time for similar-sized droplets. [NTRS-20130014061, p. 5]",
+   "sources": [
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 191,
+     "excerpt": "Inert Gas Substitution: Experiments will use nitrogen as the primary inert gas. The results can then be used for comparisons with previous experimental results that are available in the literature for n- heptane combustion. Inert gas substitution will be employed by replacing nitrogen with helium and/or by operating with nitrogen/helium mixtures. Inert gas substitution and variation is a useful ap…"
+    },
+    {
+     "doc_id": "NTRS-20130014061-Methanol-Droplet-Combustion-in-Oxygen-Inert-E",
+     "page": 1,
+     "excerpt": "Paper # 070HE-0303 Topic: Spray and Droplet 8th US National Combustion Meeting Organized by the Western States Section of the Combustion Institute and hosted by the University of Utah May 19-22, 2013. Methanol Droplet Combustion in Oxygen-Inert Environments in Microgravity V edha Nayagam1, Daniel L. Dietrich 2, Michael C. Hicks 2 F orman A. Williams3 1National Center for Space Exploration Research…"
+    },
+    {
+     "doc_id": "NTRS-20130014061-Methanol-Droplet-Combustion-in-Oxygen-Inert-E",
+     "page": 5,
+     "excerpt": "5th US Combustion Meeting – Paper # 070HE-0303 Topic: Spray and Droplet 3 Results Over one hundred methanol droplet tests in varying diluent concentrations and at primarily two different ambient pressures (0.7 and 1 atm) have been performed to date. In these tests the oxygen concentration varied from 30% to 12% by volume while the carbon dioxide and helium diluent concentrations varied in the rang…"
+    }
+   ]
+  },
+  "ru": {
+   "answer": "Гелий повышает теплопроводность по сравнению с диоксидом углерода или азотом, что увеличивает скорость горения в условиях невесомости [NTRS-20130014061, с. 5]. Он снижает поведение образования сажи при смешении с азотом или кислородом [NTRS-20000030678, с. 191].",
+   "sources": [
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 191,
+     "excerpt": "Inert Gas Substitution: Experiments will use nitrogen as the primary inert gas. The results can then be used for comparisons with previous experimental results that are available in the literature for n- heptane combustion. Inert gas substitution will be employed by replacing nitrogen with helium and/or by operating with nitrogen/helium mixtures. Inert gas substitution and variation is a useful ap…"
+    },
+    {
+     "doc_id": "NTRS-20130014061-Methanol-Droplet-Combustion-in-Oxygen-Inert-E",
+     "page": 1,
+     "excerpt": "Paper # 070HE-0303 Topic: Spray and Droplet 8th US National Combustion Meeting Organized by the Western States Section of the Combustion Institute and hosted by the University of Utah May 19-22, 2013. Methanol Droplet Combustion in Oxygen-Inert Environments in Microgravity V edha Nayagam1, Daniel L. Dietrich 2, Michael C. Hicks 2 F orman A. Williams3 1National Center for Space Exploration Research…"
+    },
+    {
+     "doc_id": "NTRS-20130014061-Methanol-Droplet-Combustion-in-Oxygen-Inert-E",
+     "page": 5,
+     "excerpt": "5th US Combustion Meeting – Paper # 070HE-0303 Topic: Spray and Droplet 3 Results Over one hundred methanol droplet tests in varying diluent concentrations and at primarily two different ambient pressures (0.7 and 1 atm) have been performed to date. In these tests the oxygen concentration varied from 30% to 12% by volume while the carbon dioxide and helium diluent concentrations varied in the rang…"
+    }
+   ]
+  }
+ },
+ "safety": {
+  "question": {
+   "en": "What are the fire safety implications for crewed spacecraft?",
+   "ru": "Что это значит для пожарной безопасности пилотируемых кораблей?"
+  },
+  "en": {
+   "answer": "Prevention is the primary focus for all spacecraft missions, but enforcement becomes harder in long-duration missions like ISSA due to accumulating waivered materials and higher ignition risks. Detection (smoke detectors) and suppression are secondary protections, critical for ISSA where ground recovery isn’t feasible. [NTRS-19950017584, p. 32]\n\nShort-duration missions (e.g., Shuttle) rely on Halon 1301 extinguishers for fixed suppression, while ISSA uses CO₂ portable units. Microgravity alters fire behavior—natural convection is absent, so smoldering and aerosol hazards persist. [NTRS-19970009350, p. 5]\n\nMaterials tested in normal gravity may not perform reliably in microgravity (e.g., PTFE’s toxic degradation). Early-warning techniques and suppression models must account for microgravity-specific fire-spread rates. [NTRS-19970009350, p. 5]",
+   "sources": [
+    {
+     "doc_id": "NTRS-19950017584-Microgravity-Combustion-Science-1995-Program-",
+     "page": 32,
+     "excerpt": "Spacecraft Fire Safety Although current spacecraft fire protection may be adequate, the application of microgravity combustion knowledge to fire safety merits considerable attention in order to optimize com- ponents and operations in current spacecraft and to acquire improved and innovative techniques for the future long-dura- tion International Space Station Alpha (ISSA). Current Spacecraft Pract…"
+    },
+    {
+     "doc_id": "NTRS-19970009350-Overview-of-Microgravity-Combustion-Research-",
+     "page": 5,
+     "excerpt": "Fire Safety Current spacecraft fire-protection designs and operations are based on terrestrial standards and testing, although there is a growing awareness of the need to apply microgravity-combustion knowledge to improve and optimize spacecraR fire safety (Friedman 1993). Certain fire scenarios have some probability of occurrence in spacecraft (Friedman 1992-3). For example, thermally stressed co…"
+    },
+    {
+     "doc_id": "NTRS-20210022402-Topical-Solid-Fuel-Combustion-in-Partial-and-",
+     "page": 7,
+     "excerpt": "References 1. Huang, X, Yuji N, and Urban, D. “Introduction to special issue on spacecraft fire safety.” (2020): 1-4. Fire Technology. https://doi.org/10.1007/s10694-019-00941-6 2. Friedman R (1996) Fire safety in spacecraft. Fire Mater 20:235–243. https://doi.org/10.1002/(SICI)1099-1018(199609)20:5%3C235::AID- FAM580%3E3.0.CO;2-Y 3. Ross HD (2001) Microgravity combustion: fire in free fall. Acade…"
+    }
+   ]
+  },
+  "ru": {
+   "answer": "Безопасность от пожаров в экипажируемых космических аппаратах требует **первоочередного предотвращения**, при этом условия невесомости изменяют риски, такие как перегрев (сниженная эффективность охлаждения воздуха) и угасающие пожары (отсутствие естественной конвекции). Обычные испытания на нормальной гравитации для определения горючести материалов не могут надежно предсказать поведение в условиях микрогравитации, что требует разработки новых моделей для обеспечения приемлемой горючести материалов—некоторые даже превышают скорость распространения пламени в условиях нормальной гравитации. [NTRS-19970009350, с. 5]",
+   "sources": [
+    {
+     "doc_id": "NTRS-19950017584-Microgravity-Combustion-Science-1995-Program-",
+     "page": 32,
+     "excerpt": "Spacecraft Fire Safety Although current spacecraft fire protection may be adequate, the application of microgravity combustion knowledge to fire safety merits considerable attention in order to optimize com- ponents and operations in current spacecraft and to acquire improved and innovative techniques for the future long-dura- tion International Space Station Alpha (ISSA). Current Spacecraft Pract…"
+    },
+    {
+     "doc_id": "NTRS-19970009350-Overview-of-Microgravity-Combustion-Research-",
+     "page": 5,
+     "excerpt": "Fire Safety Current spacecraft fire-protection designs and operations are based on terrestrial standards and testing, although there is a growing awareness of the need to apply microgravity-combustion knowledge to improve and optimize spacecraR fire safety (Friedman 1993). Certain fire scenarios have some probability of occurrence in spacecraft (Friedman 1992-3). For example, thermally stressed co…"
+    },
+    {
+     "doc_id": "NTRS-20210022402-Topical-Solid-Fuel-Combustion-in-Partial-and-",
+     "page": 7,
+     "excerpt": "References 1. Huang, X, Yuji N, and Urban, D. “Introduction to special issue on spacecraft fire safety.” (2020): 1-4. Fire Technology. https://doi.org/10.1007/s10694-019-00941-6 2. Friedman R (1996) Fire safety in spacecraft. Fire Mater 20:235–243. https://doi.org/10.1002/(SICI)1099-1018(199609)20:5%3C235::AID- FAM580%3E3.0.CO;2-Y 3. Ross HD (2001) Microgravity combustion: fire in free fall. Acade…"
+    }
+   ]
+  }
+ },
+ "droplet": {
+  "question": {
+   "en": "Why does droplet size matter for burning rate?",
+   "ru": "Почему размер капли влияет на скорость горения?"
+  },
+  "en": {
+   "answer": "The **extinction droplet diameter**—the size at which a flame stops burning—directly influences whether combustion continues or extinguishes. Smaller droplets (extinction diameter) are harder to ignite at low pressures, and their size is critical for measuring how far burning progresses before failure. Interaction effects (e.g., proximity between droplets) can shrink extinction diameters by ~60% at close spacings, altering the burning rate and stability. [NTRS-20000030678, p. 9]\n\nIn microgravity, a droplet’s **linear burn size** (e.g., heptane in [NTRS-20150023456, p. 208]) determines whether it extinguishes before reaching a critical threshold—smaller sizes mean faster extinction. [NTRS-20150023456, p. 208]",
+   "sources": [
+    {
+     "doc_id": "NTRS-20150023456",
+     "page": 208,
+     "excerpt": "NASA/TP—2015-216046 202 Figure 178.—Test FLEX –175. Free-floating heptane droplet burning in a 0.24/0.56/0.20 O2/N2/CO2, 0.70-atm ambient environment. The droplet drifted east, but it remained in the High-Bit-Depth Multispectral (HiBMs) field of view (FOV) for the entire test. The droplet burned linearly to a small size, and it disrupted when the flame extinguished. The droplet size at extinction…"
+    },
+    {
+     "doc_id": "NTRS-20150023456",
+     "page": 306,
+     "excerpt": "NASA/TP—2015-216046 300 Figure 276.—Test FLEX –276. Fiber-supported heptane droplet burning in a 0.17/0.38/0.45 O2/N2/He, 0.70-atm ambient environment. The droplet exhibited significant axial and radial oscillations throughout the test, and the burning rate and extinction diameter data were strongly influenced by this motion. The residual droplet on the fiber had a large gas bubble that resulted i…"
+    },
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 9,
+     "excerpt": "average burning rate constant varies less than 10% for L/Do greater than or equal to 6. The greatest change occurs early in the droplet lifetime, during the droplet heating period. After this period is over, interaction effects are small. This initial period is not represented in Figure 1. Thus, these results are not all that inconsistent with existing studies. At pressures below 90 torrs in norma…"
+    }
+   ]
+  },
+  "ru": {
+   "answer": "Меньшие капли испытывают **погасание (extinction) рано** вследствие их более короткого времени пребывания по сравнению с скоростью химических реакций, при этом выделение тепла конденсации временно повышает скорость горения. Для более крупных капель погасание происходит позднее, когда доминирует испарение и компенсирует более ранние увеличения скорости горения.",
+   "sources": [
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 11,
+     "excerpt": "constant also shown in Figure 4. For the droplet arrays, however, the flames did not extinguish, or at least the extinction ch'oplet diameter was smaller than the fiber diameter (0.23 mm in this case). 1.4 Discussion The effect of interactions during droplet burning occurs as a result of two competing mechanisms. The droplets compete for oxidizer, and this effect tends to weaken the burning of eac…"
+    },
+    {
+     "doc_id": "NTRS-20130014061-Methanol-Droplet-Combustion-in-Oxygen-Inert-E",
+     "page": 6,
+     "excerpt": "5th US Combustion Meeting – Paper # 070HE-0303 Topic: Spray and Droplet fuel-to-oxygen mass ratio. The fuel boiling point is Tb, and the ambient temperature is T∞. The property values needed in equation (1) and (2) are evaluated according to the semi-empirical recipe proposed by Law and Williams [21]. The experimental Kex values were obtained by linear least-square ﬁtting of the D2-versus-time cur…"
+    },
+    {
+     "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
+     "page": 7,
+     "excerpt": "changes to the burning rate constant due to interactions. Also, the experimental results show that interactions are quite weak at L/D > 7. In this article, we examine droplet interactions under conditions that yield finite extinction diameters, and determine how droplet interactions affect the extinction process. Droplet burning was in normal and micro-gravity environments, and reduced pressure, a…"
+    }
+   ]
+  }
+ }
+}

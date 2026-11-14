@@ -1,0 +1,2811 @@
+{
+    "model": {
+        "name": "fiery",
+        "task": "regression",
+        "target": "burn_rate_mm2s",
+        "units": "mm^2/s",
+        "target_range": [
+            0.05,
+            1.06
+        ],
+        "metrics": {
+            "r2": 0.6524,
+            "mae": 0.0547,
+            "rmse": 0.0808,
+            "mae_baseline": 0.1063,
+            "rows": 259.0,
+            "folds": 5.0
+        },
+        "feature_importance": {
+            "pressure_mmhg": 0.0754,
+            "oxygen_level": 0.3496,
+            "n2": 0.0527,
+            "co2": 0.0794,
+            "he": 0.182,
+            "d_initial_mm": 0.2268,
+            "fuel_heptane": 0.0177,
+            "fuel_methanol": 0.0163
+        },
+        "features": [
+            "pressure_mmhg",
+            "oxygen_level",
+            "n2",
+            "co2",
+            "he",
+            "d_initial_mm",
+            "fuel_heptane",
+            "fuel_methanol"
+        ],
+        "defaults": {
+            "pressure_mmhg": 760.0,
+            "oxygen_level": 0.21,
+            "n2": 0.79,
+            "co2": 0.0,
+            "he": 0.0,
+            "d_initial_mm": 3.0,
+            "fuel_heptane": 0.0,
+            "fuel_methanol": 1.0
+        },
+        "is_heuristic": false,
+        "trained": true
+    },
+    "dataset": {
+        "name": "FLEX",
+        "source": "FLEX (Flame Extinguishment Experiment), ISS - test matrix from report NASA/TP-2015-216046, pages 26-34",
+        "rows": 273,
+        "experiments": [
+            {
+                "test": "FLEX-001",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 757.7,
+                "d_initial_mm": 1.69,
+                "burn_rate_mm2s": 0.52,
+                "d_extinction_mm": 0.89,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-002",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 762.0,
+                "d_initial_mm": 1.86,
+                "burn_rate_mm2s": 0.6,
+                "d_extinction_mm": 0.94,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-003",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 764.2,
+                "d_initial_mm": 1.61,
+                "burn_rate_mm2s": 0.58,
+                "d_extinction_mm": 0.92,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-004",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 760.0,
+                "d_initial_mm": 2.06,
+                "burn_rate_mm2s": 0.6,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-005",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 760.0,
+                "d_initial_mm": 1.92,
+                "burn_rate_mm2s": 0.48,
+                "d_extinction_mm": 0.81,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-006",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 760.0,
+                "d_initial_mm": 2.54,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 1.53,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-007",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 761.3,
+                "d_initial_mm": 1.87,
+                "burn_rate_mm2s": 0.67,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-008",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 762.4,
+                "d_initial_mm": 2.95,
+                "burn_rate_mm2s": 0.79,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-010",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 2319.7,
+                "d_initial_mm": 3.86,
+                "burn_rate_mm2s": 0.37,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-011",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 2318.8,
+                "d_initial_mm": 3.03,
+                "burn_rate_mm2s": 0.4,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-012",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 2319.9,
+                "d_initial_mm": 2.74,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-013",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 2074.2,
+                "d_initial_mm": 2.59,
+                "burn_rate_mm2s": 0.49,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-014",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 2055.6,
+                "d_initial_mm": 3.7,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-015",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 2066.6,
+                "d_initial_mm": 4.42,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-016",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 2072.1,
+                "d_initial_mm": 1.66,
+                "burn_rate_mm2s": 0.53,
+                "d_extinction_mm": 1.0,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-017",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 1545.7,
+                "d_initial_mm": 2.67,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-018",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 1553.8,
+                "d_initial_mm": 2.74,
+                "burn_rate_mm2s": 0.61,
+                "d_extinction_mm": 1.77,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-019",
+                "fuel": "heptane",
+                "oxygen_level": 0.34,
+                "pressure_mmhg": 539.1,
+                "d_initial_mm": 3.39,
+                "burn_rate_mm2s": 0.9,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-020",
+                "fuel": "methanol",
+                "oxygen_level": 0.34,
+                "pressure_mmhg": 539.5,
+                "d_initial_mm": 3.4,
+                "burn_rate_mm2s": 0.53,
+                "d_extinction_mm": 1.56,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-021",
+                "fuel": "methanol",
+                "oxygen_level": 0.34,
+                "pressure_mmhg": 540.6,
+                "d_initial_mm": 3.49,
+                "burn_rate_mm2s": 0.66,
+                "d_extinction_mm": 0.95,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-022",
+                "fuel": "methanol",
+                "oxygen_level": 0.34,
+                "pressure_mmhg": 540.5,
+                "d_initial_mm": 3.5,
+                "burn_rate_mm2s": 0.65,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-023",
+                "fuel": "heptane",
+                "oxygen_level": 0.34,
+                "pressure_mmhg": 541.8,
+                "d_initial_mm": 3.01,
+                "burn_rate_mm2s": 0.73,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-024",
+                "fuel": "heptane",
+                "oxygen_level": 0.34,
+                "pressure_mmhg": 542.8,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-025",
+                "fuel": "methanol",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 537.3,
+                "d_initial_mm": 2.6,
+                "burn_rate_mm2s": 0.65,
+                "d_extinction_mm": 0.59,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-026",
+                "fuel": "methanol",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 538.4,
+                "d_initial_mm": 3.63,
+                "burn_rate_mm2s": 0.62,
+                "d_extinction_mm": 0.4,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-027",
+                "fuel": "heptane",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 540.7,
+                "d_initial_mm": 3.87,
+                "burn_rate_mm2s": 0.64,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-028",
+                "fuel": "heptane",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 539.7,
+                "d_initial_mm": 3.36,
+                "burn_rate_mm2s": 0.64,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-029",
+                "fuel": "methanol",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 766.9,
+                "d_initial_mm": 2.57,
+                "burn_rate_mm2s": 0.74,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-030",
+                "fuel": "methanol",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 769.2,
+                "d_initial_mm": 3.26,
+                "burn_rate_mm2s": 0.59,
+                "d_extinction_mm": 1.32,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-031",
+                "fuel": "heptane",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 770.5,
+                "d_initial_mm": 3.39,
+                "burn_rate_mm2s": 0.85,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-032",
+                "fuel": "heptane",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 771.0,
+                "d_initial_mm": 3.07,
+                "burn_rate_mm2s": 0.68,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-033",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 764.5,
+                "d_initial_mm": 2.62,
+                "burn_rate_mm2s": 0.48,
+                "d_extinction_mm": 1.25,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-034",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 767.7,
+                "d_initial_mm": 3.89,
+                "burn_rate_mm2s": 0.44,
+                "d_extinction_mm": 2.0,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-035",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 768.1,
+                "d_initial_mm": 3.85,
+                "burn_rate_mm2s": 0.43,
+                "d_extinction_mm": 3.34,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-036",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 539.0,
+                "d_initial_mm": 2.4,
+                "burn_rate_mm2s": 0.45,
+                "d_extinction_mm": 1.67,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-037",
+                "fuel": "methanol",
+                "oxygen_level": 0.34,
+                "pressure_mmhg": 534.3,
+                "d_initial_mm": 3.31,
+                "burn_rate_mm2s": 0.72,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-038",
+                "fuel": "methanol",
+                "oxygen_level": 0.34,
+                "pressure_mmhg": 534.4,
+                "d_initial_mm": 3.59,
+                "burn_rate_mm2s": 0.71,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-039",
+                "fuel": "heptane",
+                "oxygen_level": 0.34,
+                "pressure_mmhg": 534.9,
+                "d_initial_mm": 2.91,
+                "burn_rate_mm2s": 0.8,
+                "d_extinction_mm": 0.0,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-040",
+                "fuel": "methanol",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 535.1,
+                "d_initial_mm": 3.77,
+                "burn_rate_mm2s": 0.62,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-041",
+                "fuel": "methanol",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 534.3,
+                "d_initial_mm": 3.35,
+                "burn_rate_mm2s": 0.65,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-042",
+                "fuel": "heptane",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 535.0,
+                "d_initial_mm": 2.92,
+                "burn_rate_mm2s": 0.58,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-043",
+                "fuel": "heptane",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 534.9,
+                "d_initial_mm": 2.97,
+                "burn_rate_mm2s": 0.78,
+                "d_extinction_mm": 0.0,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-044",
+                "fuel": "methanol",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 766.8,
+                "d_initial_mm": 3.49,
+                "burn_rate_mm2s": 0.63,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-045",
+                "fuel": "methanol",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 768.3,
+                "d_initial_mm": 2.42,
+                "burn_rate_mm2s": 0.73,
+                "d_extinction_mm": 1.01,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-046",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 769.5,
+                "d_initial_mm": 2.78,
+                "burn_rate_mm2s": 0.54,
+                "d_extinction_mm": 1.08,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-047",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 770.1,
+                "d_initial_mm": 3.36,
+                "burn_rate_mm2s": 0.5,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-048",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 768.7,
+                "d_initial_mm": 3.66,
+                "burn_rate_mm2s": 0.27,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-049",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 764.9,
+                "d_initial_mm": 3.46,
+                "burn_rate_mm2s": 0.59,
+                "d_extinction_mm": 2.78,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-050",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 770.1,
+                "d_initial_mm": 3.57,
+                "burn_rate_mm2s": 0.52,
+                "d_extinction_mm": 2.98,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-051",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 771.4,
+                "d_initial_mm": 2.41,
+                "burn_rate_mm2s": 0.65,
+                "d_extinction_mm": 0.0,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-052",
+                "fuel": "heptane",
+                "oxygen_level": 0.3,
+                "pressure_mmhg": 771.1,
+                "d_initial_mm": 3.53,
+                "burn_rate_mm2s": 0.7,
+                "d_extinction_mm": 0.0,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-053",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 770.2,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-054",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 541.4,
+                "d_initial_mm": 3.56,
+                "burn_rate_mm2s": 0.41,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-055",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 542.6,
+                "d_initial_mm": 3.37,
+                "burn_rate_mm2s": 0.46,
+                "d_extinction_mm": 2.39,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-056",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 544.1,
+                "d_initial_mm": 3.56,
+                "burn_rate_mm2s": 0.44,
+                "d_extinction_mm": 3.04,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-057",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 544.4,
+                "d_initial_mm": 3.1,
+                "burn_rate_mm2s": 0.54,
+                "d_extinction_mm": 2.49,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-058",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 773.3,
+                "d_initial_mm": 3.69,
+                "burn_rate_mm2s": 0.42,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-059",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 769.2,
+                "d_initial_mm": 2.93,
+                "burn_rate_mm2s": 0.43,
+                "d_extinction_mm": 1.39,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-060",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 773.7,
+                "d_initial_mm": 3.43,
+                "burn_rate_mm2s": 0.45,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-061",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 774.1,
+                "d_initial_mm": 3.68,
+                "burn_rate_mm2s": 0.41,
+                "d_extinction_mm": 2.0,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-062",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 761.8,
+                "d_initial_mm": 3.43,
+                "burn_rate_mm2s": 0.39,
+                "d_extinction_mm": 3.17,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-063",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 767.6,
+                "d_initial_mm": 2.15,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 0.0,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-064",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 764.6,
+                "d_initial_mm": 2.69,
+                "burn_rate_mm2s": 0.6,
+                "d_extinction_mm": 2.07,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-065",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 765.9,
+                "d_initial_mm": 3.37,
+                "burn_rate_mm2s": 0.4,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-066",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 766.8,
+                "d_initial_mm": 2.52,
+                "burn_rate_mm2s": 0.38,
+                "d_extinction_mm": 1.32,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-067",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 767.7,
+                "d_initial_mm": 3.97,
+                "burn_rate_mm2s": 0.36,
+                "d_extinction_mm": 3.3,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-068",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 768.8,
+                "d_initial_mm": 2.38,
+                "burn_rate_mm2s": 0.39,
+                "d_extinction_mm": 1.29,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-069",
+                "fuel": "heptane",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 767.1,
+                "d_initial_mm": 1.1,
+                "burn_rate_mm2s": 0.94,
+                "d_extinction_mm": 0.0,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-070",
+                "fuel": "heptane",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 761.0,
+                "d_initial_mm": 4.67,
+                "burn_rate_mm2s": 0.41,
+                "d_extinction_mm": 4.6,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-071",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 768.3,
+                "d_initial_mm": 2.25,
+                "burn_rate_mm2s": 0.4,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-072",
+                "fuel": "heptane",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 765.2,
+                "d_initial_mm": 1.13,
+                "burn_rate_mm2s": 0.52,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-073",
+                "fuel": "heptane",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 761.0,
+                "d_initial_mm": 4.64,
+                "burn_rate_mm2s": 0.56,
+                "d_extinction_mm": 4.58,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-074",
+                "fuel": "heptane",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 765.9,
+                "d_initial_mm": 1.33,
+                "burn_rate_mm2s": 0.77,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-075",
+                "fuel": "methanol",
+                "oxygen_level": 0.13,
+                "pressure_mmhg": 770.8,
+                "d_initial_mm": 2.54,
+                "burn_rate_mm2s": 0.37,
+                "d_extinction_mm": 1.78,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-076",
+                "fuel": "methanol",
+                "oxygen_level": 0.13,
+                "pressure_mmhg": 769.5,
+                "d_initial_mm": 3.21,
+                "burn_rate_mm2s": 0.37,
+                "d_extinction_mm": 2.78,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-077",
+                "fuel": "methanol",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 768.4,
+                "d_initial_mm": 3.33,
+                "burn_rate_mm2s": 0.34,
+                "d_extinction_mm": 2.91,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-078",
+                "fuel": "methanol",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 766.0,
+                "d_initial_mm": 2.66,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 1.66,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-079",
+                "fuel": "heptane",
+                "oxygen_level": 0.13,
+                "pressure_mmhg": 768.1,
+                "d_initial_mm": 2.92,
+                "burn_rate_mm2s": 0.25,
+                "d_extinction_mm": 2.86,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-080",
+                "fuel": "heptane",
+                "oxygen_level": 0.13,
+                "pressure_mmhg": 770.0,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-081",
+                "fuel": "heptane",
+                "oxygen_level": 0.13,
+                "pressure_mmhg": 770.2,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-082",
+                "fuel": "methanol",
+                "oxygen_level": 0.13,
+                "pressure_mmhg": 764.6,
+                "d_initial_mm": 2.84,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 2.39,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-083",
+                "fuel": "methanol",
+                "oxygen_level": 0.12,
+                "pressure_mmhg": 772.0,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-084",
+                "fuel": "methanol",
+                "oxygen_level": 0.12,
+                "pressure_mmhg": 767.2,
+                "d_initial_mm": 2.35,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 1.42,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-085",
+                "fuel": "methanol",
+                "oxygen_level": 0.12,
+                "pressure_mmhg": 771.2,
+                "d_initial_mm": 2.4,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 1.77,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-086",
+                "fuel": "methanol",
+                "oxygen_level": 0.12,
+                "pressure_mmhg": 770.0,
+                "d_initial_mm": 3.07,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 2.56,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-087",
+                "fuel": "methanol",
+                "oxygen_level": 0.12,
+                "pressure_mmhg": 771.2,
+                "d_initial_mm": 2.64,
+                "burn_rate_mm2s": 0.38,
+                "d_extinction_mm": 1.92,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-088",
+                "fuel": "methanol",
+                "oxygen_level": 0.25,
+                "pressure_mmhg": 537.5,
+                "d_initial_mm": 3.01,
+                "burn_rate_mm2s": 0.53,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-089",
+                "fuel": "methanol",
+                "oxygen_level": 0.25,
+                "pressure_mmhg": 537.4,
+                "d_initial_mm": 3.7,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-090",
+                "fuel": "methanol",
+                "oxygen_level": 0.25,
+                "pressure_mmhg": 539.2,
+                "d_initial_mm": 3.62,
+                "burn_rate_mm2s": 0.53,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-091",
+                "fuel": "methanol",
+                "oxygen_level": 0.25,
+                "pressure_mmhg": 538.3,
+                "d_initial_mm": 3.51,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-092",
+                "fuel": "heptane",
+                "oxygen_level": 0.25,
+                "pressure_mmhg": 536.3,
+                "d_initial_mm": 3.41,
+                "burn_rate_mm2s": 0.55,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-093",
+                "fuel": "heptane",
+                "oxygen_level": 0.25,
+                "pressure_mmhg": 537.3,
+                "d_initial_mm": 2.48,
+                "burn_rate_mm2s": 0.71,
+                "d_extinction_mm": 0.0,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-094",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 533.6,
+                "d_initial_mm": 3.53,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 2.76,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-095",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 534.4,
+                "d_initial_mm": 3.6,
+                "burn_rate_mm2s": 0.58,
+                "d_extinction_mm": 3.04,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-096",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 534.4,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-097",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 534.2,
+                "d_initial_mm": 4.25,
+                "burn_rate_mm2s": 0.45,
+                "d_extinction_mm": 2.6,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-098",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 537.1,
+                "d_initial_mm": 3.64,
+                "burn_rate_mm2s": 0.47,
+                "d_extinction_mm": 1.74,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-099",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 535.0,
+                "d_initial_mm": 4.28,
+                "burn_rate_mm2s": 0.42,
+                "d_extinction_mm": 2.32,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-100",
+                "fuel": "heptane",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 536.7,
+                "d_initial_mm": 4.14,
+                "burn_rate_mm2s": 0.34,
+                "d_extinction_mm": 3.98,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-101",
+                "fuel": "heptane",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 538.7,
+                "d_initial_mm": 3.88,
+                "burn_rate_mm2s": 0.5,
+                "d_extinction_mm": 3.45,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-102",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 534.2,
+                "d_initial_mm": 3.57,
+                "burn_rate_mm2s": 0.33,
+                "d_extinction_mm": 3.43,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-103",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 534.3,
+                "d_initial_mm": 4.0,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 3.88,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-104",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 534.1,
+                "d_initial_mm": 3.6,
+                "burn_rate_mm2s": 0.49,
+                "d_extinction_mm": 1.58,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-105",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 534.6,
+                "d_initial_mm": 4.17,
+                "burn_rate_mm2s": 0.47,
+                "d_extinction_mm": 2.0,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-106",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 538.3,
+                "d_initial_mm": 3.08,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 1.75,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-107",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 535.0,
+                "d_initial_mm": 3.18,
+                "burn_rate_mm2s": 0.52,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-108",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 538.3,
+                "d_initial_mm": 3.75,
+                "burn_rate_mm2s": 0.47,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-109",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 536.5,
+                "d_initial_mm": 3.56,
+                "burn_rate_mm2s": 0.42,
+                "d_extinction_mm": 1.92,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-110",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 537.0,
+                "d_initial_mm": 2.83,
+                "burn_rate_mm2s": 0.45,
+                "d_extinction_mm": 1.57,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-111",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 536.9,
+                "d_initial_mm": 3.37,
+                "burn_rate_mm2s": 0.45,
+                "d_extinction_mm": 2.1,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-112",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 530.7,
+                "d_initial_mm": 3.99,
+                "burn_rate_mm2s": 0.43,
+                "d_extinction_mm": 2.35,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-113",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 534.6,
+                "d_initial_mm": 4.2,
+                "burn_rate_mm2s": 0.49,
+                "d_extinction_mm": 2.85,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-114",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 0.0,
+                "d_initial_mm": 3.23,
+                "burn_rate_mm2s": 0.42,
+                "d_extinction_mm": 1.68,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-115",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 535.8,
+                "d_initial_mm": 3.97,
+                "burn_rate_mm2s": 0.41,
+                "d_extinction_mm": 2.61,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-116",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 536.3,
+                "d_initial_mm": 3.16,
+                "burn_rate_mm2s": 0.46,
+                "d_extinction_mm": 1.57,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-117",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 531.1,
+                "d_initial_mm": 3.84,
+                "burn_rate_mm2s": 0.25,
+                "d_extinction_mm": 3.77,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-118",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 532.8,
+                "d_initial_mm": 3.03,
+                "burn_rate_mm2s": 0.38,
+                "d_extinction_mm": 2.93,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-119",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 532.6,
+                "d_initial_mm": 2.6,
+                "burn_rate_mm2s": 0.37,
+                "d_extinction_mm": 2.48,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-120",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 532.5,
+                "d_initial_mm": 2.45,
+                "burn_rate_mm2s": 0.38,
+                "d_extinction_mm": 2.39,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-121",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 526.3,
+                "d_initial_mm": 4.25,
+                "burn_rate_mm2s": 0.34,
+                "d_extinction_mm": 3.92,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-122",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 531.2,
+                "d_initial_mm": 3.46,
+                "burn_rate_mm2s": 0.41,
+                "d_extinction_mm": 2.58,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-123",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 532.0,
+                "d_initial_mm": 4.13,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 3.79,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-124",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 532.4,
+                "d_initial_mm": 2.87,
+                "burn_rate_mm2s": 0.3,
+                "d_extinction_mm": 2.74,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-125",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 537.2,
+                "d_initial_mm": 3.63,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 3.37,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-126",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 536.1,
+                "d_initial_mm": 2.8,
+                "burn_rate_mm2s": 0.4,
+                "d_extinction_mm": 1.84,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-127",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 536.7,
+                "d_initial_mm": 3.22,
+                "burn_rate_mm2s": 0.38,
+                "d_extinction_mm": 2.53,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-128",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 537.3,
+                "d_initial_mm": 2.91,
+                "burn_rate_mm2s": 0.39,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-129",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 536.2,
+                "d_initial_mm": 3.33,
+                "burn_rate_mm2s": 0.33,
+                "d_extinction_mm": 3.34,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-130",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 537.2,
+                "d_initial_mm": 2.91,
+                "burn_rate_mm2s": 0.05,
+                "d_extinction_mm": 2.89,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-131",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 763.9,
+                "d_initial_mm": 1.72,
+                "burn_rate_mm2s": 0.61,
+                "d_extinction_mm": 0.52,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-132",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 765.2,
+                "d_initial_mm": 2.63,
+                "burn_rate_mm2s": 0.6,
+                "d_extinction_mm": 0.53,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-133",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 766.7,
+                "d_initial_mm": 3.25,
+                "burn_rate_mm2s": 0.56,
+                "d_extinction_mm": 0.55,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-134",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 767.2,
+                "d_initial_mm": 3.66,
+                "burn_rate_mm2s": 0.56,
+                "d_extinction_mm": 2.88,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-135",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 768.2,
+                "d_initial_mm": 2.78,
+                "burn_rate_mm2s": 0.59,
+                "d_extinction_mm": 0.0,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-136",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 768.1,
+                "d_initial_mm": 3.08,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-137",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 768.2,
+                "d_initial_mm": 3.13,
+                "burn_rate_mm2s": 0.55,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-138",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 768.6,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-139",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 768.0,
+                "d_initial_mm": 1.75,
+                "burn_rate_mm2s": 0.63,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-140",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 533.5,
+                "d_initial_mm": 3.98,
+                "burn_rate_mm2s": 0.2,
+                "d_extinction_mm": 3.95,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-141",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 534.1,
+                "d_initial_mm": 2.86,
+                "burn_rate_mm2s": 0.3,
+                "d_extinction_mm": 2.73,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-142",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 534.5,
+                "d_initial_mm": 1.86,
+                "burn_rate_mm2s": 0.39,
+                "d_extinction_mm": 1.48,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-143",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 534.7,
+                "d_initial_mm": 2.25,
+                "burn_rate_mm2s": 0.36,
+                "d_extinction_mm": 2.06,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-144",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 761.9,
+                "d_initial_mm": 3.53,
+                "burn_rate_mm2s": 0.45,
+                "d_extinction_mm": 1.53,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-145",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 763.5,
+                "d_initial_mm": 3.33,
+                "burn_rate_mm2s": 0.45,
+                "d_extinction_mm": 1.61,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-146",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 765.5,
+                "d_initial_mm": 4.35,
+                "burn_rate_mm2s": 0.41,
+                "d_extinction_mm": 1.95,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-147",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 535.7,
+                "d_initial_mm": 3.02,
+                "burn_rate_mm2s": 0.4,
+                "d_extinction_mm": 2.49,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-148",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 764.4,
+                "d_initial_mm": 2.58,
+                "burn_rate_mm2s": 0.54,
+                "d_extinction_mm": 1.15,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-149",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 766.2,
+                "d_initial_mm": 2.21,
+                "burn_rate_mm2s": 0.53,
+                "d_extinction_mm": 0.82,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-150",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 767.6,
+                "d_initial_mm": 3.18,
+                "burn_rate_mm2s": 0.46,
+                "d_extinction_mm": 2.54,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-151",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 762.5,
+                "d_initial_mm": 3.86,
+                "burn_rate_mm2s": 0.36,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-152",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 765.0,
+                "d_initial_mm": 3.33,
+                "burn_rate_mm2s": 0.43,
+                "d_extinction_mm": 1.23,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-153",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 765.6,
+                "d_initial_mm": 2.78,
+                "burn_rate_mm2s": 0.42,
+                "d_extinction_mm": 1.19,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-154",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 762.3,
+                "d_initial_mm": 3.7,
+                "burn_rate_mm2s": 0.34,
+                "d_extinction_mm": 3.6,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-155",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 764.9,
+                "d_initial_mm": 2.73,
+                "burn_rate_mm2s": 0.39,
+                "d_extinction_mm": 2.52,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-157",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 765.7,
+                "d_initial_mm": 1.34,
+                "burn_rate_mm2s": 0.48,
+                "d_extinction_mm": 0.45,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-158",
+                "fuel": "methanol",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 762.1,
+                "d_initial_mm": 4.24,
+                "burn_rate_mm2s": 0.3,
+                "d_extinction_mm": 3.96,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-159",
+                "fuel": "methanol",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 764.4,
+                "d_initial_mm": 3.7,
+                "burn_rate_mm2s": 0.37,
+                "d_extinction_mm": 3.22,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-160",
+                "fuel": "methanol",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 765.5,
+                "d_initial_mm": 2.71,
+                "burn_rate_mm2s": 0.38,
+                "d_extinction_mm": 1.34,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-161",
+                "fuel": "methanol",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 767.6,
+                "d_initial_mm": 2.77,
+                "burn_rate_mm2s": 0.38,
+                "d_extinction_mm": 1.52,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-162",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 763.3,
+                "d_initial_mm": 3.72,
+                "burn_rate_mm2s": 0.28,
+                "d_extinction_mm": 3.5,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-163",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 764.4,
+                "d_initial_mm": 3.05,
+                "burn_rate_mm2s": 0.37,
+                "d_extinction_mm": 2.54,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-164",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 765.9,
+                "d_initial_mm": 2.59,
+                "burn_rate_mm2s": 0.37,
+                "d_extinction_mm": 1.63,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-165",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 766.1,
+                "d_initial_mm": 2.59,
+                "burn_rate_mm2s": 0.42,
+                "d_extinction_mm": 1.79,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-166",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 765.4,
+                "d_initial_mm": 1.96,
+                "burn_rate_mm2s": 0.54,
+                "d_extinction_mm": 1.39,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-167",
+                "fuel": "methanol",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 760.8,
+                "d_initial_mm": 3.22,
+                "burn_rate_mm2s": 0.28,
+                "d_extinction_mm": 3.08,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-168",
+                "fuel": "methanol",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 761.6,
+                "d_initial_mm": 2.32,
+                "burn_rate_mm2s": 0.37,
+                "d_extinction_mm": 1.84,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-169",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 763.4,
+                "d_initial_mm": 3.03,
+                "burn_rate_mm2s": 0.48,
+                "d_extinction_mm": 1.57,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-170",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 766.1,
+                "d_initial_mm": 3.05,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 1.28,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-171",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 766.7,
+                "d_initial_mm": 3.53,
+                "burn_rate_mm2s": 0.46,
+                "d_extinction_mm": 1.59,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-172",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 759.9,
+                "d_initial_mm": 3.74,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 3.68,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-173",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 762.0,
+                "d_initial_mm": 2.4,
+                "burn_rate_mm2s": 0.46,
+                "d_extinction_mm": 1.96,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-174",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 762.1,
+                "d_initial_mm": 1.35,
+                "burn_rate_mm2s": 0.5,
+                "d_extinction_mm": 0.47,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-175",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 531.7,
+                "d_initial_mm": 2.5,
+                "burn_rate_mm2s": 0.56,
+                "d_extinction_mm": 0.21,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-176",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 532.1,
+                "d_initial_mm": 2.88,
+                "burn_rate_mm2s": 0.55,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-177",
+                "fuel": "methanol",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 536.9,
+                "d_initial_mm": 4.53,
+                "burn_rate_mm2s": 0.46,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-178",
+                "fuel": "methanol",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 537.0,
+                "d_initial_mm": 3.02,
+                "burn_rate_mm2s": 0.52,
+                "d_extinction_mm": 1.35,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-179",
+                "fuel": "heptane",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 533.6,
+                "d_initial_mm": 3.32,
+                "burn_rate_mm2s": 0.5,
+                "d_extinction_mm": 2.61,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-180",
+                "fuel": "heptane",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 534.4,
+                "d_initial_mm": 2.07,
+                "burn_rate_mm2s": 0.57,
+                "d_extinction_mm": 0.48,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-181",
+                "fuel": "heptane",
+                "oxygen_level": 0.19,
+                "pressure_mmhg": 758.4,
+                "d_initial_mm": 3.4,
+                "burn_rate_mm2s": 0.41,
+                "d_extinction_mm": 3.13,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-182",
+                "fuel": "heptane",
+                "oxygen_level": 0.19,
+                "pressure_mmhg": 759.1,
+                "d_initial_mm": 2.48,
+                "burn_rate_mm2s": 0.49,
+                "d_extinction_mm": 1.68,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-183",
+                "fuel": "heptane",
+                "oxygen_level": 0.19,
+                "pressure_mmhg": 759.0,
+                "d_initial_mm": 1.64,
+                "burn_rate_mm2s": 0.54,
+                "d_extinction_mm": 0.49,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-184",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 534.4,
+                "d_initial_mm": 3.72,
+                "burn_rate_mm2s": 0.53,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-185",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 535.1,
+                "d_initial_mm": 3.42,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-186",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 535.2,
+                "d_initial_mm": 2.8,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 1.33,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-187",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 536.2,
+                "d_initial_mm": 2.47,
+                "burn_rate_mm2s": 0.52,
+                "d_extinction_mm": 1.21,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-188",
+                "fuel": "methanol",
+                "oxygen_level": 0.19,
+                "pressure_mmhg": 758.0,
+                "d_initial_mm": 3.38,
+                "burn_rate_mm2s": 0.47,
+                "d_extinction_mm": 1.29,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-189",
+                "fuel": "methanol",
+                "oxygen_level": 0.19,
+                "pressure_mmhg": 758.1,
+                "d_initial_mm": 2.47,
+                "burn_rate_mm2s": 0.46,
+                "d_extinction_mm": 1.08,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-190",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 761.2,
+                "d_initial_mm": 3.77,
+                "burn_rate_mm2s": 0.42,
+                "d_extinction_mm": 1.78,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-191",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 764.6,
+                "d_initial_mm": 2.74,
+                "burn_rate_mm2s": 0.5,
+                "d_extinction_mm": 0.95,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-192",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 765.3,
+                "d_initial_mm": 1.76,
+                "burn_rate_mm2s": 0.46,
+                "d_extinction_mm": 0.81,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-193",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 759.5,
+                "d_initial_mm": 3.46,
+                "burn_rate_mm2s": 0.39,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-194",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 759.1,
+                "d_initial_mm": 2.77,
+                "burn_rate_mm2s": 0.4,
+                "d_extinction_mm": 1.27,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-195",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 752.0,
+                "d_initial_mm": 3.76,
+                "burn_rate_mm2s": 0.29,
+                "d_extinction_mm": 3.71,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-196",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 752.5,
+                "d_initial_mm": 2.9,
+                "burn_rate_mm2s": 0.36,
+                "d_extinction_mm": 2.79,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-197",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 758.4,
+                "d_initial_mm": 3.06,
+                "burn_rate_mm2s": 0.52,
+                "d_extinction_mm": 2.28,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-198",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 759.8,
+                "d_initial_mm": 3.04,
+                "burn_rate_mm2s": 0.49,
+                "d_extinction_mm": 2.33,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-199",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 760.1,
+                "d_initial_mm": 2.12,
+                "burn_rate_mm2s": 0.53,
+                "d_extinction_mm": 0.13,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-200",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 754.0,
+                "d_initial_mm": 3.37,
+                "burn_rate_mm2s": 0.49,
+                "d_extinction_mm": 0.98,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-201",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 756.1,
+                "d_initial_mm": 2.57,
+                "burn_rate_mm2s": 0.47,
+                "d_extinction_mm": 1.13,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-202",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 756.9,
+                "d_initial_mm": 2.4,
+                "burn_rate_mm2s": 0.48,
+                "d_extinction_mm": 1.05,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-203",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 760.2,
+                "d_initial_mm": 3.3,
+                "burn_rate_mm2s": 0.47,
+                "d_extinction_mm": 1.42,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-204",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 761.6,
+                "d_initial_mm": 2.75,
+                "burn_rate_mm2s": 0.52,
+                "d_extinction_mm": 1.11,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-206",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 756.5,
+                "d_initial_mm": 3.56,
+                "burn_rate_mm2s": 0.43,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-207",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 757.3,
+                "d_initial_mm": 3.58,
+                "burn_rate_mm2s": 0.42,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-208",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 760.2,
+                "d_initial_mm": 2.96,
+                "burn_rate_mm2s": 0.5,
+                "d_extinction_mm": 0.47,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-209",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 762.7,
+                "d_initial_mm": 2.72,
+                "burn_rate_mm2s": 0.54,
+                "d_extinction_mm": 1.13,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-210",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 762.9,
+                "d_initial_mm": 2.92,
+                "burn_rate_mm2s": 0.69,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-211",
+                "fuel": "heptane",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 759.8,
+                "d_initial_mm": 3.34,
+                "burn_rate_mm2s": 0.34,
+                "d_extinction_mm": 3.18,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-212",
+                "fuel": "heptane",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 759.8,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-214",
+                "fuel": "heptane",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 759.9,
+                "d_initial_mm": 2.52,
+                "burn_rate_mm2s": 0.42,
+                "d_extinction_mm": 2.13,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-215",
+                "fuel": "heptane",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 764.0,
+                "d_initial_mm": 2.55,
+                "burn_rate_mm2s": 0.37,
+                "d_extinction_mm": 2.31,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-216",
+                "fuel": "heptane",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 766.2,
+                "d_initial_mm": 1.77,
+                "burn_rate_mm2s": 0.47,
+                "d_extinction_mm": 0.33,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-217",
+                "fuel": "heptane",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 759.8,
+                "d_initial_mm": 4.16,
+                "burn_rate_mm2s": 0.24,
+                "d_extinction_mm": 4.15,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-218",
+                "fuel": "heptane",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 759.9,
+                "d_initial_mm": 1.83,
+                "burn_rate_mm2s": 0.39,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-219",
+                "fuel": "methanol",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 757.6,
+                "d_initial_mm": 3.5,
+                "burn_rate_mm2s": 0.3,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-220",
+                "fuel": "methanol",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 758.3,
+                "d_initial_mm": 2.67,
+                "burn_rate_mm2s": 0.38,
+                "d_extinction_mm": 1.27,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-221",
+                "fuel": "methanol",
+                "oxygen_level": 0.13,
+                "pressure_mmhg": 759.4,
+                "d_initial_mm": 3.46,
+                "burn_rate_mm2s": 0.36,
+                "d_extinction_mm": 2.96,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-222",
+                "fuel": "methanol",
+                "oxygen_level": 0.13,
+                "pressure_mmhg": 760.6,
+                "d_initial_mm": 2.75,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 1.46,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-223",
+                "fuel": "methanol",
+                "oxygen_level": 0.12,
+                "pressure_mmhg": 761.6,
+                "d_initial_mm": 2.6,
+                "burn_rate_mm2s": 0.36,
+                "d_extinction_mm": 2.09,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-224",
+                "fuel": "methanol",
+                "oxygen_level": 0.12,
+                "pressure_mmhg": 761.9,
+                "d_initial_mm": 1.94,
+                "burn_rate_mm2s": 0.35,
+                "d_extinction_mm": 1.05,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-225",
+                "fuel": "methanol",
+                "oxygen_level": 0.12,
+                "pressure_mmhg": 763.7,
+                "d_initial_mm": 1.84,
+                "burn_rate_mm2s": 0.38,
+                "d_extinction_mm": 1.04,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-226",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 759.2,
+                "d_initial_mm": 2.91,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 1.12,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-230",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 756.5,
+                "d_initial_mm": 2.3,
+                "burn_rate_mm2s": 0.58,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-231",
+                "fuel": "methanol",
+                "oxygen_level": 0.19,
+                "pressure_mmhg": 753.4,
+                "d_initial_mm": 2.78,
+                "burn_rate_mm2s": 0.57,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-232",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 759.2,
+                "d_initial_mm": 2.79,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 1.3,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-233",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 760.3,
+                "d_initial_mm": 2.95,
+                "burn_rate_mm2s": 0.53,
+                "d_extinction_mm": 1.67,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-234",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 767.4,
+                "d_initial_mm": 3.32,
+                "burn_rate_mm2s": 0.52,
+                "d_extinction_mm": 1.37,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-235",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 768.1,
+                "d_initial_mm": 2.39,
+                "burn_rate_mm2s": 0.57,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-236",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 769.2,
+                "d_initial_mm": 3.65,
+                "burn_rate_mm2s": 0.57,
+                "d_extinction_mm": 2.85,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-237",
+                "fuel": "heptane",
+                "oxygen_level": 0.19,
+                "pressure_mmhg": 758.8,
+                "d_initial_mm": 2.59,
+                "burn_rate_mm2s": 0.54,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-238",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 763.7,
+                "d_initial_mm": 3.52,
+                "burn_rate_mm2s": 0.41,
+                "d_extinction_mm": 3.28,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-239",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 765.9,
+                "d_initial_mm": 2.3,
+                "burn_rate_mm2s": 0.49,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-240",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 766.5,
+                "d_initial_mm": 2.27,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-241",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 759.3,
+                "d_initial_mm": 2.85,
+                "burn_rate_mm2s": 0.46,
+                "d_extinction_mm": 2.6,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-242",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 759.3,
+                "d_initial_mm": 2.12,
+                "burn_rate_mm2s": 0.59,
+                "d_extinction_mm": 1.39,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-243",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 759.6,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-244",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 759.8,
+                "d_initial_mm": 1.61,
+                "burn_rate_mm2s": 0.91,
+                "d_extinction_mm": null,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-245",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 754.2,
+                "d_initial_mm": 2.99,
+                "burn_rate_mm2s": 0.49,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-246",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 757.0,
+                "d_initial_mm": 2.9,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 1.42,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-247",
+                "fuel": "methanol",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 759.9,
+                "d_initial_mm": 3.4,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 2.79,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-248",
+                "fuel": "methanol",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 761.0,
+                "d_initial_mm": null,
+                "burn_rate_mm2s": null,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-249",
+                "fuel": "heptane",
+                "oxygen_level": 0.16,
+                "pressure_mmhg": 757.9,
+                "d_initial_mm": 1.49,
+                "burn_rate_mm2s": 0.6,
+                "d_extinction_mm": 0.69,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-250",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 755.6,
+                "d_initial_mm": 3.67,
+                "burn_rate_mm2s": 0.43,
+                "d_extinction_mm": 3.47,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-251",
+                "fuel": "methanol",
+                "oxygen_level": 0.15,
+                "pressure_mmhg": 756.7,
+                "d_initial_mm": 2.52,
+                "burn_rate_mm2s": 0.56,
+                "d_extinction_mm": 2.06,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-252",
+                "fuel": "methanol",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 759.2,
+                "d_initial_mm": 2.44,
+                "burn_rate_mm2s": 0.56,
+                "d_extinction_mm": 2.26,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-253",
+                "fuel": "methanol",
+                "oxygen_level": 0.14,
+                "pressure_mmhg": 759.8,
+                "d_initial_mm": 1.88,
+                "burn_rate_mm2s": 0.58,
+                "d_extinction_mm": 1.73,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-254",
+                "fuel": "methanol",
+                "oxygen_level": 0.13,
+                "pressure_mmhg": 763.5,
+                "d_initial_mm": 3.56,
+                "burn_rate_mm2s": 0.51,
+                "d_extinction_mm": 3.54,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-255",
+                "fuel": "heptane",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 534.0,
+                "d_initial_mm": 3.78,
+                "burn_rate_mm2s": 0.72,
+                "d_extinction_mm": 2.52,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-256",
+                "fuel": "heptane",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 532.2,
+                "d_initial_mm": 2.8,
+                "burn_rate_mm2s": 0.71,
+                "d_extinction_mm": 0.12,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-257",
+                "fuel": "methanol",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 534.3,
+                "d_initial_mm": 2.82,
+                "burn_rate_mm2s": 0.62,
+                "d_extinction_mm": 1.03,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-258",
+                "fuel": "methanol",
+                "oxygen_level": 0.24,
+                "pressure_mmhg": 534.6,
+                "d_initial_mm": 2.79,
+                "burn_rate_mm2s": 0.7,
+                "d_extinction_mm": 1.53,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-259",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 531.7,
+                "d_initial_mm": 2.45,
+                "burn_rate_mm2s": 0.6,
+                "d_extinction_mm": 0.86,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-260",
+                "fuel": "methanol",
+                "oxygen_level": 0.23,
+                "pressure_mmhg": 531.8,
+                "d_initial_mm": 2.61,
+                "burn_rate_mm2s": 0.73,
+                "d_extinction_mm": null,
+                "test_end": "disruption"
+            },
+            {
+                "test": "FLEX-261",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 531.9,
+                "d_initial_mm": 3.22,
+                "burn_rate_mm2s": 0.56,
+                "d_extinction_mm": null,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-262",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 531.2,
+                "d_initial_mm": 3.25,
+                "burn_rate_mm2s": 0.65,
+                "d_extinction_mm": 1.78,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-263",
+                "fuel": "methanol",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 531.2,
+                "d_initial_mm": 2.67,
+                "burn_rate_mm2s": 0.7,
+                "d_extinction_mm": 1.42,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-264",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 529.6,
+                "d_initial_mm": 3.23,
+                "burn_rate_mm2s": 0.67,
+                "d_extinction_mm": 2.33,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-265",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 529.0,
+                "d_initial_mm": 2.86,
+                "burn_rate_mm2s": 0.7,
+                "d_extinction_mm": 0.71,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-266",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 532.5,
+                "d_initial_mm": 3.69,
+                "burn_rate_mm2s": 0.61,
+                "d_extinction_mm": 3.32,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-267",
+                "fuel": "heptane",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 532.0,
+                "d_initial_mm": 3.08,
+                "burn_rate_mm2s": 0.67,
+                "d_extinction_mm": 1.69,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-268",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 527.6,
+                "d_initial_mm": 3.87,
+                "burn_rate_mm2s": 0.6,
+                "d_extinction_mm": 2.24,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-269",
+                "fuel": "methanol",
+                "oxygen_level": 0.2,
+                "pressure_mmhg": 527.9,
+                "d_initial_mm": 2.95,
+                "burn_rate_mm2s": 0.63,
+                "d_extinction_mm": 1.5,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-270",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 532.4,
+                "d_initial_mm": 3.5,
+                "burn_rate_mm2s": 0.59,
+                "d_extinction_mm": 2.67,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-271",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 532.9,
+                "d_initial_mm": 2.7,
+                "burn_rate_mm2s": 0.63,
+                "d_extinction_mm": 1.92,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-272",
+                "fuel": "methanol",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 533.2,
+                "d_initial_mm": 1.84,
+                "burn_rate_mm2s": 0.62,
+                "d_extinction_mm": 1.3,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-273",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 528.0,
+                "d_initial_mm": 2.27,
+                "burn_rate_mm2s": 0.71,
+                "d_extinction_mm": 1.64,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-274",
+                "fuel": "heptane",
+                "oxygen_level": 0.18,
+                "pressure_mmhg": 530.3,
+                "d_initial_mm": 1.86,
+                "burn_rate_mm2s": 0.77,
+                "d_extinction_mm": 0.84,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-275",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 532.2,
+                "d_initial_mm": 2.22,
+                "burn_rate_mm2s": 0.76,
+                "d_extinction_mm": 1.86,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-276",
+                "fuel": "heptane",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 532.5,
+                "d_initial_mm": 1.61,
+                "burn_rate_mm2s": 1.06,
+                "d_extinction_mm": 0.91,
+                "test_end": "completion"
+            },
+            {
+                "test": "FLEX-277",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 530.4,
+                "d_initial_mm": 2.79,
+                "burn_rate_mm2s": 0.63,
+                "d_extinction_mm": 2.3,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-278",
+                "fuel": "methanol",
+                "oxygen_level": 0.17,
+                "pressure_mmhg": 531.5,
+                "d_initial_mm": 2.68,
+                "burn_rate_mm2s": 0.66,
+                "d_extinction_mm": 2.31,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-279",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 764.7,
+                "d_initial_mm": 3.54,
+                "burn_rate_mm2s": 0.55,
+                "d_extinction_mm": 2.91,
+                "test_end": "extinction"
+            },
+            {
+                "test": "FLEX-280",
+                "fuel": "heptane",
+                "oxygen_level": 0.21,
+                "pressure_mmhg": 766.2,
+                "d_initial_mm": 2.82,
+                "burn_rate_mm2s": 0.65,
+                "d_extinction_mm": 0.73,
+                "test_end": "extinction"
+            }
+        ]
+    },
+    "corpus": {
+        "chunks": 1131,
+        "documents": [
+            "NTRS-19950017584-Microgravity-Combustion-Science-1995-Program-.pdf",
+            "NTRS-19970009350-Overview-of-Microgravity-Combustion-Research-.pdf",
+            "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra.pdf",
+            "NTRS-20120015928-FLEX-A-Decisive-Step-Forward-in-NASA-s-Combus.pdf",
+            "NTRS-20130014061-Methanol-Droplet-Combustion-in-Oxygen-Inert-E.pdf",
+            "NTRS-20140009169-Gaseous-Non-Premixed-Flame-Research-Planned-f.pdf",
+            "NTRS-20140011099-Thickness-and-Fuel-Preheating-Effects-on-Mate.pdf",
+            "NTRS-20140016804-Overview-of-the-Microgravity-Science-Glovebox.pdf",
+            "NTRS-20150008961-Microgravity-Flammability-of-PMMA-Rods-in-Con.pdf",
+            "NTRS-20150023456.pdf",
+            "NTRS-20160000593.pdf",
+            "NTRS-20170006615-Mixed-Convection-Blowoff-Limits-as-a-Function.pdf",
+            "NTRS-20170008723-Annual-Highlights-of-Results-from-the-Interna.pdf",
+            "NTRS-20200000361-Solid-Fuel-Ignition-and-Extinction-SoFIE-Proj.pdf",
+            "NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-.pdf",
+            "NTRS-20210022402-Topical-Solid-Fuel-Combustion-in-Partial-and-.pdf"
+        ],
+        "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2"
+    }
+}

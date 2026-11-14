@@ -1,0 +1,14 @@
+{
+  "name": "sfss-dev",
+  "private": true,
+  "workspaces": [
+    "sfss/playground",
+    "apps/anti-fire"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "playground": "bash sfss/scripts/update_playground.sh",
+    "anti-fire": "bash apps/anti-fire/build.sh"
+  }
+}

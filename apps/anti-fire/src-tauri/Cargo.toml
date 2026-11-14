@@ -1,0 +1,19 @@
+[package]
+name = "anti-fire"
+version = "1.0.0"
+description = "Anti-Fire: a client of the SFSS service"
+authors = ["Azamat Serik", "Roman Bushuyev"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+# Нативная обёртка ничего не считает сама: внутри та же программа, что и
+# в одном HTML-файле. Поэтому и зависимостей всего одна.
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
