@@ -60,7 +60,7 @@ curl -s http://localhost:8000/health
 |---|---|
 | `"status": "ok"` | всё в порядке |
 | `"lm_studio": false` | не нажат Start Server. `/predict` работает, `/query` — нет |
-| `"chroma": false` | пропал или испорчен каталог `data/chroma` |
+| `"chroma": false` | пропал каталог `data/index`: `git checkout sfss/data/index` |
 | `"indexed_documents": 0` | индекс пуст, надо запустить `scripts/ingest_documents.py` |
 | ответ идёт дольше секунды | скорее всего выключен LM Studio: клиент повторяет неудачное соединение |
 

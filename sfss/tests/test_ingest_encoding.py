@@ -80,3 +80,13 @@ def test_ingest_pdf_repairs_text_and_replaces_old_chunks(tmp_path: Path, monkeyp
     assert service.ingest_pdf(tmp_path / "flex.pdf") > 0
     assert rag.collection.deleted == [{"source": "flex.pdf"}]
     assert rag.collection.documents[0].startswith("Stemming from the need")
+
+
+def test_csv_goes_to_processed_as_csv(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    (raw / "Runs.csv").write_text("Oxygen Level,N2\n0.3,0.7\n0.3,0.7\n,\n")
+    service = IngestService(FakeRag(), Settings(raw_dir=raw, processed_dir=tmp_path / "out"))
+    out = service.ingest_csv(raw / "Runs.csv")
+    assert out.name == "Runs.csv"
+    assert out.read_text().splitlines() == ["oxygen_level,n2", "0.3,0.7"]

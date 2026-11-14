@@ -1,14 +1,14 @@
 import type { Lang } from "@sfss/types";
 import { load, save } from "./storage";
 
-/** Язык программы. Сначала язык системы, потом выбор человека, он запоминается.
+/** Язык программы. По умолчанию английский, выбор человека запоминается между запусками.
+ *  Раньше по умолчанию брался язык системы, но программу показывают международному жюри.
  *
  *  Значение общее на модуль: условия, команды и ошибки разбираются чистыми
  *  функциями, и протаскивать язык через каждую незачем. Смену языка перерисовывает App. */
-const systemLang = (): Lang =>
-  typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("ru") ? "ru" : "en";
+export const DEFAULT_LANG: Lang = "en";
 
-let current: Lang = load<Lang | null>("antifire.lang", null) ?? systemLang();
+let current: Lang = load<Lang | null>("antifire.lang", null) ?? DEFAULT_LANG;
 
 if (typeof document !== "undefined") document.documentElement.lang = current;
 

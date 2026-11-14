@@ -1,14 +1,16 @@
-"""Retrieval релевантных чанков из ChromaDB."""
+"""Retrieval релевантных чанков: свой индекс на диске и модель поиска в ONNX."""
 
 import logging
+import threading
 from typing import Any
 
-import chromadb
-from chromadb.utils import embedding_functions
+import numpy as np
 
 from app.config import Settings, get_settings
 from app.models.schemas import Source
+from app.services.embedder import Embedder
 from app.services.keyword_search import KeywordIndex, fuse
+from app.services.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -16,43 +18,29 @@ logger = logging.getLogger(__name__)
 class RagService:
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
-        self.settings.chroma_db_path.mkdir(parents=True, exist_ok=True)
-        self._client = chromadb.PersistentClient(path=str(self.settings.chroma_db_path))
-        # sentence-transformers работает локально, без проверки обновлений на
-        # Hugging Face при каждом запуске. Для первичной загрузки новой модели
-        # флаг можно временно отключить через .env.
-        try:
-            self._embedding_fn = (
-                embedding_functions.SentenceTransformerEmbeddingFunction(
-                    model_name=self.settings.embedding_model,
-                    local_files_only=self.settings.embedding_local_files_only,
-                )
-            )
-        except Exception as exc:
-            if not self.settings.embedding_local_files_only:
-                raise
-            raise RuntimeError(
-                f"Embedding model '{self.settings.embedding_model}' is not available "
-                "locally. Temporarily set EMBEDDING_LOCAL_FILES_ONLY=false to "
-                "download it, then enable offline mode again."
-            ) from exc
+        self._embedder: Embedder | None = None
+        self._embedder_lock = threading.Lock()
+        self._store = VectorStore(self.settings.index_dir, self._embed)
         self._keyword_index: KeywordIndex | None = None
 
+    def _embed(self, texts: list[str]) -> np.ndarray:
+        # Модель грузится при первом вопросе или импорте, а не на старте: так status,
+        # расчёт и список отчётов не ждут полторы секунды и работают даже без модели
+        with self._embedder_lock:
+            if self._embedder is None:
+                self._embedder = Embedder(self.settings.embedding_dir)
+        return self._embedder.embed(texts)
+
+    def warm_up(self) -> None:
+        """Загрузить модель заранее, чтобы первый вопрос не ждал."""
+        self._embed(["warm up"])
+
     @property
-    def collection(self) -> chromadb.Collection:
-        return self._client.get_or_create_collection(
-            name=self.settings.chroma_collection,
-            embedding_function=self._embedding_fn,
-            metadata={"hnsw:space": "cosine"},
-        )
+    def collection(self) -> VectorStore:
+        return self._store
 
     def ping(self) -> bool:
-        try:
-            self._client.heartbeat()
-            return True
-        except Exception:
-            logger.warning("ChromaDB недоступна по пути %s", self.settings.chroma_db_path)
-            return False
+        return self._store.count() > 0 or (self.settings.index_dir / "chunks.jsonl").exists()
 
     def count(self) -> int:
         return self.collection.count()
@@ -77,7 +65,7 @@ class RagService:
             logger.warning("Коллекция пуста — сначала выполните ingest")
             return []
 
-        # С фильтрами — только векторный поиск: where у Chroma бывает составным,
+        # С фильтрами — только векторный поиск: where бывает составным,
         # повторять его логику в BM25 незачем.
         if self.settings.hybrid_search and not filters:
             n = min(self.settings.hybrid_candidates, self.count())

@@ -15,7 +15,7 @@
 кислорода в тексте.
 
 Запуск: python scripts/build_bass_dataset.py
-Результат: data/processed/bass_ii.parquet (+ .csv для глазами посмотреть)
+Результат: data/processed/bass_ii.csv
 """
 
 import argparse
@@ -351,7 +351,6 @@ def build(raw_dir: Path, out_dir: Path) -> pd.DataFrame:
         out = pd.concat([out, dummies], axis=1)
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    out.to_parquet(out_dir / "bass_ii.parquet", index=False)
     out.to_csv(out_dir / "bass_ii.csv", index=False)
     return out
 
@@ -375,7 +374,7 @@ def main() -> None:
                 "flow_initial_cms", "flow_final_cms", "flow_min_cms", "flow_decreasing",
                 "thickness_mm", "diameter_mm", "width_cm"):
         print(f"  {col:18} {df[col].notna().sum():>4} / {len(df)}")
-    print(f"\nСохранено в {args.out_dir}/bass_ii.parquet")
+    print(f"\nСохранено в {args.out_dir}/bass_ii.csv")
 
 
 if __name__ == "__main__":

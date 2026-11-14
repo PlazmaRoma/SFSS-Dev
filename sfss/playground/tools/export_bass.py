@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-df = pd.read_parquet(ROOT.parent / "data/processed/bass_ii.parquet")
+df = pd.read_csv(ROOT.parent / "data/processed/bass_ii.csv")
 
 RU_MATERIAL = {
     "pmma": "Оргстекло (PMMA)",

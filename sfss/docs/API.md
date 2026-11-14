@@ -78,11 +78,11 @@ curl http://localhost:8000/health
 | Поле | Смысл |
 |---|---|
 | `status` | `ok` — обе зависимости живы; `degraded` — хотя бы одна недоступна |
-| `chroma` | векторная база отвечает |
+| `chroma` | индекс по отчётам на месте; имя поля прежнее ради совместимости |
 | `lm_studio` | рантайм нейросети отвечает. Имя старое: раньше рантайм был один |
 | `runtime`, `runtime_name`, `runtime_address` | какой рантайм настроен: `ollama`, `Ollama`, `localhost:11434` |
 | `model` | какая модель настроена (не обязательно загружена) |
-| `indexed_documents` | сколько чанков в индексе; `null`, если Chroma недоступна |
+| `indexed_documents` | сколько чанков в индексе; `null`, если индекса нет |
 | `model_loaded` | модель уже в памяти; `false` — сервис загрузит её при первом вопросе; `null` — сервер не сообщает состояние (не LM Studio) |
 | `model_context_length` | длина контекста загруженной модели. Нужно 8192: на большей машина с 8 ГБ уходит в своп |
 | `model_context_limit` | контекст из настроек; `null`, если его задаёт сам рантайм (Ollama) |
@@ -276,7 +276,7 @@ curl -s http://localhost:8000/dashboard
 | Поле | Тип | Обязательно | Смысл |
 |---|---|---|---|
 | `question` | строка | да | вопрос; пустая строка → 422 |
-| `filters` | объект или `null` | нет | фильтр по метаданным Chroma, например `{"doc_id": "NTRS-20210011385-..."}` |
+| `filters` | объект или `null` | нет | фильтр по метаданным фрагмента, как `where` у Chroma: равенство, `$in`, `$and`, `$or`. Например `{"doc_id": "NTRS-20210011385-..."}` |
 | `language` | `"ru"`, `"en"` или `null` | нет | язык ответа; другое значение → 422 |
 
 **Язык ответа задавайте полем `language`, а не просьбой в тексте вопроса.**
@@ -495,7 +495,7 @@ curl -X POST http://localhost:8000/predict \
 ## POST /ingest
 
 Служебный эндпоинт, **не для фронта**. Переиндексирует содержимое `data/raw`:
-PDF идут в векторную базу, CSV — в `data/processed/*.parquet`.
+PDF идут в векторную базу, CSV — в `data/processed/*.csv`.
 
 ```bash
 curl -X POST http://localhost:8000/ingest -H 'Content-Type: application/json' -d '{"force": false}'
@@ -515,10 +515,10 @@ curl -X POST http://localhost:8000/ingest -H 'Content-Type: application/json' -d
 **Осторожно:** на полном корпусе это минуты работы и оно меняет состояние базы.
 То же самое удобнее делать скриптом: `python scripts/ingest_documents.py`.
 
-**Смена модели эмбеддингов требует полного сброса**, дописать поверх нельзя:
+**Смена модели поиска требует полной переиндексации**, дописать поверх нельзя:
 
 ```bash
-rm -rf data/chroma && python scripts/ingest_documents.py
+python scripts/ingest_documents.py --force
 ```
 
 ---

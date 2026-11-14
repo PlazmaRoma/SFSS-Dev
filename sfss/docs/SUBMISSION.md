@@ -57,10 +57,11 @@ Anti-Fire — рабочая программа на этом сервисе: о
 
 ## Инструменты
 
-- **Бэкенд:** Python, FastAPI, uvicorn, ChromaDB, sentence-transformers, scikit-learn, pandas,
+- **Бэкенд:** Python, FastAPI, uvicorn, onnxruntime, tokenizers, scikit-learn, pandas,
   NumPy, pypdf, httpx, клиент openai.
 - **Фронтенд:** TypeScript, React, Vite, Tauri.
 - **Локальный запуск моделей:** LM Studio, MLX.
+- **Установка:** uv (Astral), bash, PowerShell.
 - **Оборудование:** MacBook на Apple Silicon, 8 ГБ памяти.
 
 ## Где и как использован ИИ
@@ -68,7 +69,7 @@ Anti-Fire — рабочая программа на этом сервисе: о
 | Инструмент | Разработчик | Где и как |
 |---|---|---|
 | Ministral 3B | Mistral AI, Франция | в продукте: пишет ответы по найденным фрагментам и переводит на русский |
-| paraphrase-multilingual-MiniLM-L12-v2 | sentence-transformers | в продукте: векторный поиск |
+| paraphrase-multilingual-MiniLM-L12-v2 | sentence-transformers, сборка ONNX от Xenova | в продукте: векторный поиск |
 | Claude Code | Anthropic, США | разработка: код бэкенда и Anti-Fire, тесты, документация |
 | **[дополнить]** | | что использовали остальные участники, для кода, текстов и изображений |
 

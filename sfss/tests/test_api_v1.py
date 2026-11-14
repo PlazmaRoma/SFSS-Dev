@@ -207,7 +207,7 @@ class ConstantModel:
 def ml(tmp_path) -> MLService:
     pd.DataFrame(
         {"oxygen_level": [0.12, 0.34], "n2": [0.09, 0.88], "co2": [0, 0.7], "he": [0, 0.45]}
-    ).to_parquet(tmp_path / "flex.parquet")
+    ).to_csv(tmp_path / "flex.csv", index=False)
     service = MLService(Settings(processed_dir=tmp_path, models_dir=tmp_path))
     service._bundle = {
         "features": FEATURES,

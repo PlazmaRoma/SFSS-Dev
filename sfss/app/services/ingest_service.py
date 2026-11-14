@@ -172,8 +172,8 @@ class IngestService:
         df = pd.read_csv(path)
         df = df.dropna(how="all").drop_duplicates()
         df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
-        out_path = self.settings.processed_dir / f"{path.stem}.parquet"
-        df.to_parquet(out_path, index=False)
+        out_path = self.settings.processed_dir / f"{path.stem}.csv"
+        df.to_csv(out_path, index=False)
         logger.info("CSV %s → %s (%d строк)", path.name, out_path.name, len(df))
         return out_path
 

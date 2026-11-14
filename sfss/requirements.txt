@@ -9,9 +9,9 @@ pydantic-settings>=2.6
 # LLM через LM Studio (OpenAI-совместимый клиент)
 openai>=1.54
 
-# RAG
-chromadb>=0.5.15
-sentence-transformers>=3.2
+# Поиск по отчётам: модель в ONNX, без PyTorch (ARCHITECTURE § 7.23)
+onnxruntime>=1.19
+tokenizers>=0.20
 pypdf>=5.0
 
 # ML / данные
@@ -19,5 +19,4 @@ scikit-learn>=1.5
 pandas>=2.2
 numpy>=1.26
 joblib>=1.4
-pyarrow>=17.0
 openpyxl>=3.1

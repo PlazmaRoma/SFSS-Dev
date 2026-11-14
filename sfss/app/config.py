@@ -1,6 +1,5 @@
 """Конфигурация приложения: пути, параметры retrieval, нейросеть по умолчанию."""
 
-import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -36,14 +35,11 @@ class Settings(BaseSettings):
     # Задача профильная, а не свободная беседа — длинный ответ не нужен.
     llm_max_tokens: int = 512
 
-    # ChromaDB / эмбеддинги
-    chroma_db_path: Path = BASE_DIR / "data" / "chroma"
-    chroma_collection: str = "anti_fire_docs"
+    # Индекс и модель поиска (ARCHITECTURE § 7.23). Индекс лежит в git, модель
+    # качается при установке: python -m app.services.embedder
+    index_dir: Path = BASE_DIR / "data" / "index"
+    embedding_dir: Path = BASE_DIR / "data" / "embedding"
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
-    # Модель уже хранится локально. Запрещаем sentence-transformers проверять
-    # Hugging Face при каждом холодном старте: без сети такие проверки уходят
-    # в долгие ретраи. False нужен только для первичной загрузки новой модели.
-    embedding_local_files_only: bool = True
 
     # Retrieval и чанкинг (раздел 5 ТЗ)
     # top_k снижен с 5: меньше контекста — быстрее ответ. Качество retrieval
@@ -127,17 +123,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
-
-def apply_offline_mode(settings: Settings) -> None:
-    """Включает офлайн-режим Hugging Face, если модель эмбеддингов берётся из кэша.
-
-    local_files_only закрывает только скачивание весов. Но huggingface_hub,
-    собирая User-Agent, раз в сутки ходит на huggingface.co за реестром
-    «AI-агентов», и этот запрос флаг не отключает. Без сети он съедает таймаут
-    на холодном старте. HF_HUB_OFFLINE закрывает и его, но библиотека читает
-    переменную один раз при импорте, поэтому вызов стоит в app/__init__.py,
-    раньше всех импортов. Явно выставленное значение не перетираем.
-    """
-    if settings.embedding_local_files_only:
-        os.environ.setdefault("HF_HUB_OFFLINE", "1")

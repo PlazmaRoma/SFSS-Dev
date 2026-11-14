@@ -1,7 +1,7 @@
 """Обучение модели fiery: RandomForest-скоринг риска + KMeans-кластеризация.
 
 Запуск:
-    python scripts/train_model.py --dataset data/processed/bass_ii.parquet \
+    python scripts/train_model.py --dataset data/processed/bass_ii.csv \
         --target outcome --group sample
 
 Если целевой колонки в датасете нет, модель риска НЕ обучается: сохраняется
@@ -82,8 +82,6 @@ class HeuristicRiskModel:
 
 
 def load_dataset(path: Path) -> pd.DataFrame:
-    if path.suffix == ".parquet":
-        return pd.read_parquet(path)
     return pd.read_csv(path)
 
 

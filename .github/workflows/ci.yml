@@ -1,5 +1,5 @@
-# Проверка на трёх системах: установщик ставит SFSS на чистую машину, сервис отвечает,
-# тесты проходят. Нейросеть не ставится: в CI её нет.
+# Проверка на трёх системах: установщик ставит SFSS и Anti-Fire на чистую машину,
+# сервис отвечает, удаление убирает всё, тесты проходят. Нейросети в CI нет.
 #
 # Запускается на PR в main и по кнопке, а не на каждый коммит: у приватного репозитория
 # минуты считаются, macOS идёт за десять.
@@ -75,7 +75,11 @@ jobs:
         working-directory: sfss
         run: |
           if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=.venv/Scripts/python.exe; fi
-          "$PY" -m pip install --quiet pytest
+          UV="$(command -v uv || true)"
+          for candidate in ../.tools/uv ../.tools/uv.exe; do
+            if [ -z "$UV" ] && [ -x "$candidate" ]; then UV="$candidate"; fi
+          done
+          "$UV" pip install --python "$PY" --quiet pytest
           "$PY" -m pytest -q
 
       - name: Тесты Площадки и Anti-Fire
@@ -95,3 +99,25 @@ jobs:
         run: |
           npm run page -w anti-fire
           cd apps/anti-fire/src-tauri && cargo test
+
+      - name: Удаление убирает всё (macOS, Linux)
+        if: runner.os != 'Windows'
+        run: |
+          ./install.sh --uninstall --yes
+          test ! -e "$HOME/.local/bin/sfss"
+          test ! -e sfss/.venv
+          test ! -e sfss/data/embedding
+          test ! -e /Applications/Anti-Fire.app
+          test ! -e "$HOME/.local/share/anti-fire"
+          test -z "$(git status --porcelain)"
+
+      - name: Удаление убирает всё (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          .\install.ps1 -Uninstall
+          foreach ($p in @("$env:LOCALAPPDATA\sfss\bin", "sfss\.venv", "sfss\data\embedding", "$env:LOCALAPPDATA\Programs\Anti-Fire")) {
+            if (Test-Path $p) { Write-Host "осталось: $p"; exit 1 }
+          }
+          if (git status --porcelain) { git status --porcelain; exit 1 }
+          exit 0

@@ -1,170 +1,219 @@
-﻿# Установка SFSS на Windows из клона репозитория.
+﻿# Installs SFSS and Anti-Fire on Windows from a clone of the repository.
 #
-#   powershell -ExecutionPolicy Bypass -File install.ps1              поставить и проверить
-#   powershell -ExecutionPolicy Bypass -File install.ps1 -Yes         не задавать вопросов
-#   powershell -ExecutionPolicy Bypass -File install.ps1 -NoLlm       не трогать нейросеть
-#   powershell -ExecutionPolicy Bypass -File install.ps1 -Uninstall   убрать установку
+#   powershell -ExecutionPolicy Bypass -File install.ps1              install and check
+#   powershell -ExecutionPolicy Bypass -File install.ps1 -Yes         answer yes to every question
+#   powershell -ExecutionPolicy Bypass -File install.ps1 -NoLlm       leave the language model alone
+#   powershell -ExecutionPolicy Bypass -File install.ps1 -NoApp       skip the Anti-Fire app
+#   powershell -ExecutionPolicy Bypass -File install.ps1 -Uninstall   remove everything this script installed
 #
-# Повторный запуск безопасен. macOS и Linux: install.sh. Подробности: INSTALL.md.
-# На настоящей Windows вживую не проверялось: только в GitHub Actions, без нейросети.
-param([switch]$Yes, [switch]$NoLlm, [switch]$Uninstall)
+# Python and libraries come through uv: one file, no admin rights, and it downloads
+# Python itself if needed. Safe to run again. macOS and Linux: install.sh.
+param([switch]$Yes, [switch]$NoLlm, [switch]$NoApp, [switch]$Uninstall)
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"   # иначе Invoke-WebRequest качает в разы медленнее
 $env:PYTHONUTF8 = "1"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $Root = $PSScriptRoot
 $Sfss = Join-Path $Root "sfss"
 $Venv = Join-Path $Sfss ".venv"
-$VenvPython = Join-Path $Venv "Scripts\python.exe"
+$Py = Join-Path $Venv "Scripts\python.exe"
 $VenvSfss = Join-Path $Venv "Scripts\sfss.exe"
+$Tools = Join-Path $Root ".tools"
 $Bin = Join-Path $env:LOCALAPPDATA "sfss\bin"
 $Shim = Join-Path $Bin "sfss.cmd"
+$AppDir = Join-Path $env:LOCALAPPDATA "Programs\Anti-Fire"
+$Shortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Anti-Fire.lnk"
+$Release = Join-Path $Root "apps\anti-fire\release"
+$PythonVersion = "3.12"
+$UvVersion = "0.12.5"
 $ModelId = "ministral-3-3b-instruct-2512"
 $ModelGguf = "https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF"
 $ModelOllama = "ministral-3:3b"
 
-function Step($text) { Write-Host ""; Write-Host "-> $text" }
-function Note($text) { Write-Host "  $text" }
-function Fail($text) { Write-Host ""; Write-Host "Ошибка: $text" -ForegroundColor Red; exit 1 }
+$script:StepNo = 0
+function Step($text) { $script:StepNo++; Write-Host ""; Write-Host "[$($script:StepNo)] $text" }
+function Note($text) { Write-Host "    $text" }
+function Fail($text) { Write-Host ""; Write-Host "Error: $text" -ForegroundColor Red; exit 1 }
 function Ask($text) {
     if ($Yes) { return $true }
-    if (-not [Environment]::UserInteractive) { return $false }
-    $answer = Read-Host "  $text [Д/н]"
-    return ($answer -eq "" -or $answer -match "^(д|да|y|yes)$")
+    if (-not [Environment]::UserInteractive -or [Console]::IsInputRedirected) { return $false }
+    $answer = Read-Host "    $text [Y/n]"
+    return ($answer -eq "" -or $answer -match "^(y|yes|д|да)$")
 }
 function UserPath { [Environment]::GetEnvironmentVariable("Path", "User") }
+function Run {
+    # Внешняя команда: ошибка — по коду выхода, а не по строкам в stderr. Именованных
+    # параметров нет намеренно: иначе PowerShell принимает ключи вроде -e из
+    # «uv pip install -e» за свои и подменяет ими саму команду
+    $exe = $args[0]
+    $rest = @($args | Select-Object -Skip 1)
+    $global:LASTEXITCODE = 0
+    try {
+        # Stop: «команда не найдена» становится ошибкой, а не строкой в выводе.
+        # stderr внешней команды не перенаправлен, поэтому его строки ошибкой не считаются
+        $ErrorActionPreference = "Stop"
+        # Вывод сразу на экран: иначе он смешался бы с кодом выхода в ответе функции
+        & $exe @rest | Out-Host
+    } catch {
+        Write-Host "    $_" -ForegroundColor Red
+        return 1
+    }
+    return $LASTEXITCODE
+}
+
+function Capture {
+    # Вывод команды строкой. Под Stop Windows PowerShell 5 превращает любую строку
+    # stderr в ошибку, если stderr перенаправлен: так «lms ls» с его «Waking up
+    # LM Studio service...» обрывал установку. Здесь stderr просто отбрасывается
+    $exe = $args[0]
+    $rest = @($args | Select-Object -Skip 1)
+    $ErrorActionPreference = "Continue"
+    try { return (& $exe @rest 2>$null | Out-String) } catch { return "" }
+}
 
 # --- Удаление ----------------------------------------------------------------
 
 if ($Uninstall) {
-    Step "Останавливаю SFSS"
-    if (Test-Path $VenvSfss) { & $VenvSfss stop } else { Note "не установлен" }
-    Step "Убираю команду sfss"
-    if (Test-Path $Shim) { Remove-Item $Shim; Note "удалена $Shim" } else { Note "её и не было" }
+    Step "Stopping SFSS"
+    if (Test-Path $VenvSfss) { Run $VenvSfss stop | Out-Null; Note "stopped" } else { Note "not installed" }
+    Step "Removing the sfss command"
+    if (Test-Path $Bin) { Remove-Item $Bin -Recurse -Force; Note "removed $Shim" } else { Note "it was not there" }
     $kept = ((UserPath) -split ";" | Where-Object { $_ -and $_ -ne $Bin }) -join ";"
     [Environment]::SetEnvironmentVariable("Path", $kept, "User")
-    Step "Убираю окружение, индекс и состояние демона"
-    foreach ($path in @($Venv, (Join-Path $Sfss "data\chroma"), (Join-Path $Sfss "data\run"))) {
+    Step "Removing the environment, search model and daemon state"
+    $ToolsUv = Join-Path $Tools "uv.exe"
+    if (Test-Path $ToolsUv) {
+        # uv ставил этот скрипт, значит его кэш и скачанный Python тоже наши
+        Run $ToolsUv cache clean | Out-Null
+        Run $ToolsUv python uninstall --all | Out-Null
+        Note "removed the uv cache and the Python it downloaded"
+    }
+    foreach ($path in @($Venv, $Tools, (Join-Path $Sfss "data\embedding"), (Join-Path $Sfss "data\run"), (Join-Path $Sfss "data\chroma"))) {
         if (Test-Path $path) { Remove-Item $path -Recurse -Force }
     }
+    Note "done"
+    Step "Removing Anti-Fire"
+    Get-Process anti-fire, Anti-Fire -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    $found = $false
+    foreach ($path in @($AppDir, $Shortcut, (Join-Path $env:LOCALAPPDATA "org.twinbyte.antifire"))) {
+        if (Test-Path $path) { Remove-Item $path -Recurse -Force; Note "removed: $path"; $found = $true }
+    }
+    if (-not $found) { Note "it was not there" }
     Write-Host ""
-    Write-Host "Готово. Остались: клон в $Root, отчёты NASA, модель расчёта, sfss\.env и настройки нейросети."
+    Write-Host "Done. Kept: the clone in $Root, NASA reports, the index, sfss\.env and model settings."
+    Note "The language model in LM Studio or Ollama is untouched: remove it there."
     exit 0
 }
 
-# --- 1. Python ---------------------------------------------------------------
+Write-Host "Installing SFSS from $Root"
 
-Step "Ищу Python 3.10 или новее"
-$Python = $null
-# Сначала python из PATH, потом проверенные версии: под самый новый Python библиотек
-# может ещё не быть, а py -3 выбирает именно его
-$candidates = @(@("python"), @("py", "-3.13"), @("py", "-3.12"), @("py", "-3.11"), @("py", "-3.10"), @("py", "-3"), @("python3"))
-foreach ($candidate in $candidates) {
-    $exe = $candidate[0]
-    $rest = @($candidate | Select-Object -Skip 1)
-    if (-not (Get-Command $exe -ErrorAction SilentlyContinue)) { continue }
-    & $exe @rest -c "import sys; sys.exit(sys.version_info < (3, 10))" 2>$null
-    if ($LASTEXITCODE -eq 0) { $Python = $candidate; break }
-}
-if (-not $Python) {
-    Fail "Python 3.10+ не найден. Поставьте его с https://www.python.org/downloads/ (галочка «Add python.exe to PATH») и запустите установку снова."
-}
-$PythonExe = $Python[0]
-$PythonArgs = @($Python | Select-Object -Skip 1)
-Note (& $PythonExe @PythonArgs --version)
+# --- 1. uv -------------------------------------------------------------------
 
-# --- 2. Окружение ------------------------------------------------------------
-
-Step "Ставлю SFSS и его библиотеки (первый раз несколько минут)"
-if (-not (Test-Path $VenvPython)) {
-    & $PythonExe @PythonArgs -m venv $Venv
-    if ($LASTEXITCODE -ne 0) { Fail "Не создалось окружение." }
+Step "Package installer uv"
+$Uv = (Get-Command uv -ErrorAction SilentlyContinue).Source
+if (-not $Uv -and (Test-Path (Join-Path $Tools "uv.exe"))) { $Uv = Join-Path $Tools "uv.exe" }
+if (-not $Uv) {
+    Note "downloading uv $UvVersion, about 20 MB, into $Tools"
+    # UV_UNMANAGED_INSTALL: только в эту папку, PATH не трогается
+    $env:UV_UNMANAGED_INSTALL = $Tools
+    try {
+        Invoke-RestMethod "https://astral.sh/uv/$UvVersion/install.ps1" | Invoke-Expression | Out-Null
+    } catch { Fail "Could not download uv. Check the network and run the installer again." }
+    Remove-Item Env:UV_UNMANAGED_INSTALL
+    $Uv = Join-Path $Tools "uv.exe"
 }
-# Как и на Linux: без этого адреса pip может взять PyTorch с CUDA, это гигабайты
-& $VenvPython -m pip install --quiet --disable-pip-version-check --extra-index-url https://download.pytorch.org/whl/cpu -e $Sfss
-if ($LASTEXITCODE -ne 0) { Fail "Библиотеки не поставились. Проверьте сеть. Если pip пишет о конфликте версий, поставьте Python 3.12: под самый новый Python библиотек может ещё не быть." }
-Note "готово: $Venv"
+Note (& $Uv --version)
+
+# --- 2. Python и библиотеки --------------------------------------------------
+
+Step "Python $PythonVersion and SFSS libraries, about 100 MB"
+if (Test-Path $Py) {
+    $version = (Capture $Py -c "import sys; print('%d.%d' % sys.version_info[:2])").Trim()
+    if ($version -ne "3.12") { Note "the environment uses another Python version, recreating it"; Remove-Item $Venv -Recurse -Force }
+}
+if (-not (Test-Path $Py)) {
+    # Если Python 3.12 на машине нет, uv скачает его сам, около 20 МБ
+    if ((Run $Uv venv --python $PythonVersion $Venv) -ne 0) { Fail "Could not create the Python environment. Check the network and run the installer again." }
+}
+if ((Run $Uv pip install --python $Py -e $Sfss) -ne 0) {
+    Fail "Libraries did not install. Check the network and run the installer again: downloads are kept."
+}
+Note "done: $Venv"
 
 # --- 3. Настройки ------------------------------------------------------------
 
-Step "Настройки"
+Step "Settings"
 $EnvFile = Join-Path $Sfss ".env"
-if (Test-Path $EnvFile) { Note "sfss\.env уже есть, не трогаю" }
-else { Copy-Item (Join-Path $Sfss ".env.example") $EnvFile; Note "создан sfss\.env" }
+if (Test-Path $EnvFile) { Note "sfss\.env already exists, leaving it" }
+else { Copy-Item (Join-Path $Sfss ".env.example") $EnvFile; Note "created sfss\.env" }
 
 # --- 4. Модель поиска --------------------------------------------------------
 
-Step "Модель поиска по отчётам"
-$LoadEmbeddings = @"
-from app.config import get_settings
-from sentence_transformers import SentenceTransformer
-settings = get_settings()
-SentenceTransformer(settings.embedding_model, local_files_only=settings.embedding_local_files_only)
-print(settings.embedding_model)
-"@
-function LoadEmbeddings {
-    Push-Location $Sfss
-    try {
-        $ErrorActionPreference = "Continue"
-        $name = & $VenvPython -c $LoadEmbeddings 2>$null
-        if ($LASTEXITCODE -eq 0) { return $name } else { return $null }
-    } finally { $ErrorActionPreference = "Stop"; Pop-Location }
-}
-$name = LoadEmbeddings
-if ($name) { Note "$name уже на диске" }
-else {
-    Note "скачиваю с Hugging Face, около 470 МБ, один раз"
-    # Сервис работает без сети, поэтому скачивание разрешается только здесь
-    $env:EMBEDDING_LOCAL_FILES_ONLY = "false"; $env:HF_HUB_OFFLINE = "0"
-    $name = LoadEmbeddings
-    Remove-Item Env:EMBEDDING_LOCAL_FILES_ONLY; Remove-Item Env:HF_HUB_OFFLINE
-    if (-not $name) { Fail "Модель поиска не скачалась. Проверьте сеть и запустите установку снова." }
-    Note "$name скачана"
-}
+Step "Search model for the reports, 130 MB, once"
+Push-Location $Sfss
+$code = Run $Py -m app.services.embedder
+Pop-Location
+if ($code -ne 0) { Fail "Could not download the search model. Check the network and run the installer again." }
 
 # --- 5. Индекс ---------------------------------------------------------------
 
-Step "Индекс по отчётам NASA"
-function Chunks {
-    Push-Location $Sfss
-    try {
-        $ErrorActionPreference = "Continue"
-        $count = & $VenvPython -c "from app.dependencies import get_rag_service; print(get_rag_service().count())" 2>$null
-        if ($LASTEXITCODE -eq 0) { return [int]$count } else { return 0 }
-    } finally { $ErrorActionPreference = "Stop"; Pop-Location }
-}
-$count = Chunks
-if ($count -gt 0) { Note "уже собран: $count фрагментов" }
+Step "Index of the NASA reports"
+if (Test-Path (Join-Path $Sfss "data\index\chunks.jsonl")) { Note "ready, from the repository" }
 else {
-    Note "собираю, около минуты"
+    Note "not found, building it, about a minute"
     Push-Location $Sfss
-    try {
-        $ErrorActionPreference = "Continue"
-        & $VenvPython scripts\ingest_documents.py *> $null
-        $code = $LASTEXITCODE
-    } finally { $ErrorActionPreference = "Stop"; Pop-Location }
-    if ($code -ne 0) { Fail "Индекс не собрался. Запустите вручную: cd sfss; .venv\Scripts\python scripts\ingest_documents.py" }
-    Note "собран: $(Chunks) фрагментов"
+    $code = Run $Py scripts\ingest_documents.py
+    Pop-Location
+    if ($code -ne 0) { Fail "Could not build the index. By hand: cd sfss; .venv\Scripts\python scripts\ingest_documents.py" }
 }
 
 # --- 6. Команда sfss ---------------------------------------------------------
 
-Step "Команда sfss"
+Step "The sfss command"
 New-Item -ItemType Directory -Force $Bin | Out-Null
 # PYTHONUTF8: консоль и файлы Windows по умолчанию не в UTF-8, а sfss пишет по-русски
 Set-Content -Path $Shim -Encoding ASCII -Value "@echo off`r`nset PYTHONUTF8=1`r`n`"$VenvSfss`" %*"
 if (((UserPath) -split ";") -notcontains $Bin) {
     [Environment]::SetEnvironmentVariable("Path", ((UserPath).TrimEnd(";") + ";" + $Bin), "User")
-    Note "папка $Bin добавлена в PATH: откройте новый терминал, чтобы команда появилась"
+    Note "added $Bin to PATH: open a new terminal to get the command"
 }
 Note $Shim
 
-# --- 7. Нейросеть ------------------------------------------------------------
+# --- 7. Anti-Fire ------------------------------------------------------------
 
-$LlmState = "пропущена"
+$AppState = "skipped"
+if (-not $NoApp) {
+    Step "Anti-Fire app"
+    $Zip = Join-Path $Release "Anti-Fire-windows-x64.zip"
+    if (-not (Test-Path $Zip)) { Note "no ready build in $Release" }
+    elseif (Ask "Install Anti-Fire into $AppDir?") {
+        Get-Process anti-fire, Anti-Fire -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        if (Test-Path $AppDir) { Remove-Item $AppDir -Recurse -Force }
+        $Unpack = Join-Path $env:TEMP "anti-fire-unpack"
+        if (Test-Path $Unpack) { Remove-Item $Unpack -Recurse -Force }
+        Expand-Archive -Path $Zip -DestinationPath $Unpack
+        # На чистой Windows папки Programs в LOCALAPPDATA ещё нет
+        New-Item -ItemType Directory -Force (Split-Path $AppDir) | Out-Null
+        Move-Item (Join-Path $Unpack "Anti-Fire") $AppDir
+        Remove-Item $Unpack -Recurse -Force
+        $Exe = Join-Path $AppDir "Anti-Fire.exe"
+        New-Item -ItemType Directory -Force (Split-Path $Shortcut) | Out-Null
+        $link = (New-Object -ComObject WScript.Shell).CreateShortcut($Shortcut)
+        $link.TargetPath = $Exe
+        $link.WorkingDirectory = $AppDir
+        $link.Save()
+        $AppState = "$Exe, also in the Start menu"
+        Note $AppState
+    }
+}
+
+# --- 8. Нейросеть ------------------------------------------------------------
+
+$LlmState = "skipped"
 if (-not $NoLlm) {
-    Step "Нейросеть для ответов на вопросы"
+    Step "Language model for answering questions"
     $Lms = (Get-Command lms -ErrorAction SilentlyContinue).Source
     $LmsDefault = Join-Path $HOME ".lmstudio\bin\lms.exe"
     if (-not $Lms -and (Test-Path $LmsDefault)) { $Lms = $LmsDefault }
@@ -173,50 +222,47 @@ if (-not $NoLlm) {
     if (-not $Ollama -and (Test-Path $OllamaDefault)) { $Ollama = $OllamaDefault }
 
     if ($Lms) {
-        Note "найден LM Studio: $Lms"
-        if ((& $Lms ls 2>$null | Out-String) -match [regex]::Escape($ModelId)) {
-            Note "модель $ModelId уже скачана"; $LlmState = "LM Studio, $ModelId"
-        } elseif (Ask "Скачать Ministral 3B, около 3 ГБ?") {
-            & $Lms get $ModelGguf --yes
-            if ($LASTEXITCODE -eq 0) { $LlmState = "LM Studio, $ModelId" }
-            else { Note "не скачалась. Вручную: lms get $ModelGguf"; $LlmState = "LM Studio без модели" }
-        } else { Note "позже: lms get $ModelGguf"; $LlmState = "LM Studio без модели" }
+        Note "found LM Studio: $Lms"
+        if ((Capture $Lms ls) -match [regex]::Escape($ModelId)) {
+            Note "model $ModelId is already downloaded"; $LlmState = "LM Studio, $ModelId"
+        } elseif (Ask "Download Ministral 3B, about 3 GB?") {
+            if ((Run $Lms get $ModelGguf --yes) -eq 0) { $LlmState = "LM Studio, $ModelId" }
+            else { Note "download failed. By hand: lms get $ModelGguf"; $LlmState = "LM Studio, no model" }
+        } else { Note "later: lms get $ModelGguf"; $LlmState = "LM Studio, no model" }
     } elseif ($Ollama) {
-        Note "найдена Ollama: $Ollama"
-        $have = ((& $Ollama list 2>$null | Out-String) -match [regex]::Escape($ModelOllama))
-        if (-not $have -and (Ask "Скачать $ModelOllama, около 3 ГБ?")) {
-            & $Ollama pull $ModelOllama
-            $have = ($LASTEXITCODE -eq 0)
-        }
-        & $VenvSfss config runtime ollama | Out-Null
-        if ($have) { & $VenvSfss config model $ModelOllama | Out-Null; $LlmState = "Ollama, $ModelOllama" }
-        else { Note "позже: ollama pull $ModelOllama; sfss config model $ModelOllama"; $LlmState = "Ollama без модели" }
+        Note "found Ollama: $Ollama"
+        $have = ((Capture $Ollama list) -match [regex]::Escape($ModelOllama))
+        if (-not $have -and (Ask "Download $ModelOllama, about 3 GB?")) { $have = ((Run $Ollama pull $ModelOllama) -eq 0) }
+        Run $VenvSfss config runtime ollama | Out-Null
+        if ($have) { Run $VenvSfss config model $ModelOllama | Out-Null; $LlmState = "Ollama, $ModelOllama" }
+        else { Note "later: ollama pull $ModelOllama; sfss config model $ModelOllama"; $LlmState = "Ollama, no model" }
     } else {
-        Note "LM Studio и Ollama не найдены. Расчёт, CSV и Площадка работают и без нейросети."
-        Note "Для ответов на вопросы поставьте одно из двух и запустите установку ещё раз:"
+        Note "Neither LM Studio nor Ollama found. Calculations, CSV and the Playground work without a model."
+        Note "To answer questions, install one of them and run the installer again:"
         Note "    LM Studio  https://lmstudio.ai"
         Note "    Ollama     https://ollama.com"
-        $LlmState = "не найдена"
+        $LlmState = "not found"
     }
 }
 
-# --- 8. Проверка -------------------------------------------------------------
+# --- 9. Проверка -------------------------------------------------------------
 
-Step "Запускаю и проверяю"
-& $VenvSfss start
-if ($LASTEXITCODE -ne 0) { Fail "SFSS не запустился. Причина в логе: sfss logs" }
-& $VenvSfss predict --o2 0.30 --psi 8.2
-if ($LASTEXITCODE -ne 0) { Fail "Расчёт не ответил. Лог: sfss logs" }
+Step "Starting and checking"
+if ((Run $VenvSfss start) -ne 0) { Fail "SFSS did not start. The reason is in the log: sfss logs" }
+if ((Run $VenvSfss predict --o2 0.30 --psi 8.2) -ne 0) { Fail "The calculation did not answer. Log: sfss logs" }
 
 Write-Host @"
 
-Готово. SFSS установлен и работает. Нейросеть: $LlmState.
+Done. SFSS is installed and running.
+    Anti-Fire:  $AppState
+    Model:      $LlmState
 
-  sfss status                      что запущено
-  sfss predict --o2 0.30 --psi 8.2 расчёт
-  sfss ask "Как гелий в атмосфере влияет на горение?"
-  sfss playground                  Площадка в браузере
-  sfss stop                        остановить
+    sfss status                      what is running
+    sfss predict --o2 0.30 --psi 8.2 a calculation
+    sfss ask "How does helium in the atmosphere affect combustion?"
+    sfss playground                  the Playground in a browser
+    sfss stop                        stop the service
+    install.ps1 -Uninstall           remove everything
 
-Программа Anti-Fire и остальное: INSTALL.md
+Details: INSTALL.md
 "@
