@@ -1,10 +1,3 @@
-"""Команда sfss: демон и обращения к нему из терминала.
-
-Сам CLI ничего не вычисляет: predict и ask ходят в демон по тому же API, что и
-любая сторонняя программа. Поэтому модели и индекс здесь не импортируются, и
-команда отвечает сразу, а не через 12 секунд загрузки эмбеддингов.
-"""
-
 import argparse
 import csv
 import io
@@ -38,13 +31,9 @@ from app.services.llm_runtime import make_runtime
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
-# Прогрев 4-16 с, но на холодном диске и в свопе бывает заметно дольше
 START_TIMEOUT = 180.0
 STOP_TIMEOUT = 15.0
-# Ответ модели идёт без единого байта, пока пишется английский черновик для
-# русского ответа. Потолок 120 с (lm_studio_timeout) на каждый вызов.
 ASK_SILENCE_TIMEOUT = 180.0
-# Индексация отчёта на сотни страниц идёт минуты
 IMPORT_TIMEOUT = 900.0
 LOAD_TIMEOUT = 200.0
 
@@ -56,14 +45,9 @@ EXIT_NOT_RUNNING = 3
 
 
 class CliError(Exception):
-    """Ошибка, которую человек может исправить: печатается без трассировки."""
-
     def __init__(self, message: str, code: int = EXIT_ERROR) -> None:
         super().__init__(message)
         self.code = code
-
-
-# --- Состояние демона ---------------------------------------------------------
 
 
 def run_dir() -> Path:
@@ -93,9 +77,7 @@ WINDOWS = sys.platform == "win32"
 
 
 def process_command(pid: int) -> str | None:
-    """Командная строка процесса или None, если его нет."""
     if WINDOWS:
-        # ps там нет, а tasklist показывает только имя файла, без аргументов
         query = f'(Get-CimInstance Win32_Process -Filter "ProcessId={pid}").CommandLine'
         command = ["powershell", "-NoProfile", "-NonInteractive", "-Command", query]
     else:
@@ -109,21 +91,13 @@ def process_command(pid: int) -> str | None:
 
 
 def is_ours(pid: int) -> bool:
-    """Жив ли процесс и наш ли это uvicorn.
-
-    Одной проверки pid мало: после перезагрузки номер мог достаться чужому
-    процессу, и sfss stop убил бы его.
-    """
     return "app.main:app" in (process_command(pid) or "")
 
 
-# Выйти из «задания» Windows, в котором живёт терминал. Иначе демон умирает вместе с
-# сеансом, который закрывает своё задание: так делают SSH и терминалы некоторых программ
 CREATE_BREAKAWAY_FROM_JOB = 0x01000000
 
 
 def detached(breakaway: bool = True) -> dict:
-    """Параметры Popen, с которыми демон переживает закрытие терминала."""
     if WINDOWS:
         flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
         if breakaway:
@@ -133,13 +107,11 @@ def detached(breakaway: bool = True) -> dict:
 
 
 def base_url(args: argparse.Namespace) -> str:
-    """Адрес демона: явный --url, SFSS_URL, адрес из sfss start, иначе по умолчанию."""
     url = getattr(args, "url", None) or os.environ.get("SFSS_URL")
     if url:
         return url.rstrip("/")
     state = read_state() or {}
     host = state.get("host", DEFAULT_HOST)
-    # 0.0.0.0 — адрес, который слушают, а не тот, по которому подключаются
     host = DEFAULT_HOST if host == "0.0.0.0" else host
     return f"http://{host}:{state.get('port', DEFAULT_PORT)}"
 
@@ -168,9 +140,6 @@ def tail(path: Path, lines: int) -> list[str]:
             return list(deque(file, maxlen=lines))
     except OSError:
         return []
-
-
-# --- start / stop / status / logs ---------------------------------------------
 
 
 def cmd_start(args: argparse.Namespace) -> int:
@@ -210,7 +179,6 @@ def spawn_daemon(host: str, port: int, url: str) -> None:
         try:
             process = subprocess.Popen(command, **options, **detached())
         except PermissionError:
-            # Задание запрещает выход из себя: запускаемся в нём, как раньше
             process = subprocess.Popen(command, **options, **detached(breakaway=False))
     state_path().write_text(json.dumps({"pid": process.pid, "host": host, "port": port}))
 
@@ -231,7 +199,6 @@ def spawn_daemon(host: str, port: int, url: str) -> None:
 
 
 def load_llm(url: str) -> None:
-    """Загружает модель заранее и с нужным контекстом."""
     print("Loading the model...", file=sys.stderr)
     with make_client(url, read_timeout=LOAD_TIMEOUT) as client:
         response = client.post("/v1/llm/load")
@@ -261,7 +228,6 @@ def cmd_stop(_: argparse.Namespace) -> int:
         return 0
     pid = state["pid"]
     if not is_ours(pid):
-        # Запись устарела: демон упал или машину перезагружали
         clear_state()
         print("SFSS is not running")
         return 0
@@ -269,7 +235,6 @@ def cmd_stop(_: argparse.Namespace) -> int:
     deadline = time.monotonic() + STOP_TIMEOUT
     while time.monotonic() < deadline and is_ours(pid):
         time.sleep(0.2)
-    # На Windows SIGTERM уже завершает процесс без спроса, а SIGKILL там нет
     if not WINDOWS and is_ours(pid):
         os.kill(pid, signal.SIGKILL)
     clear_state()
@@ -338,15 +303,7 @@ def cmd_logs(args: argparse.Namespace) -> int:
             return 0
 
 
-# --- config -------------------------------------------------------------------
-
-
 def config_request(args: argparse.Namespace, method: str, body: dict | None = None) -> dict | None:
-    """Настройки через демон: он применит их сразу.
-
-    None — демон выключен, а адрес не задан явно: тогда правим файл, и настройка
-    сработает при следующем sfss start. Нельзя только посмотреть список моделей.
-    """
     try:
         with make_client(base_url(args), read_timeout=LOAD_TIMEOUT) as client:
             response = client.request(method, "/v1/llm/config", json=body)
@@ -375,7 +332,6 @@ def print_config(config: dict) -> None:
 
 
 def file_config_view() -> dict:
-    """Настройки с диска в том же виде, что отвечает API, но без проверки рантайма."""
     settings = get_settings()
     config = load_config(settings)
     runtime = make_runtime(config.runtime, settings.llm_load_timeout)
@@ -446,20 +402,12 @@ def cmd_config_reset(args: argparse.Namespace) -> int:
     return 0
 
 
-# --- predict ------------------------------------------------------------------
-
-
 def fraction(name: str, value: float | None) -> None:
     if value is not None and not 0 <= value <= 1:
         raise CliError(f"--{name} is a fraction from 0 to 1, for example 0.30, not {value}")
 
 
 def atmosphere_params(args: argparse.Namespace) -> dict:
-    """Аргументы команды → parameters для /predict.
-
-    Азот досчитывается до единицы. Демон подставил бы воздушные 0.79 и при 30%
-    кислорода посчитал бы смесь на 109%: число выйдет правдоподобным, но неверным.
-    """
     for name, value in (("o2", args.o2), ("n2", args.n2), ("co2", args.co2), ("he", args.he)):
         fraction(name, value)
 
@@ -510,7 +458,6 @@ def cmd_predict(args: argparse.Namespace) -> int:
             print(f"Risk score  {result['risk_score']:.3f}")
         else:
             print(f"Burning rate  {value:.3f} mm²/s")
-            # Сравниваем с воздухом при том же топливе и той же капле
             air = {k: v for k, v in params.items() if k in ("d_initial_mm", "fuel_methanol", "fuel_heptane")}
             baseline = post_predict(client, AIR | air).get("predicted_value")
             if baseline:
@@ -525,7 +472,6 @@ def cmd_predict(args: argparse.Namespace) -> int:
 
 
 def predict_csv(args: argparse.Namespace) -> int:
-    """Пакет из CSV: к входным колонкам дописываются результаты."""
     conflict = [
         name for name in ("o2", "pressure", "psi", "n2", "co2", "he", "droplet", "fuel")
         if getattr(args, name) is not None
@@ -575,9 +521,6 @@ def merge_results(text: str, rows: list[dict]) -> str:
     return output.getvalue()
 
 
-# --- import -------------------------------------------------------------------
-
-
 def cmd_import(args: argparse.Namespace) -> int:
     path = Path(args.file)
     if not path.is_file():
@@ -591,9 +534,6 @@ def cmd_import(args: argparse.Namespace) -> int:
     document = response.json()
     print(f"Added {document['doc_id']}: {document['chunks']} chunks")
     return 0
-
-
-# --- ask ----------------------------------------------------------------------
 
 
 STAGES = {
@@ -638,11 +578,7 @@ def cmd_ask(args: argparse.Namespace) -> int:
     return 0
 
 
-# --- playground ---------------------------------------------------------------
-
-
 def cmd_playground(args: argparse.Namespace) -> int:
-    """Площадка в браузере: без проверки адрес откроется и при выключенном демоне."""
     url = base_url(args)
     with make_client(url) as client:
         client.get("/v1/health")
@@ -651,9 +587,6 @@ def cmd_playground(args: argparse.Namespace) -> int:
     if not args.no_open:
         webbrowser.open(target)
     return 0
-
-
-# --- Разбор аргументов --------------------------------------------------------
 
 
 def raise_for_detail(response: httpx.Response) -> None:
@@ -699,7 +632,6 @@ def build_parser() -> argparse.ArgumentParser:
     def config_command(name: str, handler, description: str) -> argparse.ArgumentParser:
         sub = config_commands.add_parser(name, help=description, description=description)
         sub.set_defaults(handler=handler)
-        # SUPPRESS: иначе пустое значение здесь затёрло бы --url, заданный до подкоманды
         sub.add_argument("--url", default=argparse.SUPPRESS, help="daemon address")
         return sub
 
@@ -765,7 +697,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    # Консоль Windows по умолчанию не в UTF-8: «мм²/с» и «×» роняли бы print
     for stream in (sys.stdout, sys.stderr):
         if WINDOWS and hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")

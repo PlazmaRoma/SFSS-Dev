@@ -3,7 +3,6 @@ import { ApiError, type Client } from "./client";
 import type { Lang, LlmConfig, LlmModels, LlmPatch, RuntimeKind } from "./types";
 import "./llm-settings.css";
 
-/** Сервис может выгружать прежнюю модель, это не быстро. Он сдаётся через 180 с. */
 const SAVE_MS = 200_000;
 const DEFAULT_PORTS: Record<RuntimeKind, number> = { lmstudio: 1234, ollama: 11434 };
 const RUNTIME_NAMES: Record<RuntimeKind, string> = { lmstudio: "LM Studio", ollama: "Ollama" };
@@ -72,13 +71,9 @@ function wholeNumber(raw: string): number | null {
   return raw.trim() && Number.isInteger(value) ? value : null;
 }
 
-/** Рантайм и модель сохраняются каждый своей кнопкой: это разные решения, и смена
- *  рантайма сразу показывает модели нового. Общее окно для Anti-Fire и Площадки. */
 export function LlmSettings({ client, lang, busy = false, describeError, onClose, onChanged }: {
-  /** Клиент с префиксом /v1: настроек нет на старых путях. */
   client: Client;
   lang: Lang;
-  /** Идёт ответ: выгрузка прежней модели оборвала бы его. */
   busy?: boolean;
   describeError?: (error: unknown) => string;
   onClose: () => void;
@@ -168,7 +163,6 @@ export function LlmSettings({ client, lang, busy = false, describeError, onClose
   };
 
   const chooseKind = (next: RuntimeKind) => {
-    // Порт прежнего рантайма новому не подойдёт, а свой порт человек введёт сам
     if (wholeNumber(port) === DEFAULT_PORTS[kind]) setPort(String(DEFAULT_PORTS[next]));
     setKind(next);
     setSaved(null);

@@ -1,5 +1,3 @@
-"""POST /predict — скоринг риска и кластер на sklearn-моделях."""
-
 import csv
 import io
 import json
@@ -34,17 +32,12 @@ def predict(
 
 
 def parse_csv(body: bytes) -> list[dict[str, Any]]:
-    """CSV → строки условий. Колонки называются как признаки модели.
-
-    Пустая ячейка значит «не задано»: подставится значение по умолчанию.
-    """
     try:
         text = body.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
         raise ValueError("CSV must be UTF-8") from exc
     rows = []
     for record in csv.DictReader(io.StringIO(text)):
-        # Ячейки сверх заголовка csv кладёт под ключ None
         if None in record:
             rows.append({"extra_cells": record[None]})
             continue
@@ -90,10 +83,9 @@ async def predict_batch(
     ml: MLService = Depends(get_ml_service),
     settings: Settings = Depends(get_settings),
 ) -> BatchResponse:
-    """Много условий одним запросом: JSON или CSV.
+    """Many conditions in one request: JSON or CSV.
 
-    Плохая строка получает поле error и не мешает остальным.
-    """
+    A bad row gets an error field and does not affect the others."""
     try:
         rows = parse_rows(request.headers.get("content-type", ""), await request.body())
     except ValueError as exc:

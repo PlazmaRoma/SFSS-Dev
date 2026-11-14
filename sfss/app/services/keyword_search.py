@@ -1,18 +1,7 @@
-"""Поиск по словам (BM25) и слияние с векторным поиском (RRF).
-
-Векторный поиск MiniLM промахивается мимо фрагментов с конкретным термином:
-в корпусе 25 фрагментов про гелий, а на вопрос «как гелий влияет на горение»
-топ-3 не находил ни одного. BM25 цепляется за само слово, но сам по себе
-путается на общих словах: на «why does droplet size matter» он нашёл детектор
-частиц AMS-02 (dark matter). Слияние берёт лучшее из обоих: наверх выходит то,
-что нашли оба способа. Замер — ARCHITECTURE § 7.13.
-"""
-
 import math
 import re
 from collections import Counter
 
-# Служебные слова вопроса: без них BM25 ищет «does» и «what» наравне с терминами
 STOP_WORDS = frozenset(
     "a an the of in on at to for and or is are was were be been by with as from "
     "that this these those what how why when where which who does do did it its "
@@ -26,8 +15,6 @@ def tokenize(text: str) -> list[str]:
 
 
 class KeywordIndex:
-    """BM25 по фрагментам корпуса. 1131 фрагмент индексируется за доли секунды."""
-
     def __init__(self, ids: list[str], documents: list[str], k1: float = 1.5, b: float = 0.75):
         self.ids = ids
         self._terms = [Counter(tokenize(d)) for d in documents]
@@ -39,7 +26,6 @@ class KeywordIndex:
         self.k1, self.b = k1, b
 
     def search(self, query: str, n: int) -> list[str]:
-        """id фрагментов по убыванию BM25; фрагменты без единого слова запроса не попадают."""
         words = set(tokenize(query))
         scored = []
         for i, terms in enumerate(self._terms):
@@ -56,7 +42,6 @@ class KeywordIndex:
 
 
 def fuse(dense: list[str], keyword: list[str], keyword_weight: float, k: int, c: int = 60) -> list[str]:
-    """Reciprocal rank fusion: сумма весов 1/(c + место) по обоим спискам."""
     score: Counter[str] = Counter()
     for rank, doc_id in enumerate(dense):
         score[doc_id] += 1 / (c + rank + 1)

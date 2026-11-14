@@ -1,26 +1,11 @@
 import { useEffect, useRef } from "react";
 
-/** Два пламени рядом, оба нарисованы частицами со сложением яркости —
- *  той же техникой, что и шар на главном экране. Плоская фигура с
- *  градиентом читалась как вырезанная из бумаги.
- *
- *  Слева земное: горячий газ легче, конвекция тянет его вверх, отсюда
- *  форма капли. И отсюда же дрожание, потому что восходящий поток
- *  неустойчив. Частицы поднимаются и сужаются кверху.
- *
- *  Справа то же пламя в невесомости: тянуть нечему, кислород приходит
- *  диффузией со всех сторон, и горение идёт тонкой сферической оболочкой.
- *  Оно тусклее, синее (сажи почти нет) и неподвижно.
- */
-
 const N = 460;
 const SPRITE = 64;
 
 interface P {
   seed: number; speed: number; size: number; band: number;
   ang: number; shell: number;
-  /** Точка на поверхности шара. Раньше частицы лежали на окружности,
-   *  и вместо шара читалось кольцо. */
   sx: number; sy: number; sz: number;
 }
 
@@ -92,19 +77,15 @@ export function FlameComparison() {
       const mx = w * 0.66;
       const my = h * 0.5;
 
-      // Дрожание земного пламени: сумма несинхронных синусов
       const jit = still ? 0 : Math.sin(t * 3.1) * 0.5 + Math.sin(t * 5.3 + 1.1) * 0.28;
 
       for (const p of ps) {
-        // ── Земное: частицы поднимаются, сужаясь кверху ──
         const rise = still ? p.band : (p.band + t * 0.22 * p.speed) % 1;
-        // Капля: узко у подошвы, шире в середине, остриё кверху
         const width = Math.sin(Math.pow(rise, 0.75) * Math.PI * 0.92) * scale * 0.34 + scale * 0.03;
         const sway = Math.sin(rise * 5 + p.seed + t * 2) * width * 0.5 + jit * scale * 0.05 * rise;
         const exx = ex + sway;
         const eyy = ey - rise * scale * 1.25;
         const heat = 1 - rise;
-        // Синий даём лишь у самой подошвы: выше он съедает силуэт капли
         const wi =
           rise < 0.08
             ? 0
@@ -113,7 +94,6 @@ export function FlameComparison() {
         ctx.globalAlpha = 0.3 * (1 - rise * 0.7);
         ctx.drawImage(warm[wi], exx - es * 3.5, eyy - es * 3.5, es * 7, es * 7);
 
-        // ── В невесомости: тонкая оболочка, без подъёма и без дрожания ──
         const r = scale * 0.5 * p.shell;
         const a = still ? 0 : t * 0.08;
         const ca = Math.cos(a);
@@ -122,7 +102,6 @@ export function FlameComparison() {
         const rz = p.sx * sa + p.sz * ca;
         const mxx = mx + rx * r;
         const myy = my + p.sy * r;
-        // Ближняя сторона ярче дальней — от этого шар перестаёт быть кольцом
         const depth = (rz + 1) / 2;
         const ci = Math.min(cool.length - 1, Math.floor(p.band * cool.length));
         const ms = p.size * (1.7 + depth * 1.5);
@@ -130,13 +109,10 @@ export function FlameComparison() {
         ctx.drawImage(cool[ci], mxx - ms * 3.5, myy - ms * 3.5, ms * 7, ms * 7);
       }
 
-      // Оболочка полая на самом деле, но на плоскости дырка в середине
-      // читается как бублик. Мягкая заливка возвращает ощущение шара.
       const ball = scale * 1.1;
       ctx.globalAlpha = 0.18;
       ctx.drawImage(cool[2], mx - ball / 2, my - ball / 2, ball, ball);
 
-      // Капля топлива в центре
       ctx.globalAlpha = 0.75;
       ctx.drawImage(cool[0], mx - scale * 0.09, my - scale * 0.09, scale * 0.18, scale * 0.18);
 

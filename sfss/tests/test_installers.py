@@ -1,13 +1,9 @@
-"""Установщики в корне репозитория: то, что ломается незаметно и всплывает только на чужой машине."""
-
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_powershell_script_has_bom():
-    # Без BOM Windows PowerShell 5 читает файл в ANSI: байты кириллицы становятся
-    # кавычками, и скрипт не разбирается вовсе
     assert (ROOT / "install.ps1").read_bytes().startswith(b"\xef\xbb\xbf")
 
 
@@ -23,8 +19,6 @@ def test_installers_pin_the_same_versions():
 
 
 def test_powershell_run_has_no_named_parameters():
-    # С param($exe) PowerShell принял «-e» из «uv pip install -e» за -exe и запустил
-    # вместо uv папку sfss: установка шла дальше без библиотек
     ps1 = (ROOT / "install.ps1").read_text(encoding="utf-8-sig")
     assert "function Run {" in ps1
     assert "function Run(" not in ps1

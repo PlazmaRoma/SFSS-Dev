@@ -1,8 +1,3 @@
-"""POST /query — retrieval из ChromaDB + генерация ответа нейросетью.
-
-POST /query/stream — то же, но ответ приходит потоком (NDJSON).
-"""
-
 import json
 import logging
 from collections.abc import Iterator
@@ -25,15 +20,12 @@ def query(
     rag: RagService = Depends(get_rag_service),
     llm: LLMService = Depends(get_llm_service),
 ) -> QueryResponse:
-    # Раньше перевода вопроса: он первым обратится к модели, и LM Studio поднял
-    # бы её сам, с контекстом 262 144
     if llm.needs_load():
         try:
             llm.load_model()
         except ModelLoadError as exc:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
-    # Ищем по переводу, а отвечаем на исходный вопрос: см. translate_queries
     search_text = llm.search_query(payload.question)
     sources = rag.retrieve(search_text, filters=payload.filters)
 
@@ -45,7 +37,7 @@ def query(
             english_question=search_text if search_text != payload.question else None,
         )
     except Exception as exc:
-        logger.exception("Ошибка обращения к %s", llm.runtime_name)
+        logger.exception("Request to %s failed", llm.runtime_name)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"{llm.runtime_name} is unreachable or returned an error: {exc}",
@@ -64,14 +56,12 @@ def query_stream(
     rag: RagService = Depends(get_rag_service),
     llm: LLMService = Depends(get_llm_service),
 ) -> StreamingResponse:
-    """Ответ потоком: одна строка JSON на событие.
+    """Streamed answer: one JSON line per event.
 
-    sources — найденные фрагменты, сразу после поиска; stage — что происходит
-    сейчас (loading, searching, answering, translating); delta — следующий кусок
-    текста; done — весь ответ целиком; error — модель не загрузилась или рантайм
-    упал посреди ответа. Ошибка приходит событием, а не кодом 503: к этому моменту
-    ответ уже начат.
-    """
+    sources: found chunks, right after search; stage: what is happening now
+    (loading, searching, answering, translating); delta: the next piece of text;
+    done: the whole answer; error: the model did not load or the runtime failed
+    mid-answer. Errors arrive as an event, not as 503: the answer has already started."""
 
     def events() -> Iterator[str]:
         if llm.needs_load():
@@ -99,7 +89,7 @@ def query_stream(
                     parts.append(event["text"])
                 yield _line(event)
         except Exception as exc:
-            logger.exception("Ошибка обращения к %s", llm.runtime_name)
+            logger.exception("Request to %s failed", llm.runtime_name)
             yield _line({"type": "error", "detail": f"{llm.runtime_name} is unreachable or returned an error: {exc}"})
             return
         yield _line({"type": "done", "answer": "".join(parts).strip()})

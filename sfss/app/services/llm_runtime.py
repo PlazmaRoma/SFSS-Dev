@@ -1,9 +1,3 @@
-"""Рантаймы нейросети: LM Studio и Ollama.
-
-Сами ответы у обоих идут через OpenAI-совместимый /v1. Различается то, чего в этом
-API нет: загружена ли модель, как её загрузить и выгрузить, как поднять сервер.
-"""
-
 import logging
 import os
 import shutil
@@ -17,18 +11,16 @@ from app.services.llm_config import RuntimeConfig, is_banned
 
 logger = logging.getLogger(__name__)
 
-# /health опрашивают раз в две секунды: адрес, который не отвечает, не должен его держать
 PROBE_TIMEOUT = httpx.Timeout(2.0, connect=1.0)
 LOCAL_HOSTS = ("localhost", "127.0.0.1", "[::1]")
 OLLAMA_START_TIMEOUT = 15.0
 
 
 class ModelLoadError(RuntimeError):
-    """Модель не загрузилась. Текст уходит в detail, по-английски, как у остальных ошибок API."""
+    pass
 
 
 def find_lms() -> str | None:
-    """Демон запускают не из оболочки, поэтому PATH может и не содержать lms."""
     folder = Path.home() / ".lmstudio" / "bin"
     places = (folder / "lms", folder / "lms.exe")
     return shutil.which("lms") or next((str(place) for place in places if place.exists()), None)
@@ -46,7 +38,6 @@ def find_ollama() -> str | None:
 
 class Runtime:
     name = ""
-    # Задаётся ли контекст при загрузке. Через OpenAI API его не передать никому
     controls_context = True
 
     def __init__(self, config: RuntimeConfig, load_timeout: float) -> None:
@@ -70,15 +61,13 @@ class Runtime:
             httpx.get(f"{self.root}/v1/models", timeout=PROBE_TIMEOUT).raise_for_status()
             return True
         except Exception:
-            logger.warning("%s недоступен по %s", self.name, self.address)
+            logger.warning("%s is unavailable at %s", self.name, self.address)
             return False
 
     def state(self, model: str) -> tuple[bool | None, int | None]:
-        """Загружена ли модель и с каким контекстом. None — рантайм не сообщает."""
         raise NotImplementedError
 
     def models(self) -> list[dict]:
-        """Модели на диске у рантайма, без запрещённых и без эмбеддингов."""
         raise NotImplementedError
 
     def start(self) -> None:
@@ -103,10 +92,6 @@ class LMStudioRuntime(Runtime):
         return response.json()["data"]
 
     def state(self, model: str) -> tuple[bool | None, int | None]:
-        """/v1/models перечисляет и выгруженные модели, а разница важна: выгруженную
-        LM Studio поднимет при первом вопросе с контекстом 262 144, и на 8 ГБ это
-        своп (ARCHITECTURE § 11, п. 1). /api/v0 есть только у LM Studio.
-        """
         try:
             models = self._models()
         except Exception:
@@ -161,8 +146,6 @@ class LMStudioRuntime(Runtime):
 
 class OllamaRuntime(Runtime):
     name = "Ollama"
-    # Контекст Ollama берёт из своих настроек (OLLAMA_CONTEXT_LENGTH, Modelfile):
-    # через OpenAI API его не передать, так сказано в её документации
     controls_context = False
 
     @staticmethod
@@ -215,7 +198,6 @@ class OllamaRuntime(Runtime):
             time.sleep(0.5)
 
     def load(self, model: str, context_length: int) -> None:
-        # Без запроса модели генерировать нечего: Ollama просто держит её в памяти
         self._generate(model, keep_alive=-1)
 
     def unload(self, model: str) -> None:

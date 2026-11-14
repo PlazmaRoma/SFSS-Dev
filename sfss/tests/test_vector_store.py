@@ -1,5 +1,3 @@
-"""Своё хранилище фрагментов вместо ChromaDB: поиск, фильтры, запись на диск."""
-
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +8,6 @@ from app.services import rag_service
 from app.services.embedder import EmbeddingModelMissing
 from app.services.vector_store import VectorStore, matches
 
-# Слово → направление: «oxygen» и «helium» ортогональны, смесь лежит между ними
 AXES = {"oxygen": 0, "helium": 1, "pressure": 2}
 
 
@@ -88,11 +85,9 @@ def test_rag_reads_index_without_model(tmp_path):
     rag = rag_service.RagService(
         Settings(index_dir=tmp_path / "index", embedding_dir=tmp_path / "none")
     )
-    # Счёт, список и поиск по словам работают и без модели
     assert rag.count() == 3
     assert rag.ping() is True
     assert rag.keyword_index().search("helium", 1) == ["b"]
-    # А векторный поиск говорит, что делать
     with pytest.raises(EmbeddingModelMissing, match="python -m app.services.embedder"):
         rag.retrieve("helium")
 

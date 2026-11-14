@@ -1,5 +1,3 @@
-"""Команда sfss: демон подменён, проверяется то, что делает сама команда."""
-
 import json
 import os
 import socket
@@ -30,11 +28,7 @@ def fake_daemon(monkeypatch, handler) -> None:
     monkeypatch.setattr(cli, "make_client", make_client)
 
 
-# --- Параметры predict --------------------------------------------------------
-
-
 def test_nitrogen_fills_the_mix_to_one():
-    # Иначе демон подставит воздушные 0.79, и при 30% кислорода смесь выйдет на 109%
     assert parse("--o2", "0.30").o2 == 0.30
     assert cli.atmosphere_params(parse("--o2", "0.30"))["n2"] == 0.70
     assert cli.atmosphere_params(parse("--he", "0.40"))["n2"] == 0.39
@@ -117,9 +111,6 @@ def test_predict_goes_through_v1(run_dir, monkeypatch):
     assert seen == ["/v1/predict"]
 
 
-# --- predict --csv ------------------------------------------------------------
-
-
 def batch_answer(request):
     assert request.url.path == "/v1/predict/batch"
     assert request.headers["content-type"] == "text/csv"
@@ -139,7 +130,6 @@ def test_csv_results_are_added_to_input_columns(run_dir, monkeypatch, tmp_path):
     out = tmp_path / "out.csv"
     fake_daemon(monkeypatch, batch_answer)
 
-    # Код 1: есть строка с ошибкой, скрипт должен это заметить
     assert cli.main(["predict", "--csv", str(source), "--out", str(out)]) == cli.EXIT_ERROR
 
     assert out.read_text().splitlines() == [
@@ -158,9 +148,6 @@ def test_csv_cannot_be_mixed_with_conditions(run_dir, tmp_path):
 def test_csv_missing_file(run_dir, capsys):
     assert cli.main(["predict", "--csv", "/no/such.csv"]) == cli.EXIT_ERROR
     assert "/no/such.csv" in capsys.readouterr().err
-
-
-# --- import -------------------------------------------------------------------
 
 
 def test_import_uploads_file(run_dir, monkeypatch, tmp_path, capsys):
@@ -190,9 +177,6 @@ def test_import_shows_server_reason(run_dir, monkeypatch, tmp_path, capsys):
     fake_daemon(monkeypatch, lambda _: httpx.Response(422, json={"detail": "No text layer"}))
     assert cli.main(["import", str(source)]) == cli.EXIT_ERROR
     assert "No text layer" in capsys.readouterr().err
-
-
-# --- ask ----------------------------------------------------------------------
 
 
 def stream(*events) -> httpx.Response:
@@ -236,9 +220,6 @@ def test_ask_reports_error_in_the_middle_of_stream(run_dir, monkeypatch, capsys)
     assert "LM Studio is unreachable" in capsys.readouterr().err
 
 
-# --- Демон не запущен ---------------------------------------------------------
-
-
 def test_daemon_not_running_tells_what_to_do(run_dir, monkeypatch, capsys):
     def refuse(_):
         raise httpx.ConnectError("refused")
@@ -248,13 +229,9 @@ def test_daemon_not_running_tells_what_to_do(run_dir, monkeypatch, capsys):
     assert "sfss start" in capsys.readouterr().err
 
 
-# --- Адрес, pid и порт --------------------------------------------------------
-
-
 def test_url_comes_from_start_state(run_dir, monkeypatch):
     cli.state_path().write_text(json.dumps({"pid": 1, "host": "0.0.0.0", "port": 8010}))
     args = cli.build_parser().parse_args(["status"])
-    # 0.0.0.0 слушают, но подключаться к нему нельзя
     assert cli.base_url(args) == "http://127.0.0.1:8010"
 
     monkeypatch.setenv("SFSS_URL", "http://station:9000/")
@@ -262,12 +239,10 @@ def test_url_comes_from_start_state(run_dir, monkeypatch):
 
 
 def test_foreign_process_is_not_ours():
-    # pytest жив, но это не наш uvicorn
     assert cli.is_ours(os.getpid()) is False
 
 
 def test_stop_does_not_kill_a_reused_pid(run_dir, capsys):
-    # После перезагрузки номер из файла мог достаться чужому процессу
     cli.state_path().write_text(json.dumps({"pid": os.getpid(), "host": "127.0.0.1", "port": 8000}))
     assert cli.main(["stop"]) == 0
     assert not cli.state_path().exists()
@@ -325,9 +300,6 @@ def test_help_for_one_command(capsys):
 
 def test_help_for_unknown_command(capsys):
     assert cli.main(["help", "nope"]) == cli.EXIT_ERROR
-
-
-# --- Состояние модели в LM Studio ---------------------------------------------
 
 
 def lm_studio_answers(monkeypatch, data=None, error=False):

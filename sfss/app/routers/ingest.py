@@ -1,5 +1,3 @@
-"""POST /ingest — служебная переиндексация data/raw (не для фронта)."""
-
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_ingest_service

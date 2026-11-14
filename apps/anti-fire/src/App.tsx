@@ -15,22 +15,15 @@ import type { DashboardInfo, HealthInfo, Line, LoadResult } from "./types";
 import { LOAD_TIMEOUT_MS } from "./types";
 
 const DEFAULT_BASE = import.meta.env.VITE_API || "http://127.0.0.1:8000";
-// Состояние модели меняют и снаружи, из Bionic или lms. Запрос дешёвый, около 0,2 с
 const HEALTH_EVERY_MS = 2000;
-// Спросить сразу после нажатия: статус «загружается» не должен ждать опроса
 const SERVICE_REACTS_MS = 200;
 const MAX_LINES = 500;
 const TERMINAL_DEFAULT = 210;
-const TERMINAL_MIN = 40; // одна строка ввода: терминал убран, но под рукой
-const BODY_MIN_DEFAULT = 340; // пока экран расчёта не измерен
+const TERMINAL_MIN = 40;
+const BODY_MIN_DEFAULT = 340;
 
 interface Connection { base: string; key: string }
 
-/** Anti-Fire: программа, для которой SFSS — внешний сервис.
- *
- *  Один экран без режимов: условия и результат, рядом всегда открытый AI, снизу
- *  терминал, где виден каждый запрос. Ничего не считает сама и не хранит снятых
- *  ответов: нет сервиса — так и говорит. */
 export default function App() {
   const [connection, setConnection] = useState<Connection>(() =>
     load("antifire.connection", { base: DEFAULT_BASE, key: "" }),
@@ -93,7 +86,6 @@ export default function App() {
   useEffect(() => {
     void checkHealth();
     const timer = setInterval(() => void checkHealth(), HEALTH_EVERY_MS);
-    // Вернулись из другого окна: там могли выгрузить модель, узнаём сразу
     const onFocus = () => void checkHealth();
     window.addEventListener("focus", onFocus);
     return () => {
@@ -102,8 +94,6 @@ export default function App() {
     };
   }, [checkHealth]);
 
-  // Терминал не поднимается выше заголовка таблицы. Высота условий меняется с
-  // ошибками ввода и шириной окна, поэтому она измеряется, а не задана числом.
   useEffect(() => {
     const calc = document.querySelector<HTMLElement>(".calc");
     const area = calc?.querySelector<HTMLElement>(".table-area");
@@ -130,7 +120,6 @@ export default function App() {
     return () => { stop = true; };
   }, [client, online]);
 
-  // Слэш ведёт к вопросу: AI всегда под рукой, без мыши и переключений
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
@@ -176,14 +165,12 @@ export default function App() {
     }
     setService(action === "start" ? "starting" : "stopping");
     try {
-      // Без сервиса модель из программы уже не выгрузить, а память она держит
       if (action === "stop") await client.post<LoadResult>("/llm/unload", {}, LOAD_TIMEOUT_MS).catch(() => null);
       let streamed = false;
       const output = await controlService(action, connection.base, (line) => {
         streamed = true;
         print("out", line);
       }).catch((error: unknown) => {
-        // Строки уже в терминале: из ошибки печатаем только последнюю, причину
         if (streamed && typeof error === "string") throw error.split("\n").pop() ?? error;
         throw error;
       });
@@ -241,7 +228,6 @@ export default function App() {
           {tr("aiSettings")}
         </button>
         {health && !health.model_loading && (
-          // Пока идёт ответ, выгрузка оборвала бы его
           health.model_loaded ? (
             <button className="model-action" title={tr("unloadTitle")} disabled={modelBusy || aiBusy} onClick={() => void switchModel("unload")}>
               {tr("unload")}
@@ -282,7 +268,6 @@ export default function App() {
         )}
         {screen === "work" ? (
           <>
-            {/* Расчёт скрыт, а не убран: иначе закрытие страницы теряло бы ввод */}
             <div className="left" hidden={aiExpanded || Boolean(viewer)}>
               <Calculator client={client} online={online} dashboard={dashboard} print={print} />
             </div>

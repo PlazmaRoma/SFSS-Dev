@@ -21,9 +21,7 @@ def test_language_goes_to_llm_not_to_search(client):
     response = client.post("/query", json={"question": question, "language": "en"})
     assert response.status_code == 200
 
-    # Поиск видит только перевод вопроса: любой лишний текст в нём уводит retrieval
     assert FakeRagService.last_question == f"translated: {question}"
-    # А модель отвечает на исходный вопрос; перевод ей передаётся отдельно
     assert FakeLLMService.last_call == {
         "question": question,
         "language": "en",

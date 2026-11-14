@@ -18,7 +18,6 @@ const ASK_STAGES = {
   translating: "termStageTranslating",
 } as const;
 
-/** Те же команды, что у sfss, и журнал всего, что программа отправляет в API. */
 export function Terminal({ client, lines, print, replaceLine, clear, onModelChanged, onModelStarting, onService }: {
   client: Client;
   lines: Line[];

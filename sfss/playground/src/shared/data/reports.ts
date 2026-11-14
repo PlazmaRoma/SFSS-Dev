@@ -1,14 +1,3 @@
-/** Названия отчётов NASA для списка источников.
- *
- *  Бэкенд отдаёт doc_id — имя PDF-файла, обрезанное на полуслове:
- *  `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`. Читать
- *  такое нельзя, а сам бэкенд заголовков не знает. Названия переписаны с
- *  титульных листов всех 16 отчётов корпуса.
- *
- *  Ключ — номер NTRS, а не doc_id целиком: хвост имени зависит от того,
- *  как файл назвали при скачивании, и у разных машин он разный (в снятых
- *  ответах `...-BASS-II-Summary-Report`, в индексе `...-Burning-and-...`).
- *  Номер одинаков всегда. */
 const REPORTS: Record<string, string> = {
   "19950017584": "Microgravity Combustion Science: 1995 Program Update",
   "19970009350":
@@ -34,11 +23,8 @@ const REPORTS: Record<string, string> = {
   "20210022402": "Solid Fuel Combustion in Partial and Micro-Gravity",
 };
 
-/** Номер NTRS из doc_id, если он там есть. */
 export const ntrsId = (docId: string) => docId.match(/\d{11}/)?.[0] ?? null;
 
-/** Название отчёта. Для документа не из корпуса — doc_id без дефисов,
- *  как показывалось раньше: лучше узнаваемое имя файла, чем ничего. */
 export function reportTitle(docId: string): string {
   const id = ntrsId(docId);
   if (id && REPORTS[id]) return REPORTS[id];

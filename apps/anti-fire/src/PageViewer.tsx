@@ -6,7 +6,6 @@ import { tr } from "./lang";
 
 export interface ViewerState { docId: string; page: number; url: string | null; error: string | null }
 
-/** Страница отчёта, на которую сослался ответ. */
 export function usePageViewer(client: Client) {
   const [viewer, setViewer] = useState<ViewerState | null>(null);
 
@@ -15,7 +14,6 @@ export function usePageViewer(client: Client) {
   const open = useCallback(async (docId: string, page: number) => {
     setViewer({ docId, page, url: null, error: null });
     try {
-      // Через fetch, а не src у iframe: так уходит ключ, и запрос виден в журнале
       const blob = await client.send(
         "GET", `/documents/${encodeURIComponent(docId)}/pages/${page}`,
         { ms: 30_000 },

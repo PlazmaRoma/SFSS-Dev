@@ -41,8 +41,6 @@
 }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
-/* Интерфейс всегда помещается в окно, прокручиваются только его части. Без этого macOS
-   оттягивала всю страницу пружиной при прокрутке трекпадом, вместе с шапкой */
 html, body { overflow: hidden; overscroll-behavior: none; }
 body {
   background: var(--bg);
@@ -75,8 +73,6 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
 input[aria-invalid="true"] { border-color: var(--bad); }
 .muted { color: var(--muted); }
 
-/* Упор терминала: --body-min заканчивается на заголовке таблицы. CSS держит его и при
-   уменьшении окна, max оставляет строку ввода, даже если окно совсем маленькое */
 .app { height: 100%; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto max(40px, min(var(--terminal-height, 210px), calc(100vh - var(--body-min, 340px)))); }
 .top { display: flex; align-items: center; gap: 14px; padding: 6px 12px; border-bottom: 1px solid var(--line); }
 .brand { font-size: 14px; }
@@ -210,8 +206,6 @@ th, td { padding: 2px 8px; border-bottom: 1px solid var(--line); }
 .viewer iframe { flex: 1; width: 100%; min-height: 0; border: 0; background: #fff; }
 .viewer > .muted, .viewer > .notice { margin: 8px 12px; }
 
-/* Две колонки, у каждой один свой скролл. Вложенные скроллы не давали долистать
-   таблицу опытов до конца, особенно при высоком терминале */
 .data { grid-column: 1 / -1; grid-row: 2; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); }
 .data-block { padding: 10px 12px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .data-block .table-bar { padding: 0; }
@@ -222,7 +216,6 @@ th, td { padding: 2px 8px; border-bottom: 1px solid var(--line); }
 .metrics dt { color: var(--muted); }
 .metrics dd { margin: 0; font-variant-numeric: tabular-nums; }
 
-/* Зона захвата шире видимой ручки: в 6 пикселей мышью не попасть */
 .splitter { grid-row: 4; height: 14px; margin: -7px 0; position: relative; z-index: 2; cursor: row-resize; touch-action: none; display: flex; justify-content: center; align-items: center; }
 .splitter::after { content: ""; width: 36px; height: 2px; border-radius: 1px; background: var(--term-muted); opacity: 0.6; }
 .splitter:hover::after, .splitter:focus-visible::after { opacity: 1; background: var(--accent); }

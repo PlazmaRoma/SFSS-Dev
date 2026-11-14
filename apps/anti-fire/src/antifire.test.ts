@@ -6,7 +6,6 @@ import { canControl, controlService, localPort } from "./service";
 import { AIR, airParameters, parseNumber, switchUnit, toParameters, warningText } from "./conditions";
 import { csvRecords, parseCsv, toCsv } from "./csv";
 
-// Большинство проверок сверяет русские тексты; язык системы тут ни при чём
 beforeEach(() => setLang("ru", false));
 
 describe("config в терминале", () => {
@@ -130,7 +129,6 @@ describe("управление сервисом", () => {
 
 describe("условия → параметры", () => {
   it("азот дополняет смесь до единицы", () => {
-    // Иначе сервис подставит воздушные 79 %, и смесь выйдет на 109 %
     const { params, nitrogenAuto } = toParameters({ ...AIR, o2: "30" });
     expect(params?.oxygen_level).toBe(0.3);
     expect(params?.n2).toBe(0.7);
@@ -242,7 +240,6 @@ describe("ссылки в ответе", () => {
 
   it("жирный текст отделяется от обычного", () => {
     expect(splitBold("про **плотность газа** и **топливо**")).toEqual(["про ", "плотность газа", " и ", "топливо", ""]);
-    // Звёздочки ещё не закрыты, пока ответ пишется: остаются текстом
     expect(splitBold("про **плотн")).toEqual(["про **плотн"]);
   });
 

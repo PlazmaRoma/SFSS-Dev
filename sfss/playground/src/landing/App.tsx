@@ -6,8 +6,6 @@ import { Footer } from "./Footer";
 import "../shared/app.css";
 import { useLang } from "../shared/lib/lang";
 
-/** Лендинг. Сам рабочий стол переехал в отдельную сборку (app.html):
- *  это и есть «программа», которую скачивают кнопкой внизу страницы. */
 export default function App() {
   const [lang, setLang] = useLang();
   const heroProgress = useRef(0);

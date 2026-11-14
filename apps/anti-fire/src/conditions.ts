@@ -1,8 +1,6 @@
 import { PSI_TO_MMHG } from "@sfss/lib/risk";
 import { tr } from "./lang";
 
-/** Условия опыта, как их вводит человек: проценты и выбранная единица давления.
- *  Значения — строки: пока человек печатает «0,», это ещё не число. */
 export interface Conditions {
   o2: string;
   n2: string;
@@ -26,7 +24,6 @@ export interface Parsed {
   errors: Partial<Record<Field, string>>;
 }
 
-/** Десятичная запятая на русской раскладке — обычное дело, а не ошибка. */
 export function parseNumber(text: string): number | null {
   const normalized = text.trim().replace(",", ".");
   if (!normalized) return null;
@@ -41,10 +38,6 @@ export const fuelParams = (fuel: Conditions["fuel"]) => ({
   fuel_heptane: fuel === "heptane" ? 1 : 0,
 });
 
-/** Проценты → parameters для /v1/predict.
- *
- *  Азот без значения дополняет смесь до 100 %. Сервис подставил бы воздушные 79 %,
- *  и при 30 % кислорода считалась бы смесь на 109 %. */
 export function toParameters(c: Conditions): Parsed {
   const errors: Parsed["errors"] = {};
 
@@ -99,7 +92,6 @@ export function toParameters(c: Conditions): Parsed {
   };
 }
 
-/** Давление при смене единицы пересчитывается, а не остаётся тем же числом. */
 export function switchUnit(c: Conditions, unit: Conditions["unit"]): Conditions {
   if (unit === c.unit) return c;
   const value = parseNumber(c.pressure);
@@ -108,7 +100,6 @@ export function switchUnit(c: Conditions, unit: Conditions["unit"]): Conditions 
   return { ...c, unit, pressure: String(round(converted, unit === "psi" ? 2 : 0)) };
 }
 
-/** Обычный воздух при том же топливе и той же капле: сравнивать надо только атмосферу. */
 export function airParameters(params: Record<string, number>): Record<string, number> {
   return {
     oxygen_level: 0.21, n2: 0.79, co2: 0, he: 0, pressure_mmhg: 760,
@@ -131,8 +122,6 @@ const FEATURE_LABELS: Record<string, () => [string, number, string]> = {
   d_initial_mm: () => [tr("droplet"), 1, ` ${tr("mm")}`],
 };
 
-/** warnings приходят из API как данные, на ASCII. Человеку показываем на языке
- *  программы; незнакомый текст показываем как есть, чтобы предупреждение не потерялось. */
 export function warningText(warning: string): string {
   const range = warning.match(/^(\w+)=(\S+) is outside the training range (\S+?)\.\.(\S+)$/);
   if (range && FEATURE_LABELS[range[1]]) {

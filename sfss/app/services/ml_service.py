@@ -1,5 +1,3 @@
-"""Инференс модели fiery: скоринг риска и кластеризация экспериментов."""
-
 import logging
 import math
 from typing import Any
@@ -13,22 +11,10 @@ from app.models.schemas import BatchResponse, BatchRow, ChartData, PredictRespon
 
 logger = logging.getLogger(__name__)
 
-# Модель скоринга риска называется fiery
 MODEL_NAME = "fiery"
 RISK_MODEL_FILE = f"{MODEL_NAME}.joblib"
 CLUSTER_MODEL_FILE = f"{MODEL_NAME}_clusters.joblib"
 
-# Значения по умолчанию, чтобы фронт присылал только то, что пользователь
-# реально меняет, а не все восемь признаков.
-#
-# Это стандартная атмосфера на уровне моря, а НЕ медианы обучающей выборки:
-# медианы долей газов дают в сумме 0.86, то есть смесь, которой не бывает —
-# FLEX намеренно перебирал необычные атмосферы, и покоординатная медиана
-# физически бессмысленна. Диаметр капли 3.0 мм близок к медиане выборки (3.01),
-# метанол выбран как топливо большинства опытов (151 против 108).
-#
-# Признак, которого здесь нет, остаётся обязательным: если модель переобучат
-# на других колонках, /predict честно потребует их, а не подставит выдумку.
 FEATURE_DEFAULTS: dict[str, float] = {
     "pressure_mmhg": 760.0,
     "oxygen_level": 0.21,
@@ -42,12 +28,11 @@ FEATURE_DEFAULTS: dict[str, float] = {
 
 TRAINING_DATASET = "flex.csv"
 GASES = ("oxygen_level", "n2", "co2", "he")
-# Запас на округление долей в запросе
 GAS_SUM_TOLERANCE = 0.01
 
 
 class ModelNotTrainedError(RuntimeError):
-    """Артефакты не найдены — сначала нужно запустить scripts/train_model.py."""
+    pass
 
 
 class MLService:
@@ -58,7 +43,6 @@ class MLService:
         self._ranges: dict[str, tuple[float, float]] | None = None
 
     def _load(self) -> None:
-        """Ленивая загрузка артефактов joblib при первом обращении."""
         if self._bundle is not None:
             return
 
@@ -68,7 +52,6 @@ class MLService:
                 f"Model artifact not found: {risk_path}. Run: python scripts/train_model.py"
             )
 
-        # bundle: {"model": ..., "features": [...], "is_heuristic": bool}
         self._bundle = joblib.load(risk_path)
 
         cluster_path = self.settings.models_dir / CLUSTER_MODEL_FILE
@@ -79,11 +62,6 @@ class MLService:
         return (self.settings.models_dir / RISK_MODEL_FILE).exists()
 
     def _vectorize(self, parameters: dict[str, Any]) -> pd.DataFrame:
-        """Приводит словарь параметров к строке DataFrame в порядке features.
-
-        Именно DataFrame, а не numpy: модели обучаются на именованных
-        колонках, и без имён sklearn предупреждает о несовпадении схемы.
-        """
         assert self._bundle is not None
         features: list[str] = self._bundle["features"]
         return pd.DataFrame(
@@ -91,15 +69,6 @@ class MLService:
         )
 
     def resolve(self, parameters: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
-        """Дополняет запрос значениями по умолчанию.
-
-        Возвращает полный набор признаков и список тех, что были подставлены:
-        фронт должен показать пользователю, что часть условий он не задавал.
-
-        Неизвестный ключ — ошибка, а не повод его проигнорировать. Опечатка
-        вроде `oxigen_level` иначе молча заменилась бы значением по умолчанию,
-        и пользователь получил бы правдоподобное, но неверное число.
-        """
         assert self._bundle is not None
         features: list[str] = self._bundle["features"]
 
@@ -126,7 +95,6 @@ class MLService:
 
     @staticmethod
     def defaults_for(features: list[str]) -> dict[str, float]:
-        """Значения по умолчанию для признаков модели — фронту для инициализации."""
         return {f: FEATURE_DEFAULTS[f] for f in features if f in FEATURE_DEFAULTS}
 
     def predict(self, parameters: dict[str, Any]) -> PredictResponse:
@@ -153,11 +121,6 @@ class MLService:
         )
 
     def predict_batch(self, rows: list[dict[str, Any]]) -> BatchResponse:
-        """Пакетный расчёт: плохая строка получает error, остальные считаются.
-
-        Модель вызывается один раз на все строки, а не на каждую: лес деревьев
-        на одной строке стоит миллисекунды, и 10 000 строк шли бы минутами.
-        """
         self._load()
         assert self._bundle is not None
         features: list[str] = self._bundle["features"]
@@ -199,14 +162,13 @@ class MLService:
         )
 
     def _feature_ranges(self) -> dict[str, tuple[float, float]]:
-        """Диапазоны признаков в обучающей выборке; без датасета — пусто."""
         if self._ranges is None:
             path = self.settings.processed_dir / TRAINING_DATASET
             self._ranges = {}
             try:
                 frame = pd.read_csv(path)
             except Exception as exc:
-                logger.warning("Диапазоны обучения недоступны: %s", exc)
+                logger.warning("Training ranges unavailable: %s", exc)
                 return self._ranges
             assert self._bundle is not None
             for feature in self._bundle["features"]:
@@ -217,13 +179,6 @@ class MLService:
         return self._ranges
 
     def warnings_for(self, resolved: dict[str, Any]) -> list[str]:
-        """Почему этому числу стоит доверять меньше.
-
-        Вне диапазона обучения лес деревьев выходит на плато (кислород выше
-        0.34 даёт прямую линию), а сумма газов не из единицы значит смесь,
-        которой не бывает: {"oxygen_level": 0.30} с воздушным азотом это 109%.
-        Значения считаются всё равно, но человек должен это видеть.
-        """
         warnings = []
         for feature, (low, high) in self._feature_ranges().items():
             value = resolved.get(feature)
@@ -241,13 +196,6 @@ class MLService:
         return self._score_frame(x)[0]
 
     def _score_frame(self, x) -> list[tuple[float, float | None]]:
-        """Риск в диапазоне 0..1 и, для регрессии, сама величина в её единицах.
-
-        Регрессия предсказывает физическую величину (скорость горения, мм²/с),
-        а контракт API требует risk_score от нуля до единицы, поэтому значение
-        нормируется по диапазону обучающей выборки. Сам предсказанный результат
-        отдаётся рядом в `predicted_value` — без него число 0.73 нечитаемо.
-        """
         assert self._bundle is not None
         model = self._bundle["model"]
 
@@ -265,7 +213,6 @@ class MLService:
         return [(float(v), None) for v in model.predict(x)]
 
     def _build_chart(self, parameters: dict[str, Any]) -> ChartData:
-        """Свип риска по уровню кислорода при остальных параметрах фиксированных."""
         assert self._bundle is not None
         features: list[str] = self._bundle["features"]
         sweep_feature = "oxygen_level"
@@ -277,14 +224,11 @@ class MLService:
         frame = pd.DataFrame(
             [[probe[f] for f in features] for probe in probes], columns=features, dtype=float
         )
-        # Одним вызовом: 20 вызовов леса стоили 0.4 с на каждое движение ползунка.
-        # Та же шкала, что у risk_score, иначе график и число разойдутся
         ys = [risk for risk, _ in self._score_frame(frame)]
         return ChartData(x=[float(v) for v in xs], y=ys)
 
 
 def _numeric(parameters: dict[str, Any]) -> dict[str, float]:
-    """Значения строки как числа: CSV приносит текст, а NaN тихо сломал бы лес."""
     numeric = {}
     for name, value in parameters.items():
         try:

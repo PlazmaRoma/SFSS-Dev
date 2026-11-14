@@ -4,8 +4,6 @@ import { askStream, cache, type Progress } from "../shared/api";
 import { TOPIC_LABEL, tr } from "../shared/i18n";
 import { reportTitle } from "../shared/data/reports";
 
-/** Модель отвечает лёгкой разметкой: **жирный** и списки. Полноценный
- *  markdown-парсер сюда тащить незачем — хватает жирного и абзацев. */
 function render(text: string) {
   return text.split(/\n{2,}|\n(?=[-*\d])/).filter(Boolean).map((block, i) => {
     const parts = block.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
@@ -23,7 +21,6 @@ function render(text: string) {
 
 const TOPICS = ["oxygen", "pressure", "solids", "airflow", "materials", "helium", "safety", "droplet"];
 
-/** Длинный вопрос модель на 3B всё равно не удержит, а промпт растёт */
 const MAX_QUESTION = 300;
 
 export function Explain({
@@ -34,29 +31,21 @@ export function Explain({
 }: {
   lang: Lang;
   online: boolean;
-  /** Рантайм нейросети отвечает: без него /query упадёт, прождав до 90 секунд */
   llm: boolean;
-  /** Перечитать /health: рантайм поднимают и гасят отдельно от сервиса. Зовётся,
-   *  когда человек собирается спросить и когда ответа не было */
   onCheck: () => void;
 }) {
-  // topic === null — показан свой вопрос пользователя, а не готовая тема
   const [topic, setTopic] = useState<string | null>(TOPICS[0]);
   const [own, setOwn] = useState("");
   const [draft, setDraft] = useState("");
   const [live, setLive] = useState<Answer | null>(null);
-  // Что успело прийти из потока, пока ответ ещё пишется
   const [progress, setProgress] = useState<Progress | null>(null);
   const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [failed, setFailed] = useState(false);
   const [full, setFull] = useState(false);
 
-  // Ответ идёт полминуты, за это время можно уйти на другую тему. Номер
-  // запроса не даёт опоздавшему ответу встать под чужой вопрос.
   const request = useRef(0);
 
-  // Полминуты без движения выглядят как зависание: показываем секунды
   useEffect(() => {
     if (!busy) return;
     const started = Date.now();
@@ -69,7 +58,6 @@ export function Explain({
   const shown: Answer | null = live ?? entry?.[lang] ?? null;
   const canAsk = online && llm && !busy;
   const streamed = busy && progress?.text ? progress.text : null;
-  // Источники приходят первыми, сразу после поиска: их видно, пока модель пишет
   const sources = busy ? progress?.sources ?? null : shown?.sources ?? null;
   const stage = tr(
     progress?.stage === "translating" ? "stageTranslating" : progress?.stage === "answering" ? "stageAnswering" : "asking",
@@ -125,7 +113,6 @@ export function Explain({
     <div className="panel">
       <h3>{tr("askNasa", lang)}</h3>
 
-      {/* Поле первым: свой вопрос и есть главное, готовые темы под ним */}
       <form className="ask-own" onSubmit={submit}>
         <input
           type="text"
@@ -154,7 +141,6 @@ export function Explain({
 
       <p className="asked">{asked}</p>
 
-      {/* Пока текст идёт потоком, не обрезаем: иначе новые слова прятались бы */}
       <div className={full || busy ? "prose" : "prose clamped"}>
         {streamed ? (
           render(streamed)
@@ -198,8 +184,6 @@ export function Explain({
       {sources && sources.length > 0 && (
         <div style={{ marginTop: "20px" }}>
           <h3>{tr("sources", lang)}</h3>
-          {/* Цитата из PDF нужна для проверки, но три таких блока подряд
-              превращают панель в стену текста. Прячем под раскрытие. */}
           {sources.map((s, i) => (
             <details className="source" key={i}>
               <summary title={s.doc_id}>

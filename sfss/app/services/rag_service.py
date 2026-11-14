@@ -1,5 +1,3 @@
-"""Retrieval релевантных чанков: свой индекс на диске и модель поиска в ONNX."""
-
 import logging
 import threading
 from typing import Any
@@ -24,15 +22,12 @@ class RagService:
         self._keyword_index: KeywordIndex | None = None
 
     def _embed(self, texts: list[str]) -> np.ndarray:
-        # Модель грузится при первом вопросе или импорте, а не на старте: так status,
-        # расчёт и список отчётов не ждут полторы секунды и работают даже без модели
         with self._embedder_lock:
             if self._embedder is None:
                 self._embedder = Embedder(self.settings.embedding_dir)
         return self._embedder.embed(texts)
 
     def warm_up(self) -> None:
-        """Загрузить модель заранее, чтобы первый вопрос не ждал."""
         self._embed(["warm up"])
 
     @property
@@ -46,7 +41,6 @@ class RagService:
         return self.collection.count()
 
     def keyword_index(self) -> KeywordIndex:
-        """Индекс BM25 по всей коллекции; пересобирается, если число чанков изменилось."""
         index = self._keyword_index
         if index is None or len(index.ids) != self.count():
             data = self.collection.get(include=["documents"])
@@ -62,18 +56,15 @@ class RagService:
     ) -> list[Source]:
         k = top_k or self.settings.top_k
         if self.count() == 0:
-            logger.warning("Коллекция пуста — сначала выполните ingest")
+            logger.warning("The index is empty: run ingest first")
             return []
 
-        # С фильтрами — только векторный поиск: where бывает составным,
-        # повторять его логику в BM25 незачем.
         if self.settings.hybrid_search and not filters:
             n = min(self.settings.hybrid_candidates, self.count())
             dense = self.collection.query(query_texts=[question], n_results=n)["ids"][0]
             keyword = self.keyword_index().search(question, n)
             ids = fuse(dense, keyword, self.settings.keyword_weight, k)
             result = self.collection.get(ids=ids, include=["documents", "metadatas"])
-            # get возвращает в своём порядке, а нужен порядок слияния
             found = dict(zip(result["ids"], zip(result["documents"], result["metadatas"])))
             documents = [found[i][0] for i in ids if i in found]
             metadatas = [found[i][1] for i in ids if i in found]

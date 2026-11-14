@@ -2,15 +2,11 @@ import type { ReactNode } from "react";
 import type { Lang } from "../shared/types";
 import { tr } from "../shared/i18n";
 
-/** href — либо якорь на лендинге, либо отдельная страница. */
 const NAV: { href: string; key: string }[] = [
   { href: "#demo", key: "navDemo" },
   { href: "#premise", key: "navPremise" },
 ];
 
-/** Шапка работает в двух местах. На лендинге это навигация и кнопка
- *  скачивания, внутри программы — только название и язык: ссылки на
- *  якоря лендинга там ведут в никуда. */
 export function TopBar({
   lang, setLang, variant = "landing", actions,
 }: {
@@ -19,8 +15,6 @@ export function TopBar({
   variant?: "landing" | "program";
   actions?: ReactNode;
 }) {
-  // Остатки маршрутизации по хешу убраны вместе с дашбордом: все разделы
-  // теперь на одной странице, и вести некуда, кроме своего же якоря.
   const go = (href: string) => {
     document.getElementById(href.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" });
   };

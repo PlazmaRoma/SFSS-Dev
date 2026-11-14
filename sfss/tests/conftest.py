@@ -1,14 +1,7 @@
-"""Фикстуры: сервисы подменяются заглушками, чтобы тесты не требовали
-поднятого LM Studio и реальной ChromaDB."""
-
 import os
 import tempfile
 
-# Выставляется до импорта приложения: TestClient запускает lifespan, а тот
-# без этого грузил бы настоящую модель эмбеддингов — 12 секунд на ровном месте,
-# при том что все сервисы всё равно подменены заглушками.
 os.environ.setdefault("WARMUP_ON_STARTUP", "false")
-# Настройки на этой машине не должны влиять на тесты, а тесты на них
 os.environ["LLM_CONFIG_PATH"] = os.path.join(tempfile.mkdtemp(), "llm.json")
 
 from types import SimpleNamespace  # noqa: E402
@@ -39,7 +32,6 @@ from app.models.schemas import (  # noqa: E402
 
 
 class FakeRagService:
-    # Что ушло в поиск: инструкция о языке туда попадать не должна
     last_question: str | None = None
 
     def ping(self) -> bool:
@@ -60,7 +52,6 @@ class FakeRagService:
 
 
 class FakeLLMService:
-    # Последний вызов generate: тесты проверяют, что ушло в LLM, а что в поиск
     last_call: dict[str, Any] = {}
 
     def ping(self) -> bool:
@@ -87,7 +78,6 @@ class FakeLLMService:
         pass
 
     def search_query(self, question: str) -> str:
-        # Как настоящий: переводится только кириллица
         return f"translated: {question}" if any("а" <= c <= "я" for c in question.lower()) else question
 
     def generate(
@@ -105,7 +95,6 @@ class FakeLLMService:
         return "Скорость распространения пламени падает ниже 18% O2 [BASS-II-report, стр. 4]."
 
 
-    # Включается тестом, чтобы проверить ошибку посреди потока
     fail_midstream = False
 
     def generate_stream(
@@ -152,8 +141,6 @@ class FakeMLService:
 
 
 class FakeDashboardService:
-    """Заглушка: тесты не должны зависеть от наличия data/ и обученной модели."""
-
     def build(self) -> DashboardResponse:
         return DashboardResponse(
             model=ModelInfo(
@@ -190,7 +177,6 @@ def client() -> TestClient:
     app.dependency_overrides[get_llm_service] = FakeLLMService
     app.dependency_overrides[get_ml_service] = FakeMLService
     app.dependency_overrides[get_dashboard_service] = FakeDashboardService
-    # С адреса этой машины ключ не нужен; без client= хост был бы «testclient»
     with TestClient(app, client=("127.0.0.1", 50000)) as test_client:
         yield test_client
     app.dependency_overrides.clear()

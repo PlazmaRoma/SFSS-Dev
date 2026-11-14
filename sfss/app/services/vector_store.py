@@ -1,17 +1,3 @@
-"""Хранилище фрагментов с векторами: два файла на диске вместо ChromaDB.
-
-В корпусе 1131 фрагмент по 384 числа, 1,7 МБ. Точный перебор по такой матрице numpy
-делает за миллисекунды, так что приближённый HNSW из ChromaDB ничего не давал, а сама
-ChromaDB тянула в установку kubernetes, grpc и opentelemetry (ARCHITECTURE § 7.23).
-
-Методы повторяют ту часть API коллекции Chroma, которой пользуется сервис: get, query,
-upsert, delete, count. Поэтому остальной код и тесты с подделкой коллекции не менялись.
-
-Файлы: chunks.jsonl (id, текст, метаданные, по строке на фрагмент) и vectors.npy
-(float32, в том же порядке). Оба лежат в git: готовый индекс не надо собирать при
-установке. Запись атомарная: сначала во временный файл, потом замена.
-"""
-
 import json
 import os
 import tempfile
@@ -30,7 +16,6 @@ Embed = Callable[[list[str]], np.ndarray]
 
 
 def matches(meta: dict, where: dict | None) -> bool:
-    """Фильтр как where у Chroma: поле = значение, $eq, $ne, $in, $nin, $and, $or."""
     if not where:
         return True
     for key, condition in where.items():
@@ -75,7 +60,6 @@ class VectorStore:
         self.vectors = np.zeros((0, DIMENSIONS), dtype=np.float32)
         self._load()
 
-    # --- диск ----------------------------------------------------------------
 
     def _load(self) -> None:
         chunks, vectors = self.path / CHUNKS, self.path / VECTORS
@@ -107,7 +91,6 @@ class VectorStore:
         try:
             with os.fdopen(fd, "wb") as file:
                 writer(file)
-            # mkstemp создаёт файл только для владельца, а индекс читают все
             umask = os.umask(0)
             os.umask(umask)
             os.chmod(temp, 0o666 & ~umask)
@@ -116,7 +99,6 @@ class VectorStore:
             if os.path.exists(temp):
                 os.unlink(temp)
 
-    # --- векторы ------------------------------------------------------------
 
     def embed(self, texts: list[str]) -> np.ndarray:
         if self._embed is None:
@@ -128,7 +110,6 @@ class VectorStore:
         norms = np.linalg.norm(matrix, axis=1, keepdims=True)
         return matrix / np.clip(norms, 1e-12, None)
 
-    # --- API коллекции ---------------------------------------------------------
 
     def count(self) -> int:
         return len(self.ids)
@@ -157,7 +138,6 @@ class VectorStore:
         where: dict | None = None,
         include: list[str] | None = None,
     ) -> dict[str, list]:
-        """Ближайшие по косинусу, как у коллекции Chroma с hnsw:space=cosine."""
         result: dict[str, list] = {"ids": [], "documents": [], "metadatas": [], "distances": []}
         allowed = np.array([matches(m, where) for m in self.metadatas], dtype=bool)
         if not allowed.any():

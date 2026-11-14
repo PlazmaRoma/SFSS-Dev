@@ -1,12 +1,5 @@
 import type { Answer, Source } from "./types";
 
-/** Сетевая часть, общая для Площадки и программы Anti-Fire.
- *
- *  Без фикстур и без офлайна: Площадке они нужны, а настоящая программа должна
- *  честно сказать, что сервис не запущен. Адрес и ключ задаются при создании,
- *  потому что Anti-Fire может работать с SFSS на другой машине. */
-
-/** Событие потока /query/stream, по одному на строку (NDJSON). */
 export type StreamEvent =
   | { type: "sources"; sources: Source[]; search_query: string | null }
   | { type: "stage"; stage: "loading" | "searching" | "answering" | "translating" }
@@ -14,8 +7,6 @@ export type StreamEvent =
   | { type: "done"; answer: string }
   | { type: "error"; detail: string };
 
-/** Режет поток байт на строки JSON. Кусок может оборваться посреди строки
- *  и даже посреди буквы, поэтому хвост копится до следующего куска. */
 export async function readEvents(body: ReadableStream<Uint8Array>, onEvent: (e: StreamEvent) => void) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -33,7 +24,6 @@ export async function readEvents(body: ReadableStream<Uint8Array>, onEvent: (e: 
 
 export interface Progress { sources: Source[] | null; stage: "loading" | "searching" | "answering" | "translating"; text: string }
 
-/** Что ушло в API: из этого программа показывает журнал и команду curl. */
 export interface RequestRecord {
   method: string;
   path: string;
@@ -55,11 +45,9 @@ export interface RequestOptions {
   body?: BodyInit;
   contentType?: string;
   ms?: number;
-  /** Не записывать в журнал: фоновый опрос заглушил бы всё остальное. */
   quiet?: boolean;
 }
 
-/** Ответ с кодом ошибки. detail — причина от сервиса, её можно показать человеку. */
 export class ApiError extends Error {
   status: number;
   detail: string | null;
@@ -141,22 +129,12 @@ export function createClient({ base, key, prefix = "", onRequest }: ClientOption
   const del = <T,>(path: string, ms = 8000) =>
     call<T>("DELETE", path, { ms }, (res) => res.json() as Promise<T>);
 
-  /** Тело не JSON: CSV и PDF, а также загрузка страницы отчёта. */
   const send = <T,>(method: string, path: string, options: RequestOptions, read: (res: Response) => Promise<T>) =>
     call<T>(method, path, options, read);
 
-  /** Язык ответа — отдельное поле, а не просьба в тексте вопроса: вопрос целиком
-   *  уходит в поиск, и приписка уводила его на чужие страницы. */
   const askLive = (question: string, lang: "en" | "ru") =>
     post<Answer>("/query", { question, language: lang });
 
-  /** Тот же вопрос, но ответ показывается по мере генерации.
-   *
-   *  Полминуты пустого экрана — главное, что портило живой вопрос. Тайм-аут
-   *  здесь не на весь ответ, а на тишину: длинный русский ответ идёт дольше
-   *  90 секунд, но пока куски приходят, ждать есть чего.
-   *
-   *  Бэкенд без /query/stream отвечает 404 — тогда обычный /query. */
   async function askStream(
     question: string,
     lang: "en" | "ru",
@@ -200,12 +178,11 @@ export function createClient({ base, key, prefix = "", onRequest }: ClientOption
         else if (e.type === "error") throw new Error(e.detail);
         onProgress({ ...p });
       });
-      if (answer === null) throw new Error("/query/stream оборвался без done");
+      if (answer === null) throw new Error("/query/stream ended without done");
       return { answer, sources: p.sources ?? [] };
     } finally {
       clearTimeout(timer);
       signal?.removeEventListener("abort", stop);
-      // После ошибки посреди потока соединение иначе висело бы открытым
       ctl.abort();
     }
   }

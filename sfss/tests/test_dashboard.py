@@ -9,8 +9,6 @@ def test_dashboard_returns_all_sections(client):
 def test_dashboard_model_carries_units_and_metrics(client):
     body = client.get("/dashboard").json()["model"]
 
-    # без единиц измерения число на экране нечитаемо, но сама подпись — в ASCII:
-    # это данные для чужого кода, а не текст для человека
     assert body["units"] == "mm^2/s"
     assert body["target"] == "burn_rate_mm2s"
     assert body["trained"] is True

@@ -2,13 +2,6 @@ import type { Lang } from "../shared/types";
 import { tr } from "../shared/i18n";
 import data from "../shared/fixtures/coverage.json";
 
-/** Где NASA мерила, а где нет.
- *
- *  Самая полезная клетка здесь — пустая. Обитаемые базы планируют на 34%
- *  кислорода, а твёрдые материалы выше 24% на орбите не жгли ни разу.
- *  Значит любое утверждение про ткань или пластик в этом диапазоне это
- *  экстраполяция, включая наше собственное. Об этом честнее сказать самим.
- */
 interface Cell { lo: number; hi: number; n: number }
 interface Row { key: string; source: string; cells: Cell[] }
 
@@ -20,8 +13,6 @@ const D = data as unknown as {
   maxCell: number;
 };
 
-/** Плотность одним тоном, светлее к большему: так читается количество,
- *  а не категория. Пустые клетки не красим вовсе. */
 function shade(n: number, max: number) {
   if (n === 0) return "transparent";
   const t = Math.sqrt(n / max);

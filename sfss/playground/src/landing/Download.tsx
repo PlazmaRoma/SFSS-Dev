@@ -3,9 +3,6 @@ import { tr } from "../shared/i18n";
 
 const INTEGRATION_DOCS = "https://github.com/PlazmaRoma/SFSS-Dev/blob/main/sfss/docs/INTEGRATION.md";
 
-/** Последний блок лендинга перед подвалом.
- *  Архив лежит в public и собирается скриптом tools/make_source_zip.sh —
- *  так он не расходится с кодом после правок. */
 export function Download({ lang }: { lang: Lang }) {
   return (
     <section className="grab" id="download">

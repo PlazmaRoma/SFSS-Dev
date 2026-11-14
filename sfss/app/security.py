@@ -1,5 +1,3 @@
-"""Доступ к API: с этой машины свободно, с других адресов по ключу."""
-
 import ipaddress
 import re
 import secrets
@@ -31,12 +29,6 @@ def provided_key(request: Request) -> str | None:
 
 
 def require_api_key(request: Request, settings: Settings = Depends(get_settings)) -> None:
-    """Проверяется на каждом запросе, кроме /docs и /openapi.json.
-
-    Адреса машины недостаточно: страница чужого сайта в браузере тоже ходит с
-    127.0.0.1. Для загрузки файла ей не нужен preflight, так что CORS запрос не
-    остановит. Поэтому с чужим Origin доверия нет и с этой машины.
-    """
     origin = request.headers.get("origin")
     host = request.client.host if request.client else None
     if is_loopback(host) and (origin is None or origin_allowed(origin, settings)):

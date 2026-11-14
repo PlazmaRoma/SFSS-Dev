@@ -1,5 +1,3 @@
-"""Внешний API: /v1, ключ доступа, пакетный расчёт, документы, предупреждения."""
-
 import io
 
 import pandas as pd
@@ -27,9 +25,6 @@ def pdf_bytes(pages: int = 2) -> bytes:
     return output.getvalue()
 
 
-# --- Пути ---------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("path", ["/v1/health", "/health"])
 def test_old_paths_keep_working_next_to_v1(client, path):
     assert client.get(path).status_code == 200
@@ -41,23 +36,16 @@ def test_old_paths_are_hidden_from_the_schema(client):
     assert "/predict" not in paths
 
 
-# --- Площадка -----------------------------------------------------------------
-
-
 def test_playground_is_served_and_asks_the_same_origin(client):
     response = client.get("/playground")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
-    # Порт демона может быть любым, поэтому адрес в сборке не должен быть зашит
     assert "localhost:8000" not in response.text
     assert "Playground" in response.text
 
 
 def test_playground_is_guarded(with_key):
     assert TestClient(app, client=("203.0.113.7", 50000)).get("/playground").status_code == 401
-
-
-# --- Ключ доступа -------------------------------------------------------------
 
 
 @pytest.fixture
@@ -96,7 +84,6 @@ def test_old_paths_are_guarded_too(client, with_key):
 
 
 def test_foreign_site_in_browser_is_not_trusted_on_loopback(client, with_key):
-    # Страница чужого сайта тоже ходит с 127.0.0.1
     assert client.get("/v1/health", headers={"Origin": "https://evil.example"}).status_code == 401
     headers = {"Origin": "https://evil.example", "X-API-Key": "secret"}
     assert client.get("/v1/health", headers=headers).status_code == 200
@@ -132,9 +119,6 @@ def test_cors_answers_only_own_origins(client):
 )
 def test_is_loopback(host, expected):
     assert is_loopback(host) is expected
-
-
-# --- Пакетный расчёт: HTTP ----------------------------------------------------
 
 
 def test_batch_json(client):
@@ -191,12 +175,8 @@ def test_csv_bom_and_spaces_are_tolerated():
     ]
 
 
-# --- Пакетный расчёт и предупреждения: сервис ---------------------------------
-
-
 class ConstantModel:
     def predict(self, x):
-        # Модель вызывается один раз на весь пакет
         ConstantModel.calls += 1
         return [0.5] * len(x)
 
@@ -251,7 +231,6 @@ def test_warning_outside_training_range(ml):
 
 
 def test_warning_gases_do_not_sum_to_one(ml):
-    # Именно это получается из {"oxygen_level": 0.30} с воздушным азотом
     warnings = ml.warnings_for({"oxygen_level": 0.30, "n2": 0.79, "co2": 0.0, "he": 0.0})
     assert warnings == ["gas fractions sum to 1.090, not 1"]
 
@@ -261,7 +240,6 @@ def test_no_warnings_for_normal_air(ml):
 
 
 def test_warnings_are_ascii(ml):
-    # ARCHITECTURE § 7.9: что уходит в API как данные, то в ASCII
     for warning in ml.warnings_for({"oxygen_level": 0.9, "n2": 0.9, "co2": 0.0, "he": 0.0}):
         assert warning.isascii()
 
@@ -270,9 +248,6 @@ def test_no_dataset_means_no_range_warnings(tmp_path):
     service = MLService(Settings(processed_dir=tmp_path / "missing"))
     service._bundle = {"features": FEATURES}
     assert service.warnings_for({"oxygen_level": 0.9}) == []
-
-
-# --- Документы ----------------------------------------------------------------
 
 
 class FakeCollection:

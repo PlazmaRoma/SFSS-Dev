@@ -1,16 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-/** Плавный переход числа к новой цели.
- *
- *  Нужен, чтобы при движении ползунка крупные цифры не прыгали скачком:
- *  глаз успевает заметить, что значение выросло, а не просто подменилось.
- */
 export function useTween(target: number, ms = 420) {
   const [v, setV] = useState(target);
   const from = useRef(target);
   const raf = useRef(0);
-  // Без анимации отдаём цель прямо при рендере. Раньше её выставляли
-  // в эффекте, и каждое изменение стоило лишнего прохода рендера.
   const [still] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   useEffect(() => {
@@ -19,7 +12,6 @@ export function useTween(target: number, ms = 420) {
     const t0 = performance.now();
     const step = (now: number) => {
       const p = Math.min(1, (now - t0) / ms);
-      // Плавный вход и выход: рывков на концах не видно
       const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
       const cur = a + (target - a) * e;
       setV(cur);

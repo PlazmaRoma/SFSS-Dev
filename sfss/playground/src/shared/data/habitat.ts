@@ -1,7 +1,5 @@
 import type { Atmosphere, Lang } from "../types";
 
-/** Материалы берутся из BASS-II: там реально жгли оргстекло, ткань SIBAL и номекс.
- *  Кабелей в опытах NASA не было, поэтому их здесь нет. */
 export type MaterialKey = "pmma" | "sibal" | "nomex";
 
 export interface Module {
@@ -10,7 +8,6 @@ export interface Module {
   role: Record<Lang, string>;
   atmosphere: Atmosphere;
   materials: MaterialKey[];
-  /** Пояснение, почему в модуле именно такая атмосфера. */
   note?: Record<Lang, string>;
 }
 
@@ -42,8 +39,6 @@ export const HABITAT: Module[] = [
     id: "eva",
     name: { en: "EVA Prep", ru: "Шлюз" },
     role: { en: "Suit-up and airlock", ru: "Подготовка к выходу" },
-    // Настоящая exploration atmosphere NASA: 8.2 psi при 34% кислорода,
-    // чтобы сократить предварительное дыхание кислородом перед выходом.
     atmosphere: { oxygen_level: 0.34, pressure_psi: 8.2, droplet_mm: 3.0 },
     materials: ["nomex", "pmma"],
     note: {
@@ -71,7 +66,6 @@ export const HABITAT: Module[] = [
   },
 ];
 
-/** Земная норма — точка отсчёта для всех сравнений. */
 export const BASELINE: Atmosphere = {
   oxygen_level: 0.21,
   pressure_psi: SEA_LEVEL,

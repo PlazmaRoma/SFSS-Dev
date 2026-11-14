@@ -1,5 +1,3 @@
-"""Инструкция о языке ответа: что именно уходит в LM Studio."""
-
 from types import SimpleNamespace
 
 from app.config import Settings
@@ -11,12 +9,9 @@ SOURCES = [Source(doc_id="NTRS-1", excerpt="Flame spread slows at low oxygen.", 
 
 
 class RecordingClient:
-    """Подменяет OpenAI-клиент и запоминает промпт вместо похода в LM Studio."""
-
     def __init__(self, reply="ok") -> None:
         self.messages: list[dict] = []
         self.calls: list[dict] = []
-        # Список — ответы по очереди, на каждый вызов следующий
         self.replies = list(reply) if isinstance(reply, list) else None
         self.reply = reply
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
@@ -29,7 +24,6 @@ class RecordingClient:
         if isinstance(self.reply, Exception):
             raise self.reply
         if kwargs.get("stream"):
-            # Для потока ответ — список кусков текста
             return iter(
                 SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content=piece))])
                 for piece in self.reply
@@ -78,7 +72,6 @@ def test_instruction_appended_to_user_prompt(monkeypatch):
     user = client.messages[-1]["content"]
     assert "in English" in user
     assert "Question: Why?" in user
-    # На русском промпте Ministral вставляла в английский ответ [п. 9] и [Нет данных]
     assert not CYRILLIC.search(user + client.messages[0]["content"])
 
 
@@ -102,13 +95,11 @@ def test_no_data_message_follows_language(monkeypatch):
 
 
 def test_page_label_follows_language(monkeypatch):
-    # Подпись страницы модель переносит в ссылки ответа как есть
     service, client = _service(monkeypatch)
     service.generate("Why?", SOURCES, language="en")
     assert "[NTRS-1, p. 3]" in client.messages[-1]["content"]
     service.generate("Почему?", SOURCES)
     assert "[NTRS-1, стр. 3]" in client.messages[-1]["content"]
-    # Русский ответ пишется по-английски, и контекст для него английский
     service, client = _service(monkeypatch, reply=["EN", '{"russian": "RU"}'])
     service.generate("Почему?", SOURCES, language="ru")
     assert "[NTRS-1, p. 3]" in client.calls[0]["messages"][-1]["content"]
@@ -123,7 +114,6 @@ def test_english_question_not_translated(monkeypatch):
 def test_russian_question_translated_for_search(monkeypatch):
     service, client = _service(monkeypatch, reply='{"english": "Why does droplet size matter?"}')
     assert service.search_query("Почему важен размер капли?") == "Why does droplet size matter?"
-    # Без схемы ответа модель на 3B отвечала на вопрос вместо перевода
     assert client.calls[0]["response_format"]["type"] == "json_schema"
     assert client.calls[0]["messages"][-1]["content"] == "Query: Почему важен размер капли?"
 
@@ -141,7 +131,6 @@ def test_translation_can_be_switched_off(monkeypatch):
 
 
 def test_context_header_uses_short_report_number(monkeypatch):
-    # Имя файла в 60 символов модель переписывала в ссылки с ошибками
     service, client = _service(monkeypatch)
     long_id = Source(doc_id="NTRS-20000030678-Cooperative-Research-Projects", excerpt="x", page=97)
     service.generate("Почему?", [long_id])
@@ -149,7 +138,6 @@ def test_context_header_uses_short_report_number(monkeypatch):
 
 
 def test_prompts_carry_no_citation_template(monkeypatch):
-    # Шаблон [doc_id, стр. N] модель копировала буквально, вместо номера отчёта
     service, client = _service(monkeypatch)
     service.generate("Why?", SOURCES, language="en")
     prompt = client.messages[0]["content"] + client.messages[-1]["content"]
@@ -162,7 +150,6 @@ def test_russian_answer_written_in_english_then_translated(monkeypatch):
     )
     answer = service.generate("Почему?", SOURCES, language="ru", english_question="Why?")
     assert answer == "Пламя замедляется [NTRS-1, p. 3]."
-    # Ответ пишется на английский вариант вопроса, перевод — со схемой JSON
     assert "Question: Why?" in client.calls[0]["messages"][-1]["content"]
     assert client.calls[1]["response_format"]["type"] == "json_schema"
     assert client.calls[1]["messages"][-1]["content"] == "Text:\nFlame spread slows [NTRS-1, p. 3]."
@@ -201,7 +188,6 @@ def test_stream_russian_answer_streams_the_translation(monkeypatch):
         {"type": "stage", "stage": "translating"},
     ]
     assert "".join(e["text"] for e in events if e["type"] == "delta") == 'Пламя "медленнее"'
-    # Перевод — со схемой JSON, иначе модель дописывала от себя
     assert client.calls[1]["response_format"]["type"] == "json_schema"
 
 

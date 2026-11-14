@@ -1,5 +1,3 @@
-"""Настройки нейросети: рантайм и модель отдельно, LM Studio и Ollama."""
-
 import json
 import subprocess
 from types import SimpleNamespace
@@ -49,9 +47,6 @@ def patch_model(**fields):
     return LLMConfigPatch(model=ModelPatch(**fields))
 
 
-# --- Проверка значений --------------------------------------------------------
-
-
 def test_defaults_come_from_env_values():
     config = default_config(Settings(_env_file=None, lm_studio_base_url="http://10.0.0.5:1235/v1"))
     assert (config.runtime.kind, config.runtime.host, config.runtime.port) == ("lmstudio", "10.0.0.5", 1235)
@@ -99,9 +94,6 @@ def test_allowed_models_pass(name):
     assert apply_patch(BASE, patch_model(name=name)).model.name == name
 
 
-# --- Хранение ------------------------------------------------------------------
-
-
 def test_saved_config_survives_restart(settings):
     llm = LLMService(settings)
     llm.runtime.state = lambda _: (False, None)
@@ -121,9 +113,6 @@ def test_reset_returns_to_defaults(settings):
     llm.runtime.state = lambda _: (False, None)
     assert llm.reset_config() == default_config(settings)
     assert not settings.llm_config_path.exists()
-
-
-# --- Переключение на ходу ------------------------------------------------------
 
 
 def stub_runtime(llm, loaded=True):
@@ -185,16 +174,12 @@ def test_refused_while_loading(settings):
 
 
 def test_failed_start_is_reported(settings, monkeypatch):
-    """Порт занят чужой программой: сервер не поднялся, хотя команда не упала."""
     llm = LLMService(settings)
     monkeypatch.setattr(llm.runtime, "state", lambda _: (None, None))
     monkeypatch.setattr(llm.runtime, "ping", lambda: False)
     monkeypatch.setattr(llm.runtime, "start", lambda: None)
     with pytest.raises(ModelLoadError, match="localhost:1234"):
         llm.load_model()
-
-
-# --- LM Studio -----------------------------------------------------------------
 
 
 def test_lmstudio_lists_models_without_embeddings_and_banned(monkeypatch):
@@ -225,9 +210,6 @@ def test_lmstudio_missing_model_is_short(monkeypatch):
     monkeypatch.setattr(subprocess, "run", lambda *_, **__: SimpleNamespace(returncode=1, stdout="", stderr=details))
     with pytest.raises(ModelLoadError, match="^Model x is not in LM Studio"):
         LMStudioRuntime(RuntimeConfig(), 10).load("x", 8192)
-
-
-# --- Ollama --------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -315,7 +297,6 @@ def test_remote_ollama_is_not_ours_to_start(monkeypatch):
 
 
 def test_ollama_context_is_not_reloaded(settings, monkeypatch):
-    """Контекст Ollama не задаётся отсюда: перезагрузка его бы не изменила."""
     settings.llm_config_path.write_text(json.dumps({
         "runtime": {"kind": "ollama", "host": "localhost", "port": 11434},
         "model": {"name": "ministral", "context_length": 2048, "max_tokens": 512},
@@ -326,9 +307,6 @@ def test_ollama_context_is_not_reloaded(settings, monkeypatch):
     monkeypatch.setattr(llm.runtime, "unload", calls.append)
     llm.load_model()
     assert calls == []
-
-
-# --- API -----------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -356,7 +334,7 @@ def test_patch_config_applies_at_once(api):
     body = api.patch("/v1/llm/config", json={"runtime": {"kind": "ollama"}}).json()
     assert (body["runtime"]["name"], body["runtime"]["port"]) == ("Ollama", 11434)
     assert body["runtime"]["controls_context"] is False
-    assert body["runtime"]["reachable"] is False  # настоящего Ollama в тестах нет
+    assert body["runtime"]["reachable"] is False
     assert body["model"]["available"] is None
 
 
@@ -401,13 +379,8 @@ def test_health_names_the_runtime(client):
     assert body["model_context_limit"] == 8192
 
 
-# --- sfss config ---------------------------------------------------------------
-
-
 @pytest.fixture
 def daemon_off(monkeypatch, settings):
-    """Демона нет: команда работает с файлом настроек."""
-
     class Refused:
         def __enter__(self):
             return self
@@ -459,7 +432,6 @@ def test_cli_show_without_daemon(daemon_off, capsys):
 
 
 def test_cli_explicit_address_does_not_fall_back_to_file(daemon_off, capsys):
-    """Настройка для другой машины не должна молча лечь в файл на этой."""
     assert cli.main(["config", "runtime", "--port", "1235", "--url", "http://10.0.0.5:8000"]) == cli.EXIT_NOT_RUNNING
     assert not daemon_off.llm_config_path.exists()
 

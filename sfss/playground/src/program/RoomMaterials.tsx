@@ -3,13 +3,6 @@ import { MATERIALS, TESTED_RANGE, evidenceFor, saferThan, type MaterialKey } fro
 import { MATERIAL_LABEL } from "../shared/data/habitat";
 import { tr } from "../shared/i18n";
 
-/** Что лежит в модуле и что об этом говорят опыты NASA.
- *
- *  Материалы можно добавлять и убирать: в этом и была идея цифрового
- *  двойника. Вердикт под каждым материалом не предсказание модели, а
- *  пересчёт конкретных запусков BASS-II рядом с текущим кислородом.
- *  Поэтому рядом всегда стоит, сколько опытов за этим стоит.
- */
 export function RoomMaterials({
   materials, oxygenPct, onChange, lang,
 }: {
@@ -58,8 +51,6 @@ export function RoomMaterials({
               </span>
             </div>
 
-            {/* Пустое окно по кислороду это не «ничего не горело», а «никто
-                не мерил». Полоса и доля здесь были бы враньём. */}
             {ev.near === 0 ? (
               <p className="verdict-none">{tr("matNoRuns", lang, { o2: oxygenPct.toFixed(0) })}</p>
             ) : (
@@ -92,8 +83,6 @@ export function RoomMaterials({
         );
       })}
 
-      {/* Объяснение пробела нужно один раз на панель, а не под каждым
-          материалом: под двумя материалами оно повторялось дословно. */}
       {materials.some((k) => evidenceFor(k, oxygenPct).near === 0) && (
         <p className="footnote">
           {tr("matGap", lang, {
@@ -103,7 +92,6 @@ export function RoomMaterials({
         </p>
       )}
 
-      {/* Оговорка про исходы нужна только когда исходы показаны */}
       {materials.length > 0 && <p className="footnote">{tr("bassCaveat", lang)}</p>}
     </div>
   );

@@ -1,10 +1,3 @@
-"""Настройки нейросети: где она работает (рантайм) и какая она (модель).
-
-Значения по умолчанию лежат в .env, а то, что задал человек, в data/llm.json: его
-пишут и API, и команда sfss config, в том числе пока демон выключен. Здесь нет
-ни openai, ни эмбеддингов: модуль импортирует CLI, а он должен отвечать сразу.
-"""
-
 import json
 import logging
 import os
@@ -23,10 +16,7 @@ RuntimeKind = Literal["lmstudio", "ollama"]
 DEFAULT_PORTS: dict[str, int] = {"lmstudio": 1234, "ollama": 11434}
 
 HOST = re.compile(r"^[A-Za-z0-9.-]+$|^\[[0-9A-Fa-f:]+\]$")
-# Имя уходит аргументом в lms: с дефиса оно стало бы ключом команды
 MODEL_NAME = re.compile(r"^[A-Za-z0-9][\w.:/@+-]*$")
-# Регламент запрещает китайские ИИ в любом виде (ARCHITECTURE § 7.18). Рантайм
-# показывает всё, что лежит на диске, но выбрать такую модель здесь нельзя.
 BANNED_MODEL = re.compile(
     r"qwen|qwq|deepseek|glm|kimi|moonshot|minimax|baichuan|hunyuan|ernie|internlm|doubao|\byi-|\bbge-",
     re.IGNORECASE,
@@ -34,7 +24,7 @@ BANNED_MODEL = re.compile(
 
 
 class ConfigError(ValueError):
-    """Настройка не принята. Текст уходит в detail, по-английски, как у остальных ошибок API."""
+    pass
 
 
 class RuntimeConfig(BaseModel):
@@ -91,8 +81,6 @@ class ModelPatch(BaseModel):
 
 
 class LLMConfigPatch(BaseModel):
-    """Только то, что меняется: рантайм и модель настраиваются независимо."""
-
     runtime: RuntimePatch | None = None
     model: ModelPatch | None = None
 
@@ -118,18 +106,16 @@ def default_config(settings: Settings) -> LLMConfig:
 
 
 def load_config(settings: Settings) -> LLMConfig:
-    """Испорченный файл не повод не поднимать сервис: работаем на значениях из .env."""
     try:
         return LLMConfig.model_validate_json(Path(settings.llm_config_path).read_text())
     except FileNotFoundError:
         pass
     except (OSError, ValueError) as exc:
-        logger.warning("Не прочитать %s: %s", settings.llm_config_path, exc)
+        logger.warning("Cannot read %s: %s", settings.llm_config_path, exc)
     return default_config(settings)
 
 
 def save_config(settings: Settings, config: LLMConfig) -> None:
-    """Через временный файл: оборвавшаяся запись не должна испортить настройки."""
     path = Path(settings.llm_config_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".tmp")
@@ -146,7 +132,6 @@ def apply_patch(config: LLMConfig, patch: LLMConfigPatch) -> LLMConfig:
     model = config.model.model_dump()
     if patch.runtime:
         changes = patch.runtime.model_dump(exclude_none=True)
-        # Порт другого рантайма остался бы от прежнего: LM Studio на порту Ollama не ответит
         if "kind" in changes and changes["kind"] != runtime["kind"]:
             runtime["port"] = DEFAULT_PORTS[changes["kind"]]
         runtime.update(changes)

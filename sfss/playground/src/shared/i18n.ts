@@ -102,7 +102,6 @@ export const t: Dict = {
   askLive: { en: "Ask the model now", ru: "Спросить модель сейчас" },
   asking: { en: "Reading the reports…", ru: "Читаю отчёты…" },
   stageAnswering: { en: "Writing the answer…", ru: "Пишу ответ…" },
-  // Русский ответ модель пишет по-английски и переводит: так меньше ошибок
   stageTranslating: { en: "Translating…", ru: "Перевожу на русский…" },
   more: { en: "Read the full answer", ru: "Показать ответ целиком" },
   less: { en: "Collapse", ru: "Свернуть" },
@@ -134,8 +133,6 @@ export const t: Dict = {
   legend: { en: "Blue burns slow and soot-free. White-hot burns fast.", ru: "Синее горит медленно и без сажи. Добела горит быстро." },
   indexed: { en: "{n} passages indexed from 16 NASA reports", ru: "{n} фрагментов из 16 отчётов NASA" },
   backHome: { en: "Back to overview", ru: "Назад на главную" },
-  // Это площадка, а не готовый продукт: иначе первый же вопрос будет «где здесь
-  // ввести свои данные?». Настоящая работа идёт через сервис SFSS и программу Anti-Fire.
   playgroundNote: {
     en: "A playground: see the idea and try it. The real thing is the SFSS service you connect your own software to, and the Anti-Fire program built on it.",
     ru: "Это площадка: посмотреть идею и поиграться. Настоящая работа идёт через сервис SFSS, к которому подключается ваше ПО, и программу Anti-Fire на нём.",
@@ -237,7 +234,6 @@ export const t: Dict = {
   },
   cached: { en: "Pre-computed answer", ru: "Готовый ответ" },
   answeredNow: { en: "Answered just now", ru: "Ответ получен сейчас" },
-  // Колонка узкая: подсказка короткая, полная формулировка — для экранного диктора
   askPlaceholder: { en: "Your own question", ru: "Свой вопрос" },
   askLabel: {
     en: "Ask your own question about the NASA reports",
@@ -265,10 +261,8 @@ export const t: Dict = {
   },
 };
 
-/** Бэкенд отдаёт единицы ASCII-строкой (контракт API), показываем типографски. */
 export const prettyUnits = (u: string) => u.replace("^2", "\u00B2");
 
-/** Короткие ярлыки тем: полный вопрос в кнопку не влезает и рвётся на полуслове. */
 export const TOPIC_LABEL: Record<string, Record<Lang, string>> = {
   oxygen: { en: "Oxygen", ru: "Кислород" },
   pressure: { en: "Pressure", ru: "Давление" },
@@ -282,8 +276,6 @@ export const TOPIC_LABEL: Record<string, Record<Lang, string>> = {
 
 export const tr = (key: string, lang: Lang, vars: Record<string, string> = {}) => {
   let s = t[key]?.[lang] ?? key;
-  // split/join, а не replace: replace меняет только первое вхождение и
-  // трактует $& в значении как ссылку на совпадение
   for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(v);
   return s;
 };

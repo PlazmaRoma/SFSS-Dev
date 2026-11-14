@@ -11,18 +11,13 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 
-# Нативная обёртка ничего не считает сама: внутри та же программа, что и
-# в одном HTML-файле. Поэтому и зависимостей всего одна.
 [profile.release]
 opt-level = "s"
 lto = true
 strip = true
 
-# Центр окна на macOS ставит сама система (NSWindow center). objc2 уже приходит с Tauri,
-# новой загрузки нет.
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
 
-# Центр окна на Linux ставит GTK (gtk_window_set_position). gtk уже приходит с Tauri.
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"

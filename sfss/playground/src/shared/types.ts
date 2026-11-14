@@ -33,14 +33,12 @@ export interface Health {
 
 export type RuntimeKind = "lmstudio" | "ollama";
 
-/** GET /v1/llm/config: где работает нейросеть и какая она. */
 export interface LlmConfig {
   runtime: {
     kind: RuntimeKind;
     name: string;
     host: string;
     port: number;
-    /** Контекст задаётся здесь. Ollama берёт его из своих настроек. */
     controls_context: boolean;
     reachable: boolean;
   };
@@ -62,10 +60,9 @@ export interface Source { doc_id: string; page: number | null; excerpt: string }
 export interface Answer { answer: string; sources: Source[] }
 export interface CacheEntry { question: Record<Lang, string>; en: Answer; ru: Answer }
 
-/** Условия в модуле — ровно то, что модель принимает на вход. */
 export interface Atmosphere {
-  oxygen_level: number;  // доля, 0.16-0.40
-  pressure_psi: number;  // в модель уходит переведённым в мм рт. ст.
+  oxygen_level: number;
+  pressure_psi: number;
   droplet_mm: number;
 }
 

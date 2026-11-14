@@ -1,5 +1,3 @@
-"""GET /dashboard — всё, что фронт рисует при загрузке страницы."""
-
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_dashboard_service

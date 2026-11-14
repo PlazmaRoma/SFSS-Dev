@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""Снимок модели по трём осям: кислород, давление, размер капли.
-
-Зачем: программа скачивается и запускается без бэкенда. Раньше оффлайн
-подбиралась ближайшая точка только по кислороду, и два ползунка из трёх
-не двигали цифру. По живой модели размер капли меняет скорость горения
-в 1.43 раза, так что молчать об этом нельзя.
-
-Куб маленький: 25 x 14 x 17 = 5950 чисел. Между узлами интерполируем
-линейно уже в браузере.
-"""
 import json
 import sys
 import urllib.request
@@ -19,12 +9,9 @@ BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
 OUT = Path(sys.argv[2]) if len(sys.argv) > 2 else Path(__file__).resolve().parent.parent / "src/shared/fixtures"
 PSI_TO_MMHG = 51.715
 
-OXY = [round(0.16 + i * 0.01, 3) for i in range(25)]        # 16…40 %
-# Два давления обязаны быть узлами: 14.7 psi — земная норма, от неё
-# считается отношение, и 8.2 psi — разведочная атмосфера NASA. Иначе
-# заголовочные 1.40x оффлайн превращаются в 1.38x.
-PSI = sorted([5 + i for i in range(12)] + [8.2, 14.7])      # 5…16 psi
-DROP = [round(1 + i * 0.25, 2) for i in range(17)]          # 1…5 мм
+OXY = [round(0.16 + i * 0.01, 3) for i in range(25)]
+PSI = sorted([5 + i for i in range(12)] + [8.2, 14.7])
+DROP = [round(1 + i * 0.25, 2) for i in range(17)]
 
 
 def predict(o: float, psi: float, d: float) -> dict:
@@ -73,8 +60,6 @@ def main() -> int:
         "values": values,
         "target": target,
         "defaults_applied": sorted(defaults),
-        # Эвристику модель включает у края обучающего диапазона. Если её нет
-        # нигде, флаг не храним и в браузере считаем его выключенным.
         "heuristic": flat_heur if any(flat_heur) else None,
     }
 
@@ -83,9 +68,9 @@ def main() -> int:
 
     lo = min(v for p in values for row in p for v in row)
     hi = max(v for p in values for row in p for v in row)
-    print(f"→ {out}  ({out.stat().st_size // 1024} КБ), {len(jobs)} точек, "
-          f"значения {lo:.3f}…{hi:.3f}, эвристика: "
-          f"{sum(flat_heur)} точек")
+    print(f"→ {out}  ({out.stat().st_size // 1024} KB), {len(jobs)} points, "
+          f"values {lo:.3f}…{hi:.3f}, heuristic: "
+          f"{sum(flat_heur)} points")
     return 0
 
 

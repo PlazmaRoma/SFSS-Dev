@@ -35,13 +35,6 @@ export function Conditions({
 }) {
   const set = (patch: Partial<Atmosphere>) => onChange({ ...atmosphere, ...patch });
 
-  // Сколько значит каждая ручка здесь и сейчас.
-  //
-  // Давление по всему диапазону 5…16 psi меняет скорость горения на два
-  // процента: в данных FLEX его почти не варьировали, и у модели его вклад
-  // 8 %. Без подписи ползунок выглядит нарисованным для галочки, хотя он
-  // честно показывает, что здесь ничего не решает. Считаем по снятому кубу,
-  // а не по бэкенду: восемнадцать выборок мгновенны и не шлют запросов.
   const sens = useMemo(() => {
     const span = (axis: (v: number) => Atmosphere, points: number[]) => {
       const vs = points.map((v) => predictOffline(axis(v)).predicted_value);
@@ -56,14 +49,11 @@ export function Conditions({
     };
   }, [atmosphere]);
 
-  // На виду коротко и тихо, в строке с названием: отдельной строкой подписи
-  // удваивали высоту колонки. Полная фраза в подсказке.
   const hint = (p: number) => (
     <small className="control-sens" title={p < 3 ? tr("sensFlat", lang) : tr("sens", lang, { p: String(p) })}>
       {p < 3 ? tr("sensFlatShort", lang) : tr("sensShort", lang, { p: String(p) })}
     </small>
   );
-  // Крупные цифры доезжают до нового значения, а не подменяются скачком
   const shownValue = useTween(result?.predicted_value ?? 0);
   const shownRatio = useTween(ratio);
   const dirty =
@@ -80,8 +70,6 @@ export function Conditions({
           <span>{tr("oxygen", lang)} {hint(sens.oxygen)}</span>
           <output>{(atmosphere.oxygen_level * 100).toFixed(0)}<small>%</small></output>
         </div>
-        {/* Выше 40% обучающих данных FLEX нет — дальше модель просто повторяет
-            последнее значение, поэтому ползунок здесь и заканчивается. */}
         <input
           type="range" min={16} max={40} step={1}
           value={Math.round(atmosphere.oxygen_level * 100)}

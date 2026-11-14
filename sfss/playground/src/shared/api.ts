@@ -12,12 +12,9 @@ import cubeFixture from "../shared/fixtures/predict_cube.json";
 
 const BASE = import.meta.env.VITE_API ?? "http://localhost:8000";
 
-/** Бэкенд может быть не поднят — тогда всё берётся из снятых фикстур.
- *  Это не заглушка: файлы сняты с этого же бэкенда, цифры настоящие. */
 export const cache = queryCache as unknown as Record<string, CacheEntry>;
 
 const client = createClient({ base: BASE });
-/** Настройки AI есть только на /v1. Старые пути Площадки остаются как есть. */
 export const v1Client = createClient({ base: BASE, prefix: "/v1" });
 
 export const fetchHealth = () => client.get<Health>("/health", 4000);
@@ -33,31 +30,12 @@ export const toParams = (a: Atmosphere) => ({
   d_initial_mm: a.droplet_mm,
 });
 
-/** Пять секунд, а не пятнадцать: живой ответ приходит за десяток
- *  миллисекунд, и если бэкенд пропал, честнее быстро упасть на снятый
- *  куб, чем держать на экране старое число как будто оно новое. */
 export const predict = (a: Atmosphere) =>
   client.post<PredictResponse>("/predict", { parameters: toParams(a) }, 5000);
 
-/** Нужен бэкенд с полем language (PlazmaRoma/Anti-Fire_backend_MVP#4): старый его
- *  молча игнорирует, и на английский вопрос ответ придёт по-русски. Русский вопрос
- *  бэкенд сам ищет по английскому переводу (#5), фронту этот перевод не нужен. */
 export const askLive = client.askLive;
 export const askStream = client.askStream;
 
-/** Оффлайн-предсказание: снятый куб модели по трём осям и линейная
- *  интерполяция между узлами.
- *
- *  Куб снят с этого же бэкенда (tools/build_predict_cube.py): 25 шагов по
- *  кислороду, 14 по давлению, 17 по размеру капли. В сетку специально
- *  включены 14.7 и 8.2 psi: на них стоят все модули базы, и отношение
- *  1.40x должно совпадать с живой моделью до третьего знака. Ползунки
- *  идут мельче узлов, поэтому между ними считаем трилинейно: медиана
- *  расхождения 0.03 %, худший случай около 6 % у мелких капель.
- *
- *  Раньше здесь подбиралась ближайшая точка только по кислороду, и два
- *  ползунка из трёх цифру не двигали. По живой модели размер капли меняет
- *  скорость горения в 1.43 раза, так что это была не мелочь. */
 type Cube = {
   oxygen_level: number[];
   pressure_psi: number[];
@@ -69,7 +47,6 @@ type Cube = {
 };
 const cube = cubeFixture as unknown as Cube;
 
-/** Номер нижнего узла и доля до следующего. За краями сетки прижимаем. */
 function locate(axis: number[], v: number): [number, number] {
   if (v <= axis[0]) return [0, 0];
   const last = axis.length - 1;

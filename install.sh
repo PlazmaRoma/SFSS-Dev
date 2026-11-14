@@ -1,14 +1,4 @@
 #!/usr/bin/env bash
-# Installs SFSS and Anti-Fire on macOS and Linux from a clone of the repository.
-#
-#   ./install.sh              install and check
-#   ./install.sh --yes        answer yes to every question
-#   ./install.sh --no-llm     leave the language model alone
-#   ./install.sh --no-app     skip the Anti-Fire app
-#   ./install.sh --uninstall  remove everything this script installed
-#
-# Python and libraries come through uv: one file, no admin rights, and it downloads
-# Python itself if needed. Safe to run again. Windows: install.ps1. Details: docs/install.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -27,6 +17,21 @@ MODEL_GGUF="https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-25
 MODEL_OLLAMA="ministral-3:3b"
 OS="$(uname -s)"
 
+usage() {
+  cat <<'HELP'
+Installs SFSS and Anti-Fire on macOS and Linux from a clone of the repository.
+
+  ./install.sh              install and check
+  ./install.sh --yes        answer yes to every question
+  ./install.sh --no-llm     leave the language model alone
+  ./install.sh --no-app     skip the Anti-Fire app
+  ./install.sh --uninstall  remove everything this script installed
+
+Python and libraries come through uv: one file, no admin rights, and it downloads
+Python itself if needed. Safe to run again. Windows: install.ps1. Details: docs/install.
+HELP
+}
+
 YES=""; NO_LLM=""; NO_APP=""; UNINSTALL=""
 for arg in "$@"; do
   case "$arg" in
@@ -34,7 +39,7 @@ for arg in "$@"; do
     --no-llm) NO_LLM=1 ;;
     --no-app) NO_APP=1 ;;
     --uninstall) UNINSTALL=1 ;;
-    -h|--help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $arg. Help: ./install.sh --help" >&2; exit 2 ;;
   esac
 done
@@ -45,7 +50,6 @@ note() { printf '    %s\n' "$1"; }
 fail() { printf '\nError: %s\n' "$1" >&2; exit 1; }
 
 ask() {
-  # «да» по умолчанию; без терминала (CI, конвейер) и без --yes отвечаем «нет»
   [ -n "$YES" ] && return 0
   [ -t 0 ] || return 1
   printf '    %s [Y/n] ' "$1"
@@ -54,7 +58,6 @@ ask() {
 }
 
 to_trash() {
-  # macOS: в Корзину, чтобы можно было вернуть. На Linux общей Корзины нет: удаляем
   if [ "$OS" = "Darwin" ]; then
     local name ext=""; name="$(basename "$1")"
     case "$name" in *.app) ext=".app"; name="${name%.app}" ;; esac
@@ -71,8 +74,6 @@ LINUX_APP="$HOME/.local/share/anti-fire"
 LINUX_DESKTOP="$HOME/.local/share/applications/anti-fire.desktop"
 MAC_APP="/Applications/Anti-Fire.app"
 
-# --- Удаление ----------------------------------------------------------------
-
 if [ -n "$UNINSTALL" ]; then
   step "Stopping SFSS"
   if [ -x "$VENV/bin/sfss" ]; then "$VENV/bin/sfss" stop || true; else note "not installed"; fi
@@ -84,7 +85,6 @@ if [ -n "$UNINSTALL" ]; then
 
   step "Removing the environment, search model and daemon state"
   if [ -x "$TOOLS/uv" ]; then
-    # uv ставил этот скрипт, значит его кэш и скачанный Python тоже наши
     "$TOOLS/uv" cache clean >/dev/null 2>&1 || true
     "$TOOLS/uv" python uninstall --all >/dev/null 2>&1 || true
     note "removed the uv cache and the Python it downloaded"
@@ -121,14 +121,11 @@ fi
 
 printf 'Installing SFSS from %s\n' "$ROOT"
 
-# --- 1. uv -------------------------------------------------------------------
-
 step "Package installer uv"
 UV="$(command -v uv || true)"
 [ -z "$UV" ] && [ -x "$TOOLS/uv" ] && UV="$TOOLS/uv"
 if [ -z "$UV" ]; then
   note "downloading uv $UV_VERSION, about 20 MB, into $TOOLS"
-  # UV_UNMANAGED_INSTALL: только в эту папку, файлы оболочки и PATH не трогаются
   if command -v curl >/dev/null; then fetch="curl -LsSf"; else fetch="wget -qO-"; fi
   $fetch "https://astral.sh/uv/$UV_VERSION/install.sh" | env UV_UNMANAGED_INSTALL="$TOOLS" sh >/dev/null \
     || fail "Could not download uv. Check the network and run the installer again."
@@ -136,15 +133,12 @@ if [ -z "$UV" ]; then
 fi
 note "$("$UV" --version)"
 
-# --- 2. Python и библиотеки --------------------------------------------------
-
 step "Python $PYTHON_VERSION and SFSS libraries, about 100 MB"
 if [ -x "$PY" ] && ! "$PY" -c "import sys; sys.exit(sys.version_info[:2] != (3, 12))" 2>/dev/null; then
   note "the environment uses another Python version, recreating it"
   rm -rf "$VENV"
 fi
 if [ ! -x "$PY" ]; then
-  # Если Python 3.12 на машине нет, uv скачает его сам, около 20 МБ
   "$UV" venv --python "$PYTHON_VERSION" "$VENV" \
     || fail "Could not create the Python environment. Check the network and run the installer again."
 fi
@@ -152,19 +146,13 @@ fi
   || fail "Libraries did not install. Check the network and run the installer again: downloads are kept."
 note "done: $VENV"
 
-# --- 3. Настройки ------------------------------------------------------------
-
 step "Settings"
 if [ -f "$SFSS/.env" ]; then note "sfss/.env already exists, leaving it"
 else cp "$SFSS/.env.example" "$SFSS/.env"; note "created sfss/.env"; fi
 
-# --- 4. Модель поиска --------------------------------------------------------
-
 step "Search model for the reports, 130 MB, once"
 ( cd "$SFSS" && "$PY" -m app.services.embedder ) \
   || fail "Could not download the search model. Check the network and run the installer again."
-
-# --- 5. Индекс ---------------------------------------------------------------
 
 step "Index of the NASA reports"
 if [ -f "$SFSS/data/index/chunks.jsonl" ]; then
@@ -174,8 +162,6 @@ else
   ( cd "$SFSS" && "$PY" scripts/ingest_documents.py >/dev/null 2>&1 ) \
     || fail "Could not build the index. By hand: cd sfss && .venv/bin/python scripts/ingest_documents.py"
 fi
-
-# --- 6. Команда sfss ---------------------------------------------------------
 
 step "The sfss command"
 mkdir -p "$BIN"
@@ -195,8 +181,6 @@ case ":$PATH:" in
     ;;
 esac
 
-# --- 7. Anti-Fire ------------------------------------------------------------
-
 APP_STATE="skipped"
 if [ -z "$NO_APP" ]; then
   step "Anti-Fire app"
@@ -208,7 +192,6 @@ if [ -z "$NO_APP" ]; then
       MOUNT="$(mktemp -d)"
       hdiutil attach -nobrowse -readonly -quiet -mountpoint "$MOUNT" "$DMG" || fail "Could not open $DMG"
       pkill -f "$MAC_APP/Contents/MacOS/anti-fire" 2>/dev/null || true
-      # Старая версия уходит в Корзину: копировать поверх нельзя, файлы смешаются
       if [ -e "$MAC_APP" ]; then to_trash "$MAC_APP"; note "previous version moved to Trash"; fi
       ditto "$MOUNT/Anti-Fire.app" "$MAC_APP"
       hdiutil detach -quiet "$MOUNT" || true
@@ -238,8 +221,6 @@ Terminal=false
 DESKTOP
       APP_STATE="$BIN/anti-fire, also in the applications menu"
       note "$APP_STATE"
-      # Без трубы в grep -q: с pipefail проверка проваливалась как раз тогда, когда
-      # grep находил строку и закрывал трубу раньше, чем писатель допечатает
       libraries="$( (ldconfig -p || /sbin/ldconfig -p) 2>/dev/null || true)"
       if [ -n "$libraries" ] && [[ "$libraries" != *libwebkit2gtk-4.1* ]]; then
         note "The window needs the WebKitGTK 4.1 library:"
@@ -253,8 +234,6 @@ DESKTOP
   fi
 fi
 
-# --- 8. Нейросеть ------------------------------------------------------------
-
 LLM_STATE="skipped"
 if [ -z "$NO_LLM" ]; then
   step "Language model for answering questions"
@@ -267,7 +246,6 @@ if [ -z "$NO_LLM" ]; then
 
   if [ -n "$LMS" ]; then
     note "found LM Studio: $LMS"
-    # Список целиком в переменную, без «| grep -q»: см. проверку WebKitGTK выше
     models="$("$LMS" ls 2>/dev/null | tr '[:upper:]' '[:lower:]' || true)"
     if [[ "$models" == *"$MODEL_ID"* ]]; then
       note "model $MODEL_ID is already downloaded"; LLM_STATE="LM Studio, $MODEL_ID"
@@ -302,8 +280,6 @@ if [ -z "$NO_LLM" ]; then
     LLM_STATE="not found"
   fi
 fi
-
-# --- 9. Проверка -------------------------------------------------------------
 
 step "Starting and checking"
 "$VENV/bin/sfss" start || fail "SFSS did not start. The reason is in the log: $VENV/bin/sfss logs"

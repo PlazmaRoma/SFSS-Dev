@@ -1,11 +1,6 @@
 import type { Lang } from "@sfss/types";
 import { load, save } from "./storage";
 
-/** Язык программы. По умолчанию английский, выбор человека запоминается между запусками.
- *  Раньше по умолчанию брался язык системы, но программу показывают международному жюри.
- *
- *  Значение общее на модуль: условия, команды и ошибки разбираются чистыми
- *  функциями, и протаскивать язык через каждую незачем. Смену языка перерисовывает App. */
 export const DEFAULT_LANG: Lang = "en";
 
 let current: Lang = load<Lang | null>("antifire.lang", null) ?? DEFAULT_LANG;
@@ -21,7 +16,6 @@ export function setLang(lang: Lang, remember = true): void {
 }
 
 const TEXT = {
-  // Общее
   screen: { ru: "Экран", en: "Screen" },
   tabWork: { ru: "Работа", en: "Work" },
   tabData: { ru: "Данные", en: "Data" },
@@ -79,13 +73,11 @@ const TEXT = {
     en: "Drag to change the terminal height. Double-click to reset",
   },
 
-  // Единицы
   burnUnit: { ru: "мм²/с", en: "mm²/s" },
   mmHg: { ru: "мм рт. ст.", en: "mmHg" },
   mm: { ru: "мм", en: "mm" },
   page: { ru: "стр.", en: "p." },
 
-  // Расчёт
   calc: { ru: "Расчёт", en: "Calculation" },
   conditions: { ru: "Условия", en: "Conditions" },
   pressure: { ru: "Давление", en: "Pressure" },
@@ -129,7 +121,6 @@ const TEXT = {
   plateau: { ru: " Здесь модель выходит на плато.", en: " The model plateaus here." },
   gasSum: { ru: "Сумма газов {sum} %, а не 100 %.", en: "Gases add up to {sum} %, not 100 %." },
 
-  // График
   chartCaption: { ru: "Если менять только кислород", en: "If only oxygen changes" },
   chartSummary: {
     ru: "Скорость горения от {low} до {high} мм²/с при кислороде от {from} до {to} %",
@@ -137,7 +128,6 @@ const TEXT = {
   },
   noExperiments: { ru: "нет опытов", en: "no experiments" },
 
-  // AI
   aiPanel: { ru: "Вопросы по отчётам", en: "Questions about the reports" },
   aiTitle: { ru: "Вопрос по отчётам NASA", en: "Ask the NASA reports" },
   newChat: { ru: "Новый чат", en: "New chat" },
@@ -182,13 +172,11 @@ const TEXT = {
   unloadTitle: { ru: "Выгрузить модель из памяти", en: "Unload the model from memory" },
   loadTitle: { ru: "Загрузить модель в память", en: "Load the model into memory" },
 
-  // Страница отчёта
   reportPage: { ru: "Страница отчёта", en: "Report page" },
   openSeparately: { ru: "Открыть отдельно", en: "Open separately" },
   close: { ru: "Закрыть", en: "Close" },
   openingPage: { ru: "Открываю страницу...", en: "Opening the page..." },
 
-  // Данные
   dataScreen: { ru: "Данные", en: "Data" },
   experiments: { ru: "Опыты", en: "Experiments" },
   datasetSource: {
@@ -228,7 +216,6 @@ const TEXT = {
   featureHeptane: { ru: "гептан", en: "heptane" },
   featureMethanol: { ru: "метанол", en: "methanol" },
 
-  // Терминал
   terminal: { ru: "Терминал", en: "Terminal" },
   command: { ru: "Команда", en: "Command" },
   noResponse: { ru: "нет ответа", en: "no response" },
@@ -274,7 +261,6 @@ const TEXT = {
   termNoDocs: { ru: "Нет такого раздела: {name}. Разделы: docs", en: "No such section: {name}. Sections: docs" },
   termIndexing: { ru: "Индексирую {name}, большой отчёт займёт минуты...", en: "Indexing {name}, a large report takes minutes..." },
 
-  // Разбор команд
   cmdUnknownFlag: { ru: "Нет такого параметра: {flag}. Справка: help", en: "No such option: {flag}. See: help" },
   cmdNeedValue: { ru: "После {flag} нужно значение", en: "{flag} needs a value" },
   cmdNeedNumber: { ru: "{flag}: нужно число, а не {raw}", en: "{flag}: enter a number, not {raw}" },
@@ -298,8 +284,6 @@ export function tr(key: TextKey, vars?: Record<string, string | number>): string
   return text;
 }
 
-/** Причины от сервиса приходят по-английски: это ответ API, а не интерфейс.
- *  Частые показываем на языке программы, остальные как есть, чтобы не потерять. */
 const SERVICE_ERRORS: [RegExp, string][] = [
   [/^Not enough memory for the model/, "Модели не хватает памяти: закройте тяжёлые программы и повторите"],
   [/^The lms command was not found/, "Не найдена команда lms: установите LM Studio"],
@@ -312,7 +296,6 @@ const SERVICE_ERRORS: [RegExp, string][] = [
   [/^Model (\S+) is not in Ollama: ollama pull (\S+)/, "Модели $1 нет в Ollama: ollama pull $2"],
   [/^Model (\S+) is banned by the Space Apps rules/, "Модель $1 запрещена правилами Space Apps"],
   [/^port: .*/, "Порт должен быть от 1 до 65535"],
-  // Строки пакетного расчёта: таблица в программе на её языке, выгрузка CSV как есть
   [/^(\w+): not a number: (.+)/, "$1: не число: $2"],
   [/^(\w+): not a finite number: (.+)/, "$1: не конечное число: $2"],
   [/^Missing required parameters without defaults: (.+)/, "Не хватает параметров: $1"],

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "../shared/types";
 import { tr } from "../shared/i18n";
-// Через сборщик, а не из public: он добавит в имя хеш содержимого, и при
-// замене ролика браузер возьмёт новый вместо закешированного старого.
 import demoSrc from "../shared/media/demo.mp4";
 import posterSrc from "../shared/media/demo-poster.jpg";
 
@@ -13,9 +11,6 @@ const mmss = (s: number) => {
   return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
 };
 
-/** Плеер со своей полосой управления вместо браузерной.
- *  Браузерный хром у всех разный и ломает вид страницы; здесь ровно то,
- *  что нужно: пауза, время, перемотка, звук, полный экран. */
 export function DemoPlayer({ lang }: { lang: Lang }) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
