@@ -17,3 +17,8 @@ tauri = { version = "2", features = [] }
 opt-level = "s"
 lto = true
 strip = true
+
+# Центр окна на macOS ставит сама система (NSWindow center). objc2 уже приходит с Tauri,
+# новой загрузки нет.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"

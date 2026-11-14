@@ -162,7 +162,7 @@ export function Calculator({ client, online, dashboard, print }: {
         }}
       >
         <h2>{tr("conditions")}</h2>
-        <NumberField label="O₂" unit="%" value={conditions.o2} error={parsed.errors.o2} onChange={(v) => set("o2", v)} autoFocus />
+        <NumberField label="O₂" unit="%" value={conditions.o2} error={parsed.errors.o2} onChange={(v) => set("o2", v)} />
         <label className="field">
           <span>{tr("pressure")}</span>
           <span className="control">
@@ -279,14 +279,13 @@ export function Calculator({ client, online, dashboard, print }: {
   );
 }
 
-function NumberField({ label, unit, value, error, placeholder, onChange, autoFocus }: {
+function NumberField({ label, unit, value, error, placeholder, onChange }: {
   label: string;
   unit: string;
   value: string;
   error?: string;
   placeholder?: string;
   onChange: (value: string) => void;
-  autoFocus?: boolean;
 }) {
   return (
     <label className="field">
@@ -297,7 +296,6 @@ function NumberField({ label, unit, value, error, placeholder, onChange, autoFoc
           value={value}
           placeholder={placeholder}
           aria-invalid={Boolean(error)}
-          autoFocus={autoFocus}
           onFocus={(event) => event.target.select()}
           onChange={(event) => onChange(event.target.value)}
         />
