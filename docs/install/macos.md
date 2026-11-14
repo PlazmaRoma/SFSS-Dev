@@ -1,32 +1,32 @@
-# Установка на macOS
+# Installing on macOS
 
-Ставятся две вещи: **SFSS** — сервис, который считает и отвечает, и **Anti-Fire** — программа
-с окном. Обе ставит один скрипт, права администратора не нужны.
+Two things get installed: **SFSS**, the service that calculates and answers, and **Anti-Fire**,
+the app with a window. One script installs both, without admin rights.
 
-Проверено вживую на MacBook с Apple Silicon: с нуля по Wi-Fi около 5 минут.
+Tested on a MacBook with Apple Silicon: about 5 minutes from scratch over Wi-Fi.
 
-## Что нужно заранее
+## Prerequisites
 
-Только **git**. Если его нет, macOS сама предложит поставить инструменты разработчика при
-первом вызове `git`, или: `xcode-select --install`.
+Only **git**. If it is missing, macOS offers to install the developer tools the first time you
+run `git`, or run `xcode-select --install`.
 
-Python ставить не нужно: установщик скачает Python 3.12, если его нет. Системный Python 3.9 не
-используется и не трогается.
+You do not need to install Python: the installer downloads Python 3.12 if it is missing. The
+system Python 3.9 is neither used nor touched.
 
-## Что скачается
+## What gets downloaded
 
-| Что | Объём |
+| What | Size |
 |---|---|
-| Репозиторий: код, 16 отчётов NASA, готовый индекс, модель расчёта, Anti-Fire | около 150 МБ |
-| uv — установщик пакетов, если его ещё нет | около 20 МБ |
-| Python 3.12, если его нет | около 20 МБ |
-| Библиотеки SFSS, 56 пакетов | около 100 МБ, на диске 330 МБ |
-| Модель поиска по отчётам | 130 МБ |
-| Нейросеть Ministral 3B, по желанию | около 3 ГБ |
+| The repository: code, 16 NASA reports, ready index, prediction model, Anti-Fire | about 150 MB |
+| uv, the package installer, if not present yet | about 20 MB |
+| Python 3.12, if not present | about 20 MB |
+| SFSS libraries, 56 packages | about 100 MB, 330 MB on disk |
+| Search model for the reports | 130 MB |
+| Ministral 3B language model, optional | about 3 GB |
 
-После установки сеть не нужна.
+No network is needed after installation.
 
-## Установка
+## Installation
 
 ```bash
 git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git ~/SFSS-Dev
@@ -36,27 +36,27 @@ git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git ~/SFSS-Dev
 cd ~/SFSS-Dev && ./install.sh
 ```
 
-Шаги пронумерованы, у каждой загрузки видно, сколько осталось. Установщик задаст два вопроса,
-на оба можно нажать Enter:
+Steps are numbered, and every download shows its progress. The installer asks two questions;
+pressing Enter answers yes to both:
 
-1. **Поставить Anti-Fire в «Программы»?** Если там уже есть Anti-Fire, прежняя версия уйдёт в
-   Корзину, поверх она не копируется.
-2. **Скачать Ministral 3B?** Вопрос будет, только если на Mac стоит LM Studio или Ollama.
+1. **Install Anti-Fire into Applications?** If Anti-Fire is already there, the previous version
+   goes to the Trash; the new one is never copied over it.
+2. **Download Ministral 3B?** Asked only when LM Studio or Ollama is installed.
 
-В конце установщик запускает сервис и делает один расчёт. Если связь оборвалась, запустите
-`./install.sh` снова: скачанное не пропадёт, готовые шаги пропускаются.
+At the end the installer starts the service and runs one calculation. If the connection drops,
+run `./install.sh` again: downloads are kept and finished steps are skipped.
 
-Если установщик пишет, что `~/.local/bin` нет в `PATH`, добавьте в `~/.zshrc` строку, которую
-он напечатал, и откройте новое окно терминала.
+If the installer says `~/.local/bin` is not in `PATH`, add the line it prints to `~/.zshrc` and
+open a new terminal window.
 
-| Параметр | Что делает |
+| Option | What it does |
 |---|---|
-| `--yes` | отвечает «да» на все вопросы |
-| `--no-llm` | не трогает нейросеть |
-| `--no-app` | не ставит Anti-Fire |
-| `--uninstall` | убирает всё, что поставил |
+| `--yes` | answers yes to every question |
+| `--no-llm` | leaves the language model alone |
+| `--no-app` | skips Anti-Fire |
+| `--uninstall` | removes everything it installed |
 
-## Проверка
+## Checking
 
 ```bash
 sfss status
@@ -64,27 +64,27 @@ sfss predict --o2 0.30 --psi 8.2
 sfss playground
 ```
 
-Ожидается: в индексе 1131 фрагмент, скорость горения 0.676 мм²/с, в 1,33 раза быстрее
-обычного воздуха; в браузере открывается Площадка.
+Expected: 1131 chunks in the index, a burning rate of 0.676 mm²/s, 1.33 times faster than
+normal air; the Playground opens in a browser.
 
-**Anti-Fire** — в «Программах» или через Spotlight. Программа сама находит команду `sfss`,
-поэтому кнопки «Start SFSS» и «Stop SFSS» работают сразу. Окно встаёт по центру экрана с
-учётом Дока.
+**Anti-Fire** is in Applications or Spotlight. It finds the `sfss` command by itself, so the
+"Start SFSS" and "Stop SFSS" buttons work right away. The window opens centred on the screen,
+taking the Dock into account.
 
-## Нейросеть
+## Language model
 
-Ответы на вопросы пишет нейросеть на этом же Mac, в LM Studio или Ollama. Без неё работает
-всё остальное: расчёт, CSV, Площадка.
+Answers are written by a language model on the same Mac, in LM Studio or Ollama. Everything
+else works without it: calculations, CSV, the Playground.
 
-**LM Studio.** Установить с [lmstudio.ai](https://lmstudio.ai) и один раз открыть. Дальше
-открывать его не нужно: SFSS сам запускает сервер и загружает модель.
+**LM Studio.** Install it from [lmstudio.ai](https://lmstudio.ai) and open it once. After that
+there is no need to open it: SFSS starts its server and loads the model itself.
 
 ```bash
 lms get https://huggingface.co/mlx-community/Ministral-3-3B-Instruct-2512-4bit
 sfss load
 ```
 
-**Ollama.** Установить с [ollama.com](https://ollama.com).
+**Ollama.** Install it from [ollama.com](https://ollama.com).
 
 ```bash
 ollama pull ministral-3:3b
@@ -92,63 +92,64 @@ sfss config runtime ollama
 sfss config model ministral-3:3b
 ```
 
-Проще всего — запустить `./install.sh` ещё раз: он найдёт LM Studio или Ollama и предложит
-скачать модель сам. Проверка: `sfss ask "How does helium in the atmosphere affect combustion?"`.
-Первый ответ после загрузки модели идёт до минуты. На 8 ГБ памяти лучше закрыть тяжёлые
-программы.
+The simplest way is to run `./install.sh` again: it finds LM Studio or Ollama and offers to
+download the model. Check: `sfss ask "How does helium in the atmosphere affect combustion?"`.
+The first answer after loading the model takes up to a minute. With 8 GB of memory, close heavy
+apps first.
 
-## Удаление
+## Removal
 
 ```bash
 cd ~/SFSS-Dev && ./install.sh --uninstall
 ```
 
-Убирает:
+It removes:
 
-- сервис: останавливает его;
-- команду `sfss`;
-- Python с библиотеками, модель поиска;
-- uv из `.tools` вместе с его кэшем и скачанным Python, если uv ставил установщик;
-- Anti-Fire из «Программ» вместе с её кэшем — в Корзину.
+- the service: stops it;
+- the `sfss` command;
+- Python with its libraries and the search model;
+- uv from `.tools`, together with its cache and the Python it downloaded, if the installer put
+  uv there;
+- Anti-Fire from Applications together with its cache, into the Trash.
 
-Остаются клон с отчётами NASA и индексом, `sfss/.env` и настройки нейросети. Клон после этого
-можно удалить: `rm -rf ~/SFSS-Dev`. Нейросеть в LM Studio или Ollama не трогается: её
-удаляют там же. Если на Mac осталась модель поиска от прежней версии SFSS (470 МБ в
-`~/.cache/huggingface`), установщик предложит удалить и её.
+What stays: the clone with the NASA reports and the index, `sfss/.env` and the model settings.
+You can then delete the clone: `rm -rf ~/SFSS-Dev`. The language model in LM Studio or Ollama is
+not touched; remove it there. If a search model from an earlier SFSS version is left over
+(470 MB in `~/.cache/huggingface`), the installer offers to remove it too.
 
-Anti-Fire можно убрать и просто перетащив в Корзину, но тогда останется сервис.
+You can also drag Anti-Fire to the Trash, but then the service stays.
 
-## Обновление
+## Updating
 
 ```bash
 cd ~/SFSS-Dev && git pull && ./install.sh
 ```
 
-Установщик поставит то, что поменялось, и заменит Anti-Fire новой сборкой.
+The installer installs what changed and replaces Anti-Fire with the new build.
 
-## Если что-то пошло не так
+## Troubleshooting
 
-| Что видно | Что делать |
+| What you see | What to do |
 |---|---|
-| «Could not download uv» | проверить сеть; за прокси uv ставится вручную: https://docs.astral.sh/uv/ |
-| `sfss: command not found` | открыть новое окно терминала; проверить `PATH`, см. «Установка» |
-| «Port 8000 is taken» | `sfss start --port 8010` |
-| «Could not download the search model» | проверить сеть и запустить `./install.sh` снова |
-| LM Studio «not answering» | открыть LM Studio один раз, затем `sfss load` |
-| Anti-Fire не открывается: «разработчик не проверен» | правый клик по программе → «Открыть». Так бывает, только если `.dmg` скачан через браузер |
-| Anti-Fire: «The sfss command was not found» | сначала поставить SFSS |
+| "Could not download uv" | check the network; behind a proxy install uv by hand: https://docs.astral.sh/uv/ |
+| `sfss: command not found` | open a new terminal window; check `PATH`, see "Installation" |
+| "Port 8000 is taken" | `sfss start --port 8010` |
+| "Could not download the search model" | check the network and run `./install.sh` again |
+| LM Studio "not answering" | open LM Studio once, then `sfss load` |
+| Anti-Fire does not open: "unidentified developer" | right-click the app → Open. This only happens when the `.dmg` was downloaded with a browser |
+| Anti-Fire: "The sfss command was not found" | install SFSS first |
 
-Лог сервиса: `sfss logs`.
+Service log: `sfss logs`.
 
-## Сборка Anti-Fire из исходников
+## Building Anti-Fire from source
 
-Нужна только тем, кто меняет программу. Нужен Node 22+, Rust скрипт поставит сам, в
-`~/.cargo`, без sudo.
+Only for those who change the app. You need Node 22+; the script installs Rust itself, into
+`~/.cargo`, without sudo.
 
 ```bash
 npm ci
 bash apps/anti-fire/build.sh --install
 ```
 
-Собирает и кладёт в «Программы», прежняя версия уходит в Корзину. `--universal` собирает сразу
-под Intel и Apple Silicon.
+It builds the app and puts it into Applications; the previous version goes to the Trash.
+`--universal` builds for Intel and Apple Silicon at once.

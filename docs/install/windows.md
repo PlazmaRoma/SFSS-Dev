@@ -1,35 +1,35 @@
-# Установка на Windows
+# Installing on Windows
 
-Ставятся две вещи: **SFSS** — сервис, который считает и отвечает, и **Anti-Fire** — программа
-с окном. Обе ставит один скрипт PowerShell, права администратора не нужны.
+Two things get installed: **SFSS**, the service that calculates and answers, and **Anti-Fire**,
+the app with a window. One PowerShell script installs both, without admin rights.
 
-Проверено вживую на Windows 10: с нуля 106 секунд. В GitHub Actions установка и удаление
-проверяются на чистой Windows. Готовая сборка Anti-Fire — для x64.
+Tested on Windows 10: 106 seconds from scratch. GitHub Actions tests installation and removal on
+a clean Windows. The ready Anti-Fire build is for x64.
 
-## Что нужно заранее
+## Prerequisites
 
 - **Git for Windows**: [git-scm.com](https://git-scm.com/download/win).
-- **WebView2** — для окна Anti-Fire. В Windows 10 и 11 он уже есть.
+- **WebView2** for the Anti-Fire window. Windows 10 and 11 already have it.
 
-Python ставить не нужно: установщик скачает Python 3.12, если его нет. Уже стоящий Python не
-используется и не трогается.
+You do not need to install Python: the installer downloads Python 3.12 if it is missing. Any
+Python you already have is neither used nor touched.
 
-## Что скачается
+## What gets downloaded
 
-| Что | Объём |
+| What | Size |
 |---|---|
-| Репозиторий: код, 16 отчётов NASA, готовый индекс, модель расчёта, Anti-Fire | около 150 МБ |
-| uv — установщик пакетов, если его ещё нет | около 20 МБ |
-| Python 3.12, если его нет | около 20 МБ |
-| Библиотеки SFSS, 56 пакетов | около 100 МБ, на диске 330 МБ |
-| Модель поиска по отчётам | 130 МБ |
-| Нейросеть Ministral 3B, по желанию | около 3 ГБ |
+| The repository: code, 16 NASA reports, ready index, prediction model, Anti-Fire | about 150 MB |
+| uv, the package installer, if not present yet | about 20 MB |
+| Python 3.12, if not present | about 20 MB |
+| SFSS libraries, 56 packages | about 100 MB, 330 MB on disk |
+| Search model for the reports | 130 MB |
+| Ministral 3B language model, optional | about 3 GB |
 
-После установки сеть не нужна.
+No network is needed after installation.
 
-## Установка
+## Installation
 
-Откройте **PowerShell** (не обязательно от администратора) и выполните по очереди:
+Open **PowerShell** (no need to run it as administrator) and run, one after the other:
 
 ```powershell
 git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git $HOME\SFSS-Dev
@@ -39,31 +39,31 @@ git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git $HOME\SFSS-Dev
 cd $HOME\SFSS-Dev; powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-`-ExecutionPolicy Bypass` разрешает запустить этот один скрипт и не меняет настройки Windows.
+`-ExecutionPolicy Bypass` allows this one script to run and does not change Windows settings.
 
-Шаги пронумерованы, у загрузок видно, сколько осталось. Установщик задаст два вопроса, на оба
-можно нажать Enter:
+Steps are numbered, and downloads show their progress. The installer asks two questions;
+pressing Enter answers yes to both:
 
-1. **Поставить Anti-Fire в `%LOCALAPPDATA%\Programs\Anti-Fire`?** Появится ярлык в меню «Пуск».
-2. **Скачать Ministral 3B?** Вопрос будет, только если стоит LM Studio или Ollama. Если
-   видеокарта слабая, отвечайте «n».
+1. **Install Anti-Fire into `%LOCALAPPDATA%\Programs\Anti-Fire`?** It adds a Start menu entry.
+2. **Download Ministral 3B?** Asked only when LM Studio or Ollama is installed. With a weak video
+   card, answer "n".
 
-В конце установщик запускает сервис и делает один расчёт. Если связь оборвалась, запустите
-`install.ps1` снова: скачанное не пропадёт, готовые шаги пропускаются.
+At the end the installer starts the service and runs one calculation. If the connection drops,
+run `install.ps1` again: downloads are kept and finished steps are skipped.
 
-**Команда `sfss` появится только в новом окне PowerShell:** установщик добавляет её папку в
-`PATH`, а уже открытые окна этого не видят.
+**The `sfss` command appears only in a new PowerShell window:** the installer adds its folder to
+`PATH`, and windows that are already open do not see that.
 
-| Параметр | Что делает |
+| Option | What it does |
 |---|---|
-| `-Yes` | отвечает «да» на все вопросы |
-| `-NoLlm` | не трогает нейросеть |
-| `-NoApp` | не ставит Anti-Fire |
-| `-Uninstall` | убирает всё, что поставил |
+| `-Yes` | answers yes to every question |
+| `-NoLlm` | leaves the language model alone |
+| `-NoApp` | skips Anti-Fire |
+| `-Uninstall` | removes everything it installed |
 
-## Проверка
+## Checking
 
-В новом окне PowerShell:
+In a new PowerShell window:
 
 ```powershell
 sfss status
@@ -71,26 +71,27 @@ sfss predict --o2 0.30 --psi 8.2
 sfss playground
 ```
 
-Ожидается: в индексе 1131 фрагмент, скорость горения 0.676 мм²/с, в 1,33 раза быстрее
-обычного воздуха; в браузере открывается Площадка.
+Expected: 1131 chunks in the index, a burning rate of 0.676 mm²/s, 1.33 times faster than
+normal air; the Playground opens in a browser.
 
-**Anti-Fire** — в меню «Пуск». При первом запуске SmartScreen может предупредить о неизвестном
-издателе: «Подробнее» → «Выполнить в любом случае», сборка без подписи. Программа сама находит
-команду `sfss`, поэтому кнопки «Start SFSS» и «Stop SFSS» работают сразу.
+**Anti-Fire** is in the Start menu. On first start SmartScreen may warn about an unknown
+publisher: "More info" → "Run anyway"; the build is unsigned. Anti-Fire finds the `sfss` command
+by itself, so the "Start SFSS" and "Stop SFSS" buttons work right away.
 
-## Нейросеть
+## Language model
 
-Ответы на вопросы пишет нейросеть на этом же компьютере, в LM Studio или Ollama. Без неё
-работает всё остальное: расчёт, CSV, Площадка. Модели нужно около 3 ГБ видеопамяти или памяти.
+Answers are written by a language model on the same computer, in LM Studio or Ollama.
+Everything else works without it: calculations, CSV, the Playground. The model needs about 3 GB
+of video memory or RAM.
 
-**LM Studio.** Установить с [lmstudio.ai](https://lmstudio.ai) и один раз открыть.
+**LM Studio.** Install it from [lmstudio.ai](https://lmstudio.ai) and open it once.
 
 ```powershell
 lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF
 sfss load
 ```
 
-**Ollama.** Установить с [ollama.com](https://ollama.com).
+**Ollama.** Install it from [ollama.com](https://ollama.com).
 
 ```powershell
 ollama pull ministral-3:3b
@@ -98,53 +99,54 @@ sfss config runtime ollama
 sfss config model ministral-3:3b
 ```
 
-Проще всего — запустить `install.ps1` ещё раз: он найдёт LM Studio или Ollama и предложит
-скачать модель сам. Проверка: `sfss ask "How does helium in the atmosphere affect combustion?"`.
+The simplest way is to run `install.ps1` again: it finds LM Studio or Ollama and offers to
+download the model. Check: `sfss ask "How does helium in the atmosphere affect combustion?"`.
 
-## Удаление
+## Removal
 
 ```powershell
 cd $HOME\SFSS-Dev; powershell -ExecutionPolicy Bypass -File install.ps1 -Uninstall
 ```
 
-Убирает:
+It removes:
 
-- сервис: останавливает его;
-- команду `sfss` и её папку из `PATH`;
-- Python с библиотеками, модель поиска;
-- uv из `.tools` вместе с его кэшем и скачанным Python, если uv ставил установщик;
-- Anti-Fire: программу, ярлык в «Пуске» и её данные.
+- the service: stops it;
+- the `sfss` command and its folder in `PATH`;
+- Python with its libraries and the search model;
+- uv from `.tools`, together with its cache and the Python it downloaded, if the installer put
+  uv there;
+- Anti-Fire: the app, the Start menu entry and its data.
 
-Остаются клон с отчётами NASA и индексом, `sfss\.env` и настройки нейросети. Клон после этого
-можно удалить: `Remove-Item -Recurse -Force $HOME\SFSS-Dev`. Нейросеть в LM Studio или Ollama
-не трогается: её удаляют там же.
+What stays: the clone with the NASA reports and the index, `sfss\.env` and the model settings.
+You can then delete the clone: `Remove-Item -Recurse -Force $HOME\SFSS-Dev`. The language model
+in LM Studio or Ollama is not touched; remove it there.
 
-В «Программах и компонентах» Windows Anti-Fire нет. Там показывается только то, что ставилось
-установщиком Windows (MSI или EXE), а Anti-Fire — файлы в папке пользователя. Поэтому её
-убирает та же команда, что и ставила.
+Anti-Fire is not listed in Windows "Apps & features". That list shows only what a Windows
+installer (MSI or EXE) put there, and Anti-Fire is just files in your user folder. So the same
+command that installed it removes it.
 
-## Обновление
+## Updating
 
 ```powershell
 cd $HOME\SFSS-Dev; git pull; powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-## Если что-то пошло не так
+## Troubleshooting
 
-| Что видно | Что делать |
+| What you see | What to do |
 |---|---|
-| «Could not download uv» | проверить сеть; за прокси uv ставится вручную: https://docs.astral.sh/uv/ |
-| `sfss` не распознано как команда | открыть новое окно PowerShell |
-| «Port 8000 is taken» | `sfss start --port 8010` |
-| «Could not download the search model» | проверить сеть и запустить `install.ps1` снова |
-| LM Studio «not answering» | открыть LM Studio один раз, затем `sfss load` |
-| Anti-Fire долго открывается | нормально для первого запуска: WebView2 и проверка Defender |
-| Anti-Fire: «The sfss command was not found» | сначала поставить SFSS |
+| "Could not download uv" | check the network; behind a proxy install uv by hand: https://docs.astral.sh/uv/ |
+| `sfss` is not recognized as a command | open a new PowerShell window |
+| "Port 8000 is taken" | `sfss start --port 8010` |
+| "Could not download the search model" | check the network and run `install.ps1` again |
+| LM Studio "not answering" | open LM Studio once, then `sfss load` |
+| Anti-Fire is slow to open | normal on first start: WebView2 and the Defender scan |
+| Anti-Fire: "The sfss command was not found" | install SFSS first |
 
-Лог сервиса: `sfss logs`.
+Service log: `sfss logs`.
 
-## Сборка Anti-Fire из исходников
+## Building Anti-Fire from source
 
-На Windows для сборки нужны Visual Studio Build Tools (несколько гигабайт), Rust и Node, и
-скрипт сборки — bash. Проще взять готовую сборку: её собирает GitHub Actions, вкладка Actions →
-`release` → Run workflow.
+Building on Windows needs Visual Studio Build Tools (several gigabytes), Rust and Node, and the
+build script is bash. It is simpler to take the ready build: GitHub Actions makes it, Actions tab
+→ `release` → Run workflow.

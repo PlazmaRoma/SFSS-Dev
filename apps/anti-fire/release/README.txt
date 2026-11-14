@@ -1,2 +1,2 @@
-Готовые сборки Anti-Fire, их ставит install.sh / install.ps1.
-Собирает GitHub Actions: workflow release. Обновить: скачать артефакты запуска и заменить файлы здесь.
+Ready Anti-Fire builds; install.sh and install.ps1 install them.
+GitHub Actions builds them: workflow release. To update, download the run artifacts and replace the files here.
