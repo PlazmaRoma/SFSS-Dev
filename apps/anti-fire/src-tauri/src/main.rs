@@ -163,7 +163,32 @@ fn center(window: &tauri::WebviewWindow) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Настройки окружения для Linux под Wayland, пока GTK ещё не запущен.
+///
+/// Под GNOME на Wayland кнопки окна рисует сама программа, и с WebKitGTK на NVIDIA они не
+/// нажимались: закрыть окно можно было только из меню. Через XWayland рамку рисует GNOME,
+/// как у обычных окон. Отрисовка DMA-BUF на тех же картах давала белое окно, которое
+/// медленно обрастало интерфейсом. Проверено на Fedora 44, GNOME, GTX 1650.
+/// Что человек задал сам, не трогаем. Возвращает пары, которые выставили.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn linux_wayland_env(
+    get: impl Fn(&str) -> Option<String>,
+) -> Vec<(&'static str, &'static str)> {
+    if get("WAYLAND_DISPLAY").is_none() {
+        return Vec::new();
+    }
+    [("GDK_BACKEND", "x11"), ("WEBKIT_DISABLE_DMABUF_RENDERER", "1")]
+        .into_iter()
+        .filter(|(name, _)| get(name).is_none())
+        .collect()
+}
+
 fn main() {
+    #[cfg(target_os = "linux")]
+    for (name, value) in linux_wayland_env(|name| std::env::var(name).ok()) {
+        std::env::set_var(name, value);
+    }
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![sfss_start, sfss_stop])
         .setup(|app| {
@@ -250,6 +275,30 @@ mod tests {
         assert!(seen[0].1 < std::time::Duration::from_millis(700), "warming came at {:?}", seen[0].1);
         fs::remove_dir_all(home).unwrap();
     }
+    }
+
+    #[test]
+    fn wayland_gets_x11_and_no_dmabuf() {
+        let env = |name: &str| (name == "WAYLAND_DISPLAY").then(|| "wayland-0".to_string());
+        assert_eq!(
+            linux_wayland_env(env),
+            vec![("GDK_BACKEND", "x11"), ("WEBKIT_DISABLE_DMABUF_RENDERER", "1")]
+        );
+    }
+
+    #[test]
+    fn x11_session_is_left_alone() {
+        assert!(linux_wayland_env(|_| None).is_empty());
+    }
+
+    #[test]
+    fn explicit_choice_wins() {
+        let env = |name: &str| match name {
+            "WAYLAND_DISPLAY" => Some("wayland-0".to_string()),
+            "GDK_BACKEND" => Some("wayland".to_string()),
+            _ => None,
+        };
+        assert_eq!(linux_wayland_env(env), vec![("WEBKIT_DISABLE_DMABUF_RENDERER", "1")]);
     }
 
     #[test]
