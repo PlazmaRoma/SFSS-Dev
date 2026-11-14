@@ -8,7 +8,8 @@
     "typecheck": "tsc -b",
     "lint": "oxlint",
     "test": "vitest run",
-    "build": "bash build.sh"
+    "build": "bash build.sh",
+    "page": "vite build && node ../../sfss/playground/tools/inline.mjs dist-build dist/index.html index.html"
   },
   "dependencies": {
     "react": "^19.2.8",

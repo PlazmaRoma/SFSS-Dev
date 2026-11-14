@@ -15,40 +15,37 @@ Anti-Fire и Площадка — клиенты SFSS по HTTP. Своя про
 [`sfss/docs/INTEGRATION.md`](sfss/docs/INTEGRATION.md), пример —
 [`sfss/examples/telemetry_monitor.py`](sfss/examples/telemetry_monitor.py).
 
-## Быстрый старт на macOS
-
-Нужны Python 3.10+, LM Studio с моделью `mlx-community/Ministral-3-3B-Instruct-2512-4bit`,
-а для сборки программ ещё Node 22+ и Rust.
+## Установка
 
 ```bash
-cd sfss
-python3 -m venv .venv
-.venv/bin/pip install -e .
-cp .env.example .env
-.venv/bin/python scripts/ingest_documents.py     # индекс по отчётам, около минуты
-mkdir -p ~/.local/bin && ln -sf "$PWD/.venv/bin/sfss" ~/.local/bin/sfss
-sfss start --with-llm
+git clone https://github.com/PlazmaRoma/SFSS-Dev.git
+cd SFSS-Dev
+./install.sh          # Windows: powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+Установщик ставит сервис, собирает индекс, даёт команду `sfss`, находит LM Studio или Ollama
+и запускает проверку. Нужны только git и Python 3.10+. Дальше:
+
+```bash
 sfss status
+sfss predict --o2 0.30 --psi 8.2
+sfss ask "Как гелий в атмосфере влияет на горение?"
 sfss playground
 ```
 
-Anti-Fire:
+Anti-Fire: готовые файлы под macOS, Linux и Windows в
+[Releases](https://github.com/PlazmaRoma/SFSS-Dev/releases), сборка из исходников —
+`bash apps/anti-fire/build.sh --install`.
 
-```bash
-npm ci                          # из корня репозитория, один раз
-npm run dev -w anti-fire        # в браузере: http://localhost:5174
-bash apps/anti-fire/build.sh    # приложение: apps/anti-fire/src-tauri/target/release/bundle
-```
-
-Приложение само запускает и останавливает SFSS на этой машине. Для этого нужна команда
-`sfss` в `~/.local/bin`, `/opt/homebrew/bin` или `/usr/local/bin`.
+Полная инструкция по трём системам, нейросеть, удаление и что делать при сбоях:
+**[`INSTALL.md`](INSTALL.md)**.
 
 ## Тесты
 
 ```bash
-cd sfss && .venv/bin/python -m pytest -q          # сервис
+cd sfss && .venv/bin/pip install pytest && .venv/bin/python -m pytest -q   # сервис
 npm test && npm run typecheck                     # Площадка и Anti-Fire, из корня
-cd apps/anti-fire/src-tauri && cargo test         # окно Anti-Fire
+npm run page -w anti-fire && cd apps/anti-fire/src-tauri && cargo test     # окно Anti-Fire
 ```
 
 ## Как устроено

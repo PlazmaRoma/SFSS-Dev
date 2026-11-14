@@ -29,12 +29,18 @@ class ModelLoadError(RuntimeError):
 
 def find_lms() -> str | None:
     """Демон запускают не из оболочки, поэтому PATH может и не содержать lms."""
-    default = Path.home() / ".lmstudio" / "bin" / "lms"
-    return shutil.which("lms") or (str(default) if default.exists() else None)
+    folder = Path.home() / ".lmstudio" / "bin"
+    places = (folder / "lms", folder / "lms.exe")
+    return shutil.which("lms") or next((str(place) for place in places if place.exists()), None)
 
 
 def find_ollama() -> str | None:
-    places = ("/opt/homebrew/bin/ollama", "/usr/local/bin/ollama", "/Applications/Ollama.app/Contents/Resources/ollama")
+    places = (
+        "/opt/homebrew/bin/ollama",
+        "/usr/local/bin/ollama",
+        "/Applications/Ollama.app/Contents/Resources/ollama",
+        str(Path.home() / "AppData" / "Local" / "Programs" / "Ollama" / "ollama.exe"),
+    )
     return shutil.which("ollama") or next((place for place in places if Path(place).exists()), None)
 
 

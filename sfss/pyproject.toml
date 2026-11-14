@@ -9,6 +9,10 @@ description = "Space Fire Security Software: fire behavior in microgravity from 
 requires-python = ">=3.10"
 dynamic = ["dependencies"]
 
+# Тесты: pip install -e ".[dev]"
+[project.optional-dependencies]
+dev = ["pytest>=8.3"]
+
 [project.scripts]
 sfss = "app.cli:main"
 

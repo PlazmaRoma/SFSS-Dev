@@ -1,0 +1,7 @@
+# Скрипты должны дойти до каждой системы со своими концами строк
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.pdf binary
+*.joblib binary
+*.parquet binary
+*.dmg binary
