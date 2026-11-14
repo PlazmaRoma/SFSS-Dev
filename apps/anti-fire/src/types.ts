@@ -44,7 +44,6 @@ export interface LoadResult {
   model_context_length: number | null;
 }
 
-/** Сервис сдаётся через 180 с, клиент ждёт чуть дольше, чтобы услышать причину. */
 export const LOAD_TIMEOUT_MS = 200_000;
 
 export interface DocumentInfo {

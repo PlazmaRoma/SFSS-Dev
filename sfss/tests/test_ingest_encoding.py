@@ -1,5 +1,3 @@
-"""Восстановление PDF со сдвинутой кодировкой шрифтов (ARCHITECTURE § 11, п. 7)."""
-
 from pathlib import Path
 
 from app.config import Settings
@@ -16,19 +14,15 @@ ENGLISH = (
 
 
 def garble(text: str, shift: int = 28) -> str:
-    """Как pypdf видит текст шрифта без ToUnicode: номер глифа вместо символа."""
     return "".join(chr(ord(ch) - shift) for ch in text)
 
 
 def test_shift_text_decodes_real_flex_title() -> None:
-    # Первая строка страницы 1 FLEX-отчёта в том виде, как её отдаёт pypdf.
     raw = "*0)<\x1e\x04%\x04()'-7-:)\x0478)4\x04*36;%6(\x04-2\x042%7%"
     assert shift_text(raw, 28) == "FLEX: A DECISIVE STEP FORWARD IN NASA"
 
 
 def test_shift_text_keeps_layout_and_blanks_unknown_glyphs() -> None:
-    # Пробел и перевод строки вставил pypdf, а «¬» — глиф вне ASCII
-    # (в оригинале типографский апостроф).
     assert shift_text("2%7%¬7 *0)<\n", 28) == "NASA S FLEX\n"
 
 
@@ -40,7 +34,6 @@ def test_detect_shift_finds_garbled_english() -> None:
 def test_detect_shift_ignores_normal_and_empty_text() -> None:
     assert detect_shift(ENGLISH) is None
     assert detect_shift("") is None
-    # Таблица: служебных слов нет, но и сдвиг их не создаёт.
     assert detect_shift("FLEX-001 0.21 0.52 1.06 extinction\n" * 100) is None
 
 

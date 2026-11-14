@@ -8,13 +8,6 @@ import { tr } from "../shared/i18n";
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Лендинг: сцена с огнём → демо-видео → описание → в чём разница.
- *  Холст живёт выше по дереву, здесь только содержимое.
- *
- *  Прокрутку холст читает через ref, а не через состояние: она меняется
- *  каждый кадр, и перерисовывать ради неё дерево React незачем. Имена с
- *  окончанием Ref — не украшение: по ним анализатор React отличает ref,
- *  в который писать можно, от обычного пропса, который менять нельзя. */
 export function Landing({
   lang, progressRef, stageBottomRef,
 }: {
@@ -23,7 +16,6 @@ export function Landing({
   stageBottomRef: RefObject<number>;
 }) {
   const stage = useRef<HTMLDivElement>(null);
-  // Без анимации текст виден сразу, а не после первого кадра эффекта
   const [revealed, setRevealed] = useState(reducedMotion);
 
   useEffect(() => {

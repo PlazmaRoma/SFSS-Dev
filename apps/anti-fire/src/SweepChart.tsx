@@ -4,11 +4,8 @@ import { tr } from "./lang";
 const WIDTH = 480;
 const HEIGHT = 170;
 const PAD = { left: 44, right: 12, top: 12, bottom: 30 };
-// Выше этого кислорода опытов FLEX нет, модель выходит на плато
 const TRAINING_MAX_O2 = 0.34;
 
-/** Скорость горения по кислороду при остальных условиях неизменных.
- *  chart_data.y — риск от 0 до 1, в единицы он возвращается через диапазон цели. */
 export function SweepChart({ x, risk, range, current, currentValue }: {
   x: number[];
   risk: number[];

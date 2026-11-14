@@ -1,5 +1,3 @@
-"""BM25 и слияние с векторным поиском: без ChromaDB и модели эмбеддингов."""
-
 from app.services.keyword_search import KeywordIndex, fuse, tokenize
 
 DOCS = {
@@ -19,7 +17,6 @@ def test_tokenize_drops_question_words_and_keeps_hyphenated_terms():
 
 
 def test_search_finds_exact_term():
-    # Ради этого и нужен BM25: векторы MiniLM гелий не находили
     assert _index().search("How does helium affect combustion?", 2)[0] == "helium"
 
 
@@ -30,7 +27,6 @@ def test_search_skips_documents_without_query_words():
 def test_fuse_prefers_documents_found_by_both():
     dense = ["flow", "pressure", "helium"]
     keyword = ["ams", "pressure", "helium"]
-    # ams первый у BM25, но векторы его не нашли; pressure нашли оба
     assert fuse(dense, keyword, keyword_weight=1.5, k=2) == ["pressure", "helium"]
 
 

@@ -1,5 +1,3 @@
-"""Сервис сам поднимает LM Studio и модель, с нужным контекстом."""
-
 import json
 import subprocess
 from types import SimpleNamespace
@@ -15,7 +13,6 @@ from .conftest import FakeLLMService
 
 @pytest.fixture
 def service(monkeypatch):
-    """Настоящий LLMService, у которого подменены lms и состояние сервера."""
     calls: list[list[str]] = []
     state = SimpleNamespace(up=True, loaded=(False, None), returncode=0, stderr="")
     llm = LLMService(Settings(_env_file=None))
@@ -134,7 +131,6 @@ def test_needs_load(service):
     assert llm.needs_load() is True
     state.loaded = (True, 8192)
     assert llm.needs_load() is False
-    # Сервер не сообщает состояние: не наш, загружать нечего
     state.loaded = (None, None)
     assert llm.needs_load() is False
     state.up = False

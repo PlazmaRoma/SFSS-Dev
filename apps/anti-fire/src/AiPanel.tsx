@@ -29,12 +29,10 @@ const STAGES = {
 
 const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const newChat = (): Chat => ({ id: newId(), title: "", messages: [] });
-// Пустой чат подписан на языке программы, а не на том, при котором его создали
 const chatTitle = (chat: Chat) => (chat.messages.length ? chat.title : tr("newChat"));
 
 export interface AiHandle { focus: () => void }
 
-/** Вопрос виден и доступен всегда, без режимов и кнопок на пути к нему. */
 export const AiPanel = forwardRef<AiHandle, {
   client: Client;
   health: HealthInfo | null;
@@ -65,7 +63,6 @@ export const AiPanel = forwardRef<AiHandle, {
 
   const active = chats.find((chat) => chat.id === activeId) ?? chats[0];
 
-  // Пока ответ пишется, не сохраняем: оборванный ответ в истории только сбивает
   useEffect(() => {
     if (!busy) save("antifire.chats", chats);
   }, [chats, busy]);

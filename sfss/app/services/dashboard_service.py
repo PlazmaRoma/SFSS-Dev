@@ -1,15 +1,3 @@
-"""Сводка для дашборда: датасет, качество модели и состав корпуса.
-
-Собирает в один ответ то, что фронт показывает при загрузке страницы.
-Отдельный эндпоинт нужен, потому что `/query` отвечает десятки секунд и
-вешать на него отрисовку страницы нельзя: интерактив даёт мгновенный
-`/predict`, а LLM вызывается только по кнопке.
-
-Ничего не считает на лету — метрики и важность признаков берутся из
-артефакта модели, куда их кладёт `scripts/train_model.py`. Зашивать их
-сюда нельзя: после переобучения они бы соврали.
-"""
-
 import logging
 
 import pandas as pd
@@ -28,16 +16,10 @@ from app.services.rag_service import RagService
 logger = logging.getLogger(__name__)
 
 DATASET_FILE = "flex.csv"
-# Значения, уходящие в JSON, держим в ASCII: кириллица здесь — данные для
-# чужого кода, а не текст для человека. Фронт сам решает, как их отрисовать
-# и на каком языке подписать.
 DATASET_SOURCE = (
     "FLEX (Flame Extinguishment Experiment), ISS - test matrix from report "
     "NASA/TP-2015-216046, pages 26-34"
 )
-# Единицы целевых величин: числа без единиц на дашборде нечитаемы.
-# Запись в ASCII: 'mm^2/s' вместо 'мм²/с' — надстрочный знак ломается при
-# копировании, а кириллическая 'с' неотличима от латинской 'c' при сравнении.
 TARGET_UNITS = {
     "burn_rate_mm2s": "mm^2/s",
     "d_extinction_mm": "mm",
@@ -60,7 +42,6 @@ class DashboardService:
         self.rag = rag
         self.ml = ml
 
-    # --- модель ----------------------------------------------------------
 
     def model_info(self) -> ModelInfo:
         if not self.ml.is_ready():
@@ -85,12 +66,11 @@ class DashboardService:
             trained=True,
         )
 
-    # --- датасет ---------------------------------------------------------
 
     def dataset_info(self) -> DatasetInfo:
         path = self.settings.processed_dir / DATASET_FILE
         if not path.exists():
-            logger.warning("Нет %s — соберите его scripts/build_flex_dataset.py", path)
+            logger.warning("No %s: build it with scripts/build_flex_dataset.py", path)
             return DatasetInfo(name="FLEX", source=DATASET_SOURCE, rows=0)
 
         df = pd.read_csv(path)
@@ -101,7 +81,6 @@ class DashboardService:
             name="FLEX", source=DATASET_SOURCE, rows=len(df), experiments=points
         )
 
-    # --- корпус ----------------------------------------------------------
 
     def corpus_info(self) -> CorpusInfo:
         try:
@@ -111,7 +90,7 @@ class DashboardService:
                 {m.get("source") for m in stored.get("metadatas", []) if m and m.get("source")}
             )
         except Exception as exc:
-            logger.warning("Корпус недоступен: %s", exc)
+            logger.warning("Corpus unavailable: %s", exc)
             chunks, documents = 0, []
         return CorpusInfo(
             chunks=chunks,

@@ -1,12 +1,10 @@
-Anti-Fire для Windows (x64)
+Anti-Fire for Windows (x64)
 
-Запуск: распакуйте архив и откройте Anti-Fire.exe.
-Нужен WebView2: в Windows 10 и 11 он уже есть.
-При первом запуске SmartScreen может предупредить о неизвестном издателе:
-«Подробнее» -> «Выполнить в любом случае». Сборка без подписи.
+Start: unpack the archive and open Anti-Fire.exe.
+It needs WebView2, which Windows 10 and 11 already have.
+On first start SmartScreen may warn about an unknown publisher:
+"More info" -> "Run anyway". The build is unsigned.
 
-Anti-Fire — клиент сервиса SFSS. Сервис ставится отдельно, из репозитория:
-install.ps1. Тогда кнопка «Запустить SFSS» в программе найдёт команду sfss сама.
-Подробности: docs/install/windows.md в репозитории.
-
-Сборка под Windows на настоящей машине не проверялась.
+Anti-Fire is a client of the SFSS service. Install the service from the repository with
+install.ps1, and the "Start SFSS" button will find the sfss command by itself.
+Details: docs/install/windows.md in the repository.

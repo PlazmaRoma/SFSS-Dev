@@ -1,28 +1,29 @@
-# Повторный интеграционный прогон после offline-оптимизации
+# Repeat integration run after the offline optimisation
 
-Дата: 21 сентября 2026 года.
+Date: 21 September 2026.
 
-Проверялось состояние `main` на коммите `503174e`. Запросы к Ministral
-выполнялись строго последовательно: один клиент, один запрос, ожидание полного
-завершения и только затем следующий запрос. Всего выполнено ровно три вызова
-`POST /query`.
+This is a historical record of the ChromaDB and sentence-transformers stack, replaced in November
+(ARCHITECTURE § 7.23). The questions were asked in Russian; the answers are quoted in translation.
 
-## Итог
+The state of `main` at commit `503174e` was checked. Requests to Ministral ran strictly one after
+another: one client, one request, wait for it to finish completely, then the next. Exactly three
+`POST /query` calls in total.
 
-| Проверка | Результат | Время |
+## Summary
+
+| Check | Result | Time |
 |---|---:|---:|
-| Прогрев FastAPI | ПРОЙДЕНО | 4,8 с |
-| Контрактные тесты | ПРОЙДЕНО | 19 тестов за 0,04 с |
-| `GET /health` | ПРОЙДЕНО | 0,417 с |
-| `POST /predict` | ПРОЙДЕНО | 0,288 с |
-| Обычный вопрос по корпусу | ПРЕДУПРЕЖДЕНИЕ | 43,848 с |
-| Ловушка про футбол | ПРОЙДЕНО | 16,552 с |
-| Ловушка Saffire-IV | ПРОЙДЕНО | 14,976 с |
+| FastAPI warm-up | PASS | 4.8 s |
+| Contract tests | PASS | 19 tests in 0.04 s |
+| `GET /health` | PASS | 0.417 s |
+| `POST /predict` | PASS | 0.288 s |
+| Normal corpus question | WARNING | 43.848 s |
+| Football trap | PASS | 16.552 s |
+| Saffire-IV trap | PASS | 14.976 s |
 
-Во время холодного старта обращений к Hugging Face не было. Модель
-`paraphrase-multilingual-MiniLM-L12-v2` загрузилась из локального кэша,
-ChromaDB открыла существующий индекс из 1118 чанков, а `fiery` успешно
-прогрелась.
+There were no requests to Hugging Face during the cold start. The
+`paraphrase-multilingual-MiniLM-L12-v2` model loaded from the local cache, ChromaDB opened the
+existing index of 1118 chunks, and `fiery` warmed up successfully.
 
 ## Health
 
@@ -38,7 +39,7 @@ ChromaDB открыла существующий индекс из 1118 чанк
 
 ## Fiery
 
-Контрольный запрос вернул эталонные значения:
+The control request returned the reference values:
 
 ```json
 {
@@ -51,76 +52,75 @@ ChromaDB открыла существующий индекс из 1118 чанк
 }
 ```
 
-## Обычный вопрос
+## Normal question
 
-Вопрос:
+Question:
 
-> Как концентрация кислорода влияет на скорость горения?
+> How does oxygen concentration affect the burning rate?
 
-Точный ответ:
+The answer:
 
-> Скорость горения зависит от режима:
-> - **Теплово-плотный режим**: скорость не зависит от плотности топлива [doc_id, стр. 91].
-> - **Теплово-холодный переход**: скорость уменьшается с увеличением плотности топлива [doc_id, стр. 91].
+> The burning rate depends on the regime:
+> - **Thermally dense regime**: the rate does not depend on the fuel density [doc_id, p. 91].
+> - **Thermally cold transition**: the rate decreases as the fuel density increases [doc_id, p. 91].
 >
-> В микрогравитации при **21% O₂**:
-> - С CO₂-разбавлением — стабильное горение (нет экстенции в нормальной гравитации) [doc_id, стр. 97].
-> - С He-разбавлением — экстенция горения при этом же % O₂ [doc_id, стр. 97].
+> In microgravity at **21% O₂**:
+> - With CO₂ dilution, stable combustion (no extinction in normal gravity) [doc_id, p. 97].
+> - With He dilution, combustion extinction at the same % O₂ [doc_id, p. 97].
 
-Источники retrieval:
+Retrieved sources:
 
-1. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, страница 91
-2. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, страница 97
-3. `NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-`, страница 138
+1. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, page 91
+2. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, page 97
+3. `NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-`, page 138
 
-Оценка: **ПРЕДУПРЕЖДЕНИЕ**. Ответ не вышел за найденный контекст, однако
-сформулирован слабее самих источников. Модель пропустила прямые выводы о том,
-что с ростом концентрации кислорода уменьшается задержка воспламенения и растёт
-температура пламени. Термины `теплово-плотный`, `теплово-холодный` и
-`экстенция` неудачны. Вместо ID документа снова выведен шаблон `[doc_id]`.
+Assessment: **WARNING**. The answer stayed within the retrieved context but is weaker than the
+sources themselves. The model missed the direct findings that ignition delay decreases and flame
+temperature rises as oxygen concentration grows. The Russian terms for "thermally dense",
+"thermally cold" and "extinction" were poor. The `[doc_id]` template was printed instead of the
+document id again.
 
-## Внетематическая ловушка
+## Off-topic trap
 
-Вопрос:
+Question:
 
-> Кто выиграл чемпионат мира по футболу 2022 года?
+> Who won the 2022 FIFA World Cup?
 
-Точный ответ:
+The answer:
 
-> Контекст не содержит информации о чемпионатах мира по футболу или других земных событиях. Данные [doc_id] относятся только к исследованиям ISS и микрогравитации.
+> The context contains no information about football World Cups or other events on Earth. The data [doc_id] concerns only ISS and microgravity research.
 
-Источники retrieval:
+Retrieved sources:
 
-1. `NTRS-20170008723-Annual-Highlights-of-Results-from-the-Interna`, страница 2
-2. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, страница 99
-3. `NTRS-20120015928-FLEX-A-Decisive-Step-Forward-in-NASA-s-Combus`, страница 33
+1. `NTRS-20170008723-Annual-Highlights-of-Results-from-the-Interna`, page 2
+2. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, page 99
+3. `NTRS-20120015928-FLEX-A-Decisive-Step-Forward-in-NASA-s-Combus`, page 33
 
-Оценка: **ПРОЙДЕНО**. Ministral отказалась отвечать и не назвала Аргентину.
+Assessment: **PASS**. Ministral refused and did not name Argentina.
 
-## Тематическая ловушка Saffire-IV
+## On-topic Saffire-IV trap
 
-Вопрос:
+Question:
 
-> Каковы результаты эксперимента Saffire-IV на борту Cygnus?
+> What are the results of the Saffire-IV experiment aboard Cygnus?
 
-Точный ответ:
+The answer:
 
-> Контекст не содержит данных о **Saffire-IV** или экспериментах на борту *Cygnus*. Для анализа горения в невесомости ссылаюсь на **исследования cooperative research** по аппаратуре [doc_id: NTRS-20000030678], но конкретные результаты Saffire-IV не указаны [стр. 205–210]. Дополнительно: фигуры (Fig. 3, Fig. 7) демонстрируют **аппаратуру** для моделирования горения в микрогравитации [стр. 25, 31].
+> The context contains no data about **Saffire-IV** or experiments aboard *Cygnus*. For combustion in microgravity I refer to the **cooperative research** on hardware [doc_id: NTRS-20000030678], but specific Saffire-IV results are not given [pp. 205–210]. In addition, figures (Fig. 3, Fig. 7) show **hardware** for modelling combustion in microgravity [pp. 25, 31].
 
-Источники retrieval:
+Retrieved sources:
 
-1. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, PDF-страница 209 — подпись к Figure 7 (печатная страница 31)
-2. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, PDF-страница 61 — подпись к Figure 3 (печатная страница 25)
-3. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, PDF-страница 205 — подпись к Figure 7 (печатная страница 27)
+1. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, PDF page 209: the Figure 7 caption (printed page 31)
+2. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, PDF page 61: the Figure 3 caption (printed page 25)
+3. `NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra`, PDF page 205: the Figure 7 caption (printed page 27)
 
-Оценка: **ПРОЙДЕНО**. Модель не выдумала результаты Saffire-IV и прямо
-сказала, что их нет в контексте. Она правильно распознала найденные фрагменты
-как подписи к аппаратуре. Недостаток: в тексте ответа смешана нумерация
-PDF-страниц и печатных страниц отчёта.
+Assessment: **PASS**. The model did not invent Saffire-IV results and said plainly that they are
+not in the context. It correctly recognised the chunks as hardware captions. A flaw: the answer
+mixes PDF page numbers with the report's printed page numbers.
 
-## Вывод
+## Conclusion
 
-Offline-оптимизация работает: холодный запуск не обращается к Hugging Face,
-индекс и предсказательная модель доступны. Ministral повторно прошла обе
-проверки на галлюцинации. Основной оставшийся дефект относится не к
-достоверности, а к качеству обычного ответа и формированию ссылок.
+The offline optimisation works: a cold start makes no requests to Hugging Face, and the index and
+the prediction model are available. Ministral passed both hallucination checks again. The main
+remaining defect concerns not trustworthiness but the quality of a normal answer and the way
+references are formed.

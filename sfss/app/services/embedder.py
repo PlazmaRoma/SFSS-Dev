@@ -1,13 +1,3 @@
-"""Векторы для поиска по отчётам: модель в ONNX, без PyTorch.
-
-Модель та же, что была с sentence-transformers: paraphrase-multilingual-MiniLM-L12-v2,
-русский вопрос находит английский текст. Только запускается через onnxruntime, а веса
-сжаты до int8. Ради этого из установки ушёл PyTorch с transformers, около гигабайта,
-а модель весит 113 МБ вместо 470 (ARCHITECTURE § 7.23).
-
-Модель качается один раз: `python -m app.services.embedder`. Дальше работает без сети.
-"""
-
 import hashlib
 import logging
 import os
@@ -20,11 +10,8 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 REPO = "Xenova/paraphrase-multilingual-MiniLM-L12-v2"
-# Ревизия закреплена: индекс в git посчитан именно этой моделью, и тихое обновление
-# на Hugging Face разошлось бы с ним
 REVISION = "2c4055b12046f11709e9df2c122e59ffbdc2f900"
 FILES = {
-    # имя на диске: (путь в репозитории, sha256)
     "model.onnx": (
         "onnx/model_quantized.onnx",
         "66fc00f5f29afcaff34092e1bdd20008ca3918265a82fb9695a551e510cc4ebc",
@@ -34,13 +21,12 @@ FILES = {
         "b60b6b43406a48bf3638526314f3d232d97058bc93472ff2de930d43686fa441",
     ),
 }
-# Как у sentence-transformers для этой модели: дальше 128 токенов текст не читается
 MAX_TOKENS = 128
 BATCH = 32
 
 
 class EmbeddingModelMissing(RuntimeError):
-    """Модели нет на диске: её не скачали при установке."""
+    pass
 
 
 def model_ready(model_dir: Path) -> bool:
@@ -48,8 +34,6 @@ def model_ready(model_dir: Path) -> bool:
 
 
 class Embedder:
-    """Текст → вектор 384 чисел. Средний вектор токенов, как в sentence-transformers."""
-
     def __init__(self, model_dir: Path) -> None:
         if not model_ready(model_dir):
             raise EmbeddingModelMissing(
@@ -88,9 +72,6 @@ class Embedder:
         return (summed / np.clip(weights.sum(axis=1), 1e-9, None)).astype(np.float32)
 
 
-# --- Загрузка ------------------------------------------------------------------
-
-
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as file:
@@ -100,7 +81,6 @@ def _sha256(path: Path) -> str:
 
 
 def download(model_dir: Path, show_progress: bool = True) -> None:
-    """Скачивает модель с Hugging Face, проверяет контрольные суммы. Готовые файлы пропускает."""
     import httpx
 
     model_dir.mkdir(parents=True, exist_ok=True)
@@ -122,8 +102,6 @@ def download(model_dir: Path, show_progress: bool = True) -> None:
                     out.write(chunk)
                     done += len(chunk)
                     percent = done * 100 // total if total else 0
-                    # Строка обновляется только при новом проценте: в логе без
-                    # терминала иначе были бы тысячи одинаковых строк
                     if show_progress and total and percent != shown:
                         shown = percent
                         print(

@@ -1,5 +1,3 @@
-"""Документы корпуса: список, загрузка PDF, отдача одной страницы."""
-
 import hashlib
 import io
 import logging
@@ -29,7 +27,7 @@ class DocumentExistsError(RuntimeError):
 
 
 class DocumentRejectedError(ValueError):
-    """Файл не подходит: не PDF, слишком большой или без текста."""
+    pass
 
 
 class DocumentTooLargeError(DocumentRejectedError):
@@ -37,12 +35,6 @@ class DocumentTooLargeError(DocumentRejectedError):
 
 
 def safe_filename(name: str, content: bytes) -> str:
-    """Имя файла из запроса → имя на диске, только ASCII и без каталогов.
-
-    doc_id уходит в API и в ссылки ответа, а там действует правило «ASCII для
-    машин». Имя целиком из кириллицы превратилось бы в пустое, поэтому у него
-    вместо имени хеш содержимого.
-    """
     base = Path(name.replace("\\", "/")).name
     stem = re.sub(r"[^A-Za-z0-9._-]+", "_", Path(base).stem).strip("._-")
     if not stem:
@@ -85,12 +77,6 @@ class DocumentService:
         ]
 
     def find(self, doc_id: str) -> Path:
-        """Файл документа по doc_id или короткому номеру из ссылки ответа.
-
-        doc_id только сравнивается с именами из каталога и никогда не
-        подставляется в путь, поэтому выйти за пределы data/raw им нельзя.
-        В ответах модели ссылка короткая: [NTRS-20000030678, p. 97].
-        """
         files = self._files()
         for path in files:
             if path.stem == doc_id:
@@ -101,7 +87,6 @@ class DocumentService:
         raise DocumentNotFoundError(doc_id)
 
     def page_pdf(self, doc_id: str, page: int) -> bytes:
-        """Одна страница отдельным PDF, нумерация с единицы, как в sources."""
         reader = PdfReader(str(self.find(doc_id)))
         if not 1 <= page <= len(reader.pages):
             raise DocumentNotFoundError(f"{doc_id}, page {page}")
@@ -122,7 +107,6 @@ class DocumentService:
         name = safe_filename(filename, content)
         path = self.settings.raw_dir / name
         try:
-            # Режим x: два одновременных запроса не перезапишут файл друг друга
             with path.open("xb") as file:
                 file.write(content)
         except FileExistsError:
@@ -140,7 +124,7 @@ class DocumentService:
             path.unlink(missing_ok=True)
             raise DocumentRejectedError("No text layer in the PDF: scans are not supported")
 
-        logger.info("Добавлен документ %s: %d фрагментов", name, chunks)
+        logger.info("Added document %s: %d chunks", name, chunks)
         return DocumentInfo(
             doc_id=path.stem, filename=name, chunks=chunks, size_bytes=len(content)
         )

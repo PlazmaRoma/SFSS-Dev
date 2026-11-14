@@ -1,10 +1,10 @@
-# Установка
+# Installation
 
-Инструкции разделены по системам. В каждой — что нужно заранее, установка, проверка,
-нейросеть, удаление, обновление и что делать при сбоях.
+The instructions are split by system. Each covers prerequisites, installation, checking, the
+language model, removal, updating and troubleshooting.
 
 - [macOS](docs/install/macos.md)
 - [Linux](docs/install/linux.md)
 - [Windows](docs/install/windows.md)
 
-Коротко — в [README](README.md#установка).
+The short version is in the [README](README.md#installation).

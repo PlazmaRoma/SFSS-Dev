@@ -47,7 +47,6 @@ export function Calculator({ client, online, dashboard, print }: {
   const nextRow = useRef(rows.reduce((max, row) => Math.max(max, row.id), 0) + 1);
   const sequence = useRef(0);
 
-  // Язык в зависимостях: в разборе лежат готовые тексты ошибок
   const lang = getLang();
   const parsed = useMemo(() => toParameters(conditions), [conditions, lang]);
   const paramsKey = parsed.params ? JSON.stringify(parsed.params) : null;
@@ -55,8 +54,6 @@ export function Calculator({ client, online, dashboard, print }: {
   useEffect(() => save("antifire.conditions", conditions), [conditions]);
   useEffect(() => save("antifire.rows", rows), [rows]);
 
-  // Пересчёт сразу при вводе: /predict мгновенный, кнопка была бы лишним действием.
-  // Устаревший ответ отбрасывается: сеть может вернуть ответы не по порядку.
   useEffect(() => {
     if (!paramsKey || !online) return;
     const params = JSON.parse(paramsKey) as Record<string, number>;
@@ -134,7 +131,6 @@ export function Calculator({ client, online, dashboard, print }: {
     link.href = url;
     link.download = "anti-fire-results.csv";
     link.click();
-    // Не сразу: окно приложения забирает файл уже после клика
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
     print("out", tr("csvSaved"));
   };
@@ -146,7 +142,6 @@ export function Calculator({ client, online, dashboard, print }: {
   };
 
   const value = result?.predicted_value ?? null;
-  // Старое число при новых условиях выглядело бы ответом на них
   const stale = Boolean(failure) || !parsed.params || !online || resultKey !== paramsKey;
   const units = tr("burnUnit");
   const columns = tableColumns();

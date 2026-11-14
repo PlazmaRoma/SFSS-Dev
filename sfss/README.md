@@ -1,201 +1,201 @@
-# SFSS — сервис
+# SFSS: the service
 
-RAG + ML сервис по данным NASA о горении в невесомости
-(NASA Space Apps 2026, «Flame in Freefall»).
+A RAG + ML service over NASA data on combustion in microgravity
+(NASA Space Apps 2026, "Flame in Freefall").
 
-Делает две вещи:
+It does two things:
 
-- **отвечает на вопросы** по отчётам NASA со ссылками на документ и страницу;
-- **предсказывает скорость горения** капли топлива по составу атмосферы.
+- **answers questions** from NASA reports, with references to the document and page;
+- **predicts the burning rate** of a fuel droplet from the atmosphere composition.
 
 ---
 
-## Быстрый старт
+## Quick start
 
-Эта папка — часть репозитория SFSS-Dev: сервис `sfss` и Площадка в `playground/`.
-Программа Anti-Fire лежит рядом, в `../apps/anti-fire`. Отчёты NASA и обученная модель
-лежат в git, а индекс собирается на машине один раз. Сервис работает в фоне,
-управляется командой `sfss`:
+This folder is part of the SFSS-Dev repository: the `sfss` service and the Playground in
+`playground/`. The Anti-Fire app is next to it, in `../apps/anti-fire`. The NASA reports, the
+trained model and the ready index are in git. The service runs in the background and is
+controlled with the `sfss` command:
 
 ```bash
-./install.sh                   # из корня SFSS-Dev, один раз; Windows: install.ps1
-sfss start --with-llm          # демон и модель с контекстом 8192
+./install.sh                   # from the SFSS-Dev root, once; Windows: install.ps1
+sfss start --with-llm          # the daemon and the model with context 8192
 sfss status
 ```
 
-Что делает установщик, удаление и сбои — по системам: [`../docs/install/`](../docs/install/).
+What the installer does, removal and troubleshooting, per system: [`../docs/install/`](../docs/install/).
 
-Модель загружается сама при первом вопросе. Заранее: `sfss load`, кнопка в Anti-Fire
-или `POST /v1/llm/load`. Выгрузить: `sfss unload` или кнопка там же. LM Studio открывать
-не нужно, но он должен быть установлен. Вместо него можно Ollama: раздел «Настройки нейросети».
+The model loads by itself on the first question. To load it in advance: `sfss load`, the button
+in Anti-Fire, or `POST /v1/llm/load`. To unload: `sfss unload` or the same button. LM Studio does
+not need to be open, but it must be installed. Ollama works instead of it: see "Language model
+settings".
 
 ```bash
 sfss predict --o2 0.30 --psi 8.2
-sfss ask "Как гелий в атмосфере влияет на горение?"
+sfss ask "How does helium in the atmosphere affect combustion?"
 sfss predict --csv runs.csv --out results.csv
 sfss import report.pdf
-sfss playground                # Площадка в браузере
+sfss playground                # the Playground in a browser
 sfss logs -f
 sfss stop
 sfss help predict
 ```
 
-Pid и лог демона лежат в `data/run/`. Для разработки по-прежнему удобнее
-`.venv/bin/uvicorn app.main:app --reload`.
+The daemon pid and log are in `data/run/`. For development, `.venv/bin/uvicorn app.main:app
+--reload` is still handier.
 
-Открыть **http://localhost:8000/docs** — там все эндпоинты можно потыкать мышкой.
+Open **http://localhost:8000/docs** to try every endpoint with the mouse.
 
-Проверить, что всё живо, без `sfss`:
+Check that everything is alive without `sfss`:
 
 ```bash
 curl http://localhost:8000/health
 ```
 
-Ожидаемый ответ: `"status": "ok"`, `"indexed_documents": 1131`.
+Expected: `"status": "ok"`, `"indexed_documents": 1131`.
 
-**Если `"lm_studio": false`** — не запущен LM Studio. Это нужно только для
-`/query`; `/predict` работает и без него. Как поднять — раздел «LM Studio» ниже.
+**If `"lm_studio": false`**, the model runtime is not running. It is only needed for `/query`;
+`/predict` works without it. How to start it: "LM Studio" below.
 
-> Команды начинаются с `.venv/bin/...`, чтобы не активировать окружение.
-> Если удобнее активировать: `source .venv/bin/activate`, дальше просто
-> `uvicorn`, `python`, `pytest`.
+> Commands start with `.venv/bin/...` so you do not have to activate the environment. If you
+> prefer activating it: `source .venv/bin/activate`, then just `uvicorn`, `python`, `pytest`.
 
 ---
 
-## Что где лежит
+## Documents
 
-| Документ | О чём |
+| Document | About |
 |---|---|
-| [`docs/SMOKE-TEST.md`](docs/SMOKE-TEST.md) | **как потыкать руками и понять, что не сломалось** |
-| [`docs/CODEMAP.md`](docs/CODEMAP.md) | что делает каждый файл с кодом |
-| [`docs/INTEGRATION.md`](docs/INTEGRATION.md) | **как подключить к SFSS свою программу**; рабочий пример — [`examples/telemetry_monitor.py`](examples/telemetry_monitor.py) |
-| [`docs/API.md`](docs/API.md) | справочник по эндпоинтам с примерами |
-| [`docs/DEMO.md`](docs/DEMO.md) | сценарий показа на 3 минуты |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | требования после созвона с организаторами и что по ним сделано |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | как устроено и почему; журнал всех решений |
-| [`docs/anti-fire-backend-mvp.md`](docs/anti-fire-backend-mvp.md) | исходное техническое задание |
+| [`docs/SMOKE-TEST.md`](docs/SMOKE-TEST.md) | **how to try it by hand and see that nothing broke** |
+| [`docs/CODEMAP.md`](docs/CODEMAP.md) | what every code file does |
+| [`docs/INTEGRATION.md`](docs/INTEGRATION.md) | **how to connect your own program to SFSS**; a working example: [`examples/telemetry_monitor.py`](examples/telemetry_monitor.py) |
+| [`docs/API.md`](docs/API.md) | endpoint reference with examples |
+| [`docs/DEMO.md`](docs/DEMO.md) | the 3-minute demo script |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | requirements after the call with the organisers and what was done |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | how it works and why; the log of all decisions |
+| [`docs/anti-fire-backend-mvp.md`](docs/anti-fire-backend-mvp.md) | the original specification |
 
 ---
 
-## Три запроса, чтобы вспомнить, что оно умеет
+## Four requests to remember what it can do
 
 ```bash
-# 1. Статус
+# 1. Status
 curl http://localhost:8000/health
 
-# 2. Данные для дашборда одним запросом
+# 2. Dashboard data in one request
 curl -s http://localhost:8000/dashboard
 
-# 3. Вопрос по документам NASA (нужен LM Studio, ответ 33-46 секунд)
+# 3. A question to the NASA reports (needs the model runtime)
 curl -X POST http://localhost:8000/query \
   -H 'Content-Type: application/json' \
-  -d '{"question": "Как концентрация кислорода влияет на распространение пламени?"}'
+  -d '{"question": "How does oxygen concentration affect flame spread?"}'
 
-# 4. Предсказание скорости горения
-#    Достаточно того, что меняете — остальное подставится (стандартный воздух)
+# 4. Burning rate prediction
+#    Pass only what you change; the rest is filled in (standard air)
 curl -X POST http://localhost:8000/predict \
   -H 'Content-Type: application/json' \
   -d '{"parameters": {"oxygen_level": 0.30}}'
 ```
 
-Последний вернёт `predicted_value` — скорость горения в мм²/с. Полное описание
-полей и ошибок — в [`docs/API.md`](docs/API.md).
+The last one returns `predicted_value`, the burning rate in mm²/s. All fields and errors are
+described in [`docs/API.md`](docs/API.md).
 
-Чтобы проверить, что модель отвечает осмысленно, а не сочиняет, — пройдите
-[`docs/SMOKE-TEST.md`](docs/SMOKE-TEST.md): четыре запроса с эталонными
-ответами, включая контрольный вопрос на галлюцинации.
+To check that the model answers sensibly rather than inventing things, go through
+[`docs/SMOKE-TEST.md`](docs/SMOKE-TEST.md): four requests with reference answers, including a
+control question for hallucinations.
 
 ---
 
-## Настройки нейросети
+## Language model settings
 
-Рантайм (где она работает) и модель (какая она) настраиваются отдельно, сразу и без
-перезапуска: команда `sfss config`, окно «Настройки AI» в Anti-Fire и на Площадке,
-`config` в терминале Anti-Fire, `GET` и `PATCH /v1/llm/config`.
+The runtime (where the model runs) and the model (which one) are set separately, at once and
+without a restart: the `sfss config` command, the "AI settings" window in Anti-Fire and the
+Playground, `config` in the Anti-Fire terminal, `GET` and `PATCH /v1/llm/config`.
 
 ```bash
-sfss config                                 # что сейчас настроено
-sfss config runtime ollama                  # рантайм и его стандартный порт, 11434
-sfss config runtime --port 1235             # только порт
+sfss config                                 # current settings
+sfss config runtime ollama                  # the runtime and its default port, 11434
+sfss config runtime --port 1235             # the port only
 sfss config runtime lmstudio --host 10.0.0.5 --port 1234
-sfss config models                          # какие модели есть у рантайма
+sfss config models                          # models the runtime has
 sfss config model ministral-3:3b --max-tokens 256
-sfss config reset                           # назад к значениям из .env
+sfss config reset                           # back to the values from .env
 ```
 
-Настройки лежат в `data/llm.json` и важнее `.env`. Демон выключен: команда правит этот файл,
-и настройка сработает при `sfss start`.
+Settings live in `data/llm.json` and take precedence over `.env`. When the daemon is off, the
+command edits this file and the setting applies on `sfss start`.
 
 | | LM Studio | Ollama |
 |---|---|---|
-| Порт по умолчанию | 1234 | 11434 |
-| Сервис сам поднимает сервер | `lms server start --port` | `ollama serve` |
-| Загрузка и выгрузка модели | `lms` | `POST /api/generate` с `keep_alive` |
-| Контекст | из настроек SFSS, 8192 | задаётся в самой Ollama: `OLLAMA_CONTEXT_LENGTH` |
-| Модель остаётся в памяти | пока её не выгрузят | может уйти через 5 минут после ответа, следующий вопрос загрузит снова |
+| Default port | 1234 | 11434 |
+| The service starts the server itself | `lms server start --port` | `ollama serve` |
+| Loading and unloading the model | `lms` | `POST /api/generate` with `keep_alive` |
+| Context | from SFSS settings, 8192 | set in Ollama itself: `OLLAMA_CONTEXT_LENGTH` |
+| The model stays in memory | until unloaded | may leave 5 minutes after an answer; the next question loads it again |
 
-В Ollama модель надо скачать заранее: `ollama pull имя`. Поддержка Ollama проверена на тестах
-и на имитации её API, с настоящей Ollama ещё не запускалась. Запрещённые регламентом китайские
-модели в списке не показываются и не принимаются (ARCHITECTURE § 7.18).
+With Ollama, download the model first: `ollama pull name`. Ollama support is tested with unit
+tests and against an imitation of its API. Chinese models, banned by the hackathon rules, are
+neither listed nor accepted (ARCHITECTURE § 7.18).
 
 ---
 
 ## LM Studio
 
-Нужен только для `/query`: он отвечает за генерацию текста. Всё работает
-локально, наружу не уходит ничего.
+Needed only for `/query`: it generates the text. Everything runs locally; nothing leaves the
+machine.
 
-1. Открыть LM Studio → вкладка **Developer** (Local Server)
-2. Загрузить модель `mlx-community/Ministral-3-3B-Instruct-2512-4bit` с длиной
-   контекста 8192 (по умолчанию LM Studio ставит 262 144, и на 8 ГБ это своп)
-3. Нажать **Start Server**
+1. Open LM Studio → the **Developer** tab (Local Server)
+2. Load `mlx-community/Ministral-3-3B-Instruct-2512-4bit` with context length 8192 (LM Studio
+   defaults to 262 144, which means swapping on 8 GB)
+3. Press **Start Server**
 
-Проверка:
+Check:
 
 ```bash
-curl -s localhost:1234/api/v0/models   # состояние всех моделей
+curl -s localhost:1234/api/v0/models   # state of all models
 ```
 
-**Берите MLX-сборку, а не GGUF.** На этой машине замеряли: GGUF Q4_K_M отвечает
-~120 с и упирается в таймаут, MLX — 3-7 с. Имя загруженной модели должно
-совпадать с `LM_STUDIO_MODEL` в `.env`.
+**Take the MLX build, not GGUF, on a Mac.** Measured on the development machine: GGUF Q4_K_M
+answers in about 120 s and hits the timeout, MLX in 3-7 s. The loaded model name must match
+`LM_STUDIO_MODEL` in `.env`.
 
 ---
 
-## Тесты
+## Tests
 
 ```bash
-uv pip install --python .venv/bin/python pytest      # один раз; uv из PATH или ../.tools/uv
+uv pip install --python .venv/bin/python pytest      # once; uv from PATH or ../.tools/uv
 .venv/bin/python -m pytest -q
 ```
 
-238 тестов, проходят за пару секунд. Сервисы подменены заглушками, поэтому
-**ни LM Studio, ни модель поиска для тестов не нужны**.
+242 tests, a couple of seconds. Services are replaced with stubs, so **neither a model runtime
+nor the search model is needed for the tests**.
 
 ---
 
-## Если нужно пересобрать с нуля
+## Rebuilding from scratch
 
-Обычно не нужно — всё уже готово. Команды на случай, если данные потерялись.
+Usually not needed: everything is ready. These commands are for when data got lost.
 
-**Установка окружения:** `../install.sh` из корня репозитория, или вручную:
+**Environment:** `../install.sh` from the repository root, or by hand:
 
 ```bash
 uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python -e .
-.venv/bin/python -m app.services.embedder     # модель поиска, 130 МБ
+.venv/bin/python -m app.services.embedder     # the search model, 130 MB
 ```
 
-**Переиндексация документов** (`data/raw/` → `data/index/`). Готовый индекс лежит в git,
-пересобирать его нужно, только если поменялись отчёты или модель поиска, около 40 секунд:
+**Re-indexing the documents** (`data/raw/` → `data/index/`). The ready index is in git; rebuild
+it only when the reports or the search model change. About 40 seconds:
 
 ```bash
 .venv/bin/python scripts/ingest_documents.py --force
 ```
 
-Новый индекс закоммитить: `data/index/chunks.jsonl` и `vectors.npy`.
+Commit the new index: `data/index/chunks.jsonl` and `vectors.npy`.
 
-**Пересборка датасета и обучение модели:**
+**Rebuilding the dataset and training the model:**
 
 ```bash
 .venv/bin/python scripts/build_flex_dataset.py
@@ -206,41 +206,42 @@ uv pip install --python .venv/bin/python -e .
     --exclude d_extinction_mm burn_time_s
 ```
 
-Появятся `data/models/fiery.joblib` и `fiery_clusters.joblib`.
-Флаг `--dry-run` считает качество, ничего не перезаписывая.
+This produces `data/models/fiery.joblib` and `fiery_clusters.joblib`. `--dry-run` measures the
+quality without overwriting anything.
 
-Зачем нужны `--group` и `--exclude` и почему без них оценка врёт — в
-[`docs/CODEMAP.md`](docs/CODEMAP.md), раздел про `train_model.py`.
+Why `--group` and `--exclude` are needed and why the evaluation lies without them:
+[`docs/CODEMAP.md`](docs/CODEMAP.md), the `train_model.py` section.
 
 ---
 
-## Переменные окружения
+## Environment variables
 
-`.env` в корне проекта (шаблон — `.env.example`):
+`.env` in the service folder (template: `.env.example`):
 
 ```
 LM_STUDIO_BASE_URL=http://localhost:1234/v1
 LM_STUDIO_MODEL=ministral-3-3b-instruct-2512
 EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
+SFSS_API_KEY=
 ```
 
-Модель поиска лежит в `data/embedding`, индекс — в `data/index`. Сеть для работы не нужна:
-модель скачивается один раз при установке, с закреплённой версией и проверкой контрольной
-суммы (`app/services/embedder.py`).
+`SFSS_API_KEY` is needed only when programs connect from other machines. The search model is in
+`data/embedding`, the index in `data/index`. No network is needed to run: the model is downloaded
+once at installation, with a pinned revision and a checksum (`app/services/embedder.py`).
 
 ---
 
-## Состояние проекта
+## Project state
 
-Все критерии готовности MVP из ТЗ закрыты:
+All MVP readiness criteria from the specification are met:
 
-- [x] `/health` отвечает при поднятых LM Studio и индексе
-- [x] документы проиндексированы — **1131 чанк из 16 отчётов NASA**,
-      `/query` отвечает со ссылками на страницы
-- [x] датасет обработан, `/predict` даёт не-заглушечный результат —
-      модель **fiery**, R² 0.65 против нуля у константы
-- [x] эндпоинты покрыты pytest
-- [x] README с инструкцией запуска
+- [x] `/health` answers with the model runtime and the index up
+- [x] documents are indexed: **1131 chunks from 16 NASA reports**, `/query` answers with page
+      references
+- [x] the dataset is processed, `/predict` gives a real result: model **fiery**, R² 0.65 versus
+      zero for a constant
+- [x] endpoints are covered by pytest
+- [x] a README with startup instructions
 
-Что осталось за рамками MVP и почему — [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
-разделы 11 (ограничения) и 12 (что дальше).
+What is outside the MVP and why: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), sections 11
+(limitations) and 12 (dead ends).

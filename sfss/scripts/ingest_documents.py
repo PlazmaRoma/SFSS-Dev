@@ -1,8 +1,3 @@
-"""Офлайн-индексация PDF/CSV из data/raw в ChromaDB.
-
-Запуск: python scripts/ingest_documents.py [--force]
-"""
-
 import argparse
 import logging
 import sys
@@ -17,22 +12,22 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Индексация документов в ChromaDB")
+    parser = argparse.ArgumentParser(description="Index the documents in data/raw")
     parser.add_argument(
-        "--force", action="store_true", help="Переиндексировать уже загруженные файлы"
+        "--force", action="store_true", help="Re-index files that are already indexed"
     )
     args = parser.parse_args()
 
     service = IngestService(rag=RagService())
     result = service.run(force=args.force)
 
-    print(f"Проиндексировано файлов: {len(result.indexed_files)}")
+    print(f"Files indexed: {len(result.indexed_files)}")
     for name in result.indexed_files:
         print(f"  + {name}")
     if result.skipped_files:
-        print(f"Пропущено: {', '.join(result.skipped_files)}")
-    print(f"Добавлено чанков: {result.chunks_added}")
-    print(f"Всего в коллекции: {service.rag.count()}")
+        print(f"Skipped: {', '.join(result.skipped_files)}")
+    print(f"Chunks added: {result.chunks_added}")
+    print(f"Chunks in the index: {service.rag.count()}")
 
 
 if __name__ == "__main__":

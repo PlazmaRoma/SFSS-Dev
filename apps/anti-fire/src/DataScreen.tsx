@@ -25,7 +25,6 @@ const END_NAMES: Record<string, TextKey> = {
 const label = (names: Record<string, TextKey>, value: string | null) =>
   value !== null && names[value] ? tr(names[value]) : value;
 
-/** Сервис отдаёт источник одной английской строкой. Незнакомую показываем как есть. */
 function sourceText(source: string): string {
   const match = source.match(/report (\S+), pages (\S+)$/);
   return match ? tr("datasetSource", { report: match[1], pages: match[2].replace("-", "–") }) : source;

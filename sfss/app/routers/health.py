@@ -1,5 +1,3 @@
-"""GET /health — доступность сервиса, ChromaDB и нейросети."""
-
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_llm_service, get_rag_service

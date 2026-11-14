@@ -20,8 +20,6 @@ describe("reportTitle", () => {
     expect(ntrsId("no-number")).toBeNull();
   });
 
-  // Готовые ответы снимаются с бэкенда: если в них появится источник, которого
-  // нет в таблице, панель молча покажет имя файла. Пусть это ловит тест.
   it("у всех источников в готовых ответах есть настоящее название", () => {
     const cache = queryCache as unknown as Record<string, Record<string, { sources?: { doc_id: string }[] }>>;
     const ids = Object.values(cache).flatMap((entry) =>

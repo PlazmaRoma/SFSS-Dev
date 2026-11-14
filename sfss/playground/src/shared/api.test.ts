@@ -4,10 +4,6 @@ import { BASELINE, HABITAT } from "./data/habitat";
 import { PSI_TO_MMHG } from "./lib/risk";
 import cubeFixture from "./fixtures/predict_cube.json";
 
-/** Оффлайн-режим — не запасной: скачанная программа живёт только на нём.
- *  Если интерполяция поедет, цифры на экране разойдутся с моделью, и
- *  заметить это без бэкенда будет нечем. */
-
 const cube = cubeFixture as unknown as {
   oxygen_level: number[];
   pressure_psi: number[];
@@ -44,8 +40,6 @@ describe("predictOffline", () => {
     expect(predictOffline({ ...at(0, 11, 8), oxygen_level: 0.05 }).predicted_value).toBeCloseTo(first, 10);
   });
 
-  // Заголовочная цифра лендинга и вкладки Model: шлюз NASA горит в 1.40 раза
-  // быстрее земного воздуха. Ради неё 8.2 и 14.7 psi сделаны узлами сетки.
   it("шлюз EVA даёт те же 1.40× к земному воздуху, что и живая модель", () => {
     const eva = HABITAT.find((m) => m.id === "eva")!;
     const ratio = predictOffline(eva.atmosphere).predicted_value / predictOffline(BASELINE).predicted_value;
@@ -57,7 +51,6 @@ describe("toParams", () => {
   it("переводит атмосферу в параметры /predict", () => {
     const p = toParams({ oxygen_level: 0.34, pressure_psi: 8.2, droplet_mm: 3 });
     expect(p.oxygen_level).toBe(0.34);
-    // Остальное до единицы — азот: гелий и CO2 в модулях базы не используются
     expect(p.n2).toBe(0.66);
     expect(p.pressure_mmhg).toBeCloseTo(8.2 * PSI_TO_MMHG, 1);
     expect(p.d_initial_mm).toBe(3);
@@ -70,7 +63,6 @@ describe("toParams", () => {
   });
 });
 
-/** Поток из готовых кусков байт — как его режет сеть, а не как удобно. */
 function streamOf(text: string, size: number): ReadableStream<Uint8Array> {
   const bytes = new TextEncoder().encode(text);
   let at = 0;
@@ -92,7 +84,6 @@ const NDJSON = [
 ].map((e) => JSON.stringify(e)).join("\n") + "\n";
 
 describe("readEvents", () => {
-  // Кириллица — два байта на букву: кусок в 3 байта рвёт букву пополам
   it("собирает события, как бы ни был порезан поток", async () => {
     for (const size of [1, 3, 7, 64, NDJSON.length * 2]) {
       const events: StreamEvent[] = [];

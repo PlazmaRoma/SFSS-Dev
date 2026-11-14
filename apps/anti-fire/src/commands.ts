@@ -3,9 +3,6 @@ import type { RequestRecord } from "@sfss/client";
 import type { Lang, LlmConfig, LlmPatch } from "@sfss/types";
 import { getLang, tr } from "./lang";
 
-/** Команды терминала: тот же синтаксис, что у sfss, чтобы научившись здесь,
- *  можно было работать из обычного терминала и из скриптов. */
-
 export const COMMANDS = ["predict", "ask", "import", "load", "unload", "config", "start", "stop", "status", "help", "docs", "clear"] as const;
 const PREDICT_FLAGS = ["--o2", "--n2", "--co2", "--he", "--pressure", "--psi", "--droplet", "--fuel"];
 const ASK_FLAGS = ["--lang"];
@@ -173,7 +170,6 @@ export const help = () => HELP_TEXT[getLang()];
 export const helpIndex = () => HELP_INDEX[getLang()];
 export const docs = () => DOCS_TEXT[getLang()];
 
-/** Разбор строки как в оболочке: кавычки объединяют слова. */
 export function tokenize(line: string): string[] {
   const tokens: string[] = [];
   const pattern = /"([^"]*)"|'([^']*)'|(\S+)/g;
@@ -267,7 +263,6 @@ function wholeNumber(values: Record<string, string>, flag: string): number | und
   return value;
 }
 
-/** Тот же синтаксис, что у sfss config. Диапазоны проверяет сервис: правила одни на всех. */
 export function parseConfig(tokens: string[]): ConfigRequest {
   const [action, ...rest] = tokens;
   if (action === undefined) return { action: "show" };
@@ -320,7 +315,6 @@ function configOptions(parts: string[]): readonly string[] {
   return parts[1] === "model" ? CONFIG_MODEL_FLAGS : [];
 }
 
-/** Дополнение по Tab: продолжение текущего слова, если вариант один. */
 export function complete(line: string): string {
   const parts = line.split(/\s+/);
   const word = parts[parts.length - 1];
@@ -346,7 +340,6 @@ export function complete(line: string): string {
 
 const shellQuote = (text: string) => `'${text.replace(/'/g, `'\\''`)}'`;
 
-/** Запрос как команда curl. Ключ не подставляется: команду копируют и пересылают. */
 export function toCurl(record: RequestRecord, hasKey: boolean): string {
   const parts = ["curl"];
   if (record.path.endsWith("/stream")) parts.push("-N");

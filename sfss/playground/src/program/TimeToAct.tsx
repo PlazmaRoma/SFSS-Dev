@@ -4,33 +4,15 @@ import { tr } from "../shared/i18n";
 import { useTween } from "../shared/lib/tween";
 import data from "../shared/fixtures/burntime.json";
 
-/** Сколько длится пожар в этой атмосфере.
- *
- *  Шесть секунд на бумаге ничего не значат. Поэтому здесь не график, а
- *  часы: бегунок проходит шкалу ровно за столько, сколько горел настоящий
- *  огонь в опытах NASA при этом кислороде. Засечки на линии — сами опыты.
- */
 interface Run { o: number; t: number; id: string }
 const RUNS = (data as unknown as { runs: Run[] }).runs;
-const SPAN = 24; // секунд на шкале: дальше хвост из редких долгих опытов
+const SPAN = 24;
 
 export function TimeToAct({ oxygenPct, lang }: { oxygenPct: number; lang: Lang }) {
-  // Прогон помнит, при каком кислороде его запустили. Сдвинули ползунок —
-  // прогон к новой атмосфере не относится, и часы возвращаются к медиане.
-  // Раньше сброс делал эффект, но анимация продолжала писать время, и
-  // старый прогон доигрывал поверх новой атмосферы.
   const [run, setRun] = useState<{ o: number; s: number } | null>(null);
   const elapsed = run && run.o === oxygenPct ? run.s : null;
   const raf = useRef(0);
 
-  // Опыты рядом с текущим кислородом: окно расширяется, пока не наберётся
-  // хотя бы десяток, иначе медиана скачет по одной-двум точкам.
-  //
-  // Опыты FLEX заканчиваются на 34% кислорода, а ползунок идёт до 40%.
-  // Раньше на 39% не набиралось десятка даже в окне ±8, и медиана падала
-  // на все 268 опытов сразу: 15.3 с превращались в 9.6 с, посчитанные по
-  // низким кислородам. Поэтому окно доходит до ±12 и остаётся у ближайших
-  // настоящих опытов, а интерфейс пишет, при каком кислороде они шли.
   const near = useMemo(() => {
     for (const band of [1.5, 3, 5, 8, 12]) {
       const hit = RUNS.filter((r) => Math.abs(r.o - oxygenPct) <= band);
@@ -40,8 +22,6 @@ export function TimeToAct({ oxygenPct, lang }: { oxygenPct: number; lang: Lang }
     return widest.length ? widest : RUNS;
   }, [oxygenPct]);
 
-  // Насколько далеко пришлось уйти за данными: если ближайшие опыты не
-  // при этом кислороде, об этом надо сказать, а не прятать.
   const spread = useMemo(() => {
     const ox = near.map((r) => r.o);
     return { lo: Math.min(...ox), hi: Math.max(...ox) };
@@ -89,7 +69,6 @@ export function TimeToAct({ oxygenPct, lang }: { oxygenPct: number; lang: Lang }
       </div>
 
       <div className="clock-line">
-        {/* Каждая засечка — один опыт NASA, а не сглаженная кривая */}
         {near.map((r, i) => (
           <i key={i} style={{ left: `${pct(r.t)}%` }} title={`${r.id} · ${r.t} s`} />
         ))}

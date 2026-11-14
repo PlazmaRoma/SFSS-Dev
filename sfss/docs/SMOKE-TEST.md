@@ -1,50 +1,51 @@
-# Ручная проверка — потыкать руками
+# Manual check
 
-Четыре запроса, чтобы убедиться, что система жива и **модель не сошла с ума**.
-Команды копируются целиком. Рядом с каждой — что должно прийти в ответ.
+Five requests to make sure the system is alive and **the model has not gone off the rails**. Copy
+the commands whole. Next to each one is what should come back.
 
-Автотесты (`pytest`) это не заменяет и не дублирует: они гоняют контракт HTTP
-на заглушках, а здесь проверяется живая связка с реальной моделью и данными.
+This does not replace or duplicate the automated tests (`pytest`): they exercise the HTTP contract
+on stubs, while this checks the live chain with the real model and data.
 
-Все выводы ниже — настоящие, снятые с работающего сервиса 19 сентября 2026.
+The answers quoted below were recorded from the running service on 19 September 2026. Those runs
+used Russian questions; the quotes are translated.
 
 ---
 
-## Подготовка
+## Preparation
 
-**1. Поднять LM Studio** (нужен только для `/query`): вкладка Developer →
-загрузить `mlx-community/Ministral-3-3B-Instruct-2512-4bit` с контекстом 8192 →
-Start Server.
+**1. Start LM Studio** (needed only for `/query`): the Developer tab → load
+`mlx-community/Ministral-3-3B-Instruct-2512-4bit` with context 8192 → Start Server. Or simply
+`sfss load`.
 
-**2. Прогреть модель.** LM Studio выгружает её из памяти по таймауту, и первый
-запрос иначе будет дольше на 12-20 секунд:
+**2. Warm up the model.** LM Studio unloads it on a timeout, and the first request would otherwise
+take 12-20 seconds longer:
 
 ```bash
 curl -s -m 300 localhost:1234/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{"model":"ministral-3-3b-instruct-2512","messages":[{"role":"user","content":"ok"}],"max_tokens":3}' \
-  -o /dev/null -w "прогрев: %{time_total} c\n"
+  -o /dev/null -w "warm-up: %{time_total} s\n"
 ```
 
-**3. Запустить сервер** — в отдельной вкладке терминала:
+**3. Start the server** in a separate terminal tab:
 
 ```bash
-cd /Users/roman/Python/SFSS-Dev/sfss
+cd ~/SFSS-Dev/sfss
 .venv/bin/uvicorn app.main:app --port 8000
 ```
 
-Стартует **от 4 до 16 секунд** — это прогрев модели эмбеддингов, так задумано.
-Пока порт не открылся, сервис не готов; как открылся — готов полностью.
+It starts in a few seconds: that is the search model warming up, on purpose. Until the port is
+open the service is not ready; once it is open, it is fully ready.
 
 ---
 
-## Проверка 1. Сервис и зависимости
+## Check 1. The service and its dependencies
 
 ```bash
 curl -s http://localhost:8000/health
 ```
 
-**Должно прийти:**
+**Expected:**
 
 ```json
 {
@@ -56,38 +57,38 @@ curl -s http://localhost:8000/health
 }
 ```
 
-| Что видите | Что значит |
+| What you see | What it means |
 |---|---|
-| `"status": "ok"` | всё в порядке |
-| `"lm_studio": false` | не нажат Start Server. `/predict` работает, `/query` — нет |
-| `"chroma": false` | пропал каталог `data/index`: `git checkout sfss/data/index` |
-| `"indexed_documents": 0` | индекс пуст, надо запустить `scripts/ingest_documents.py` |
-| ответ идёт дольше секунды | скорее всего выключен LM Studio: клиент повторяет неудачное соединение |
+| `"status": "ok"` | all is well |
+| `"lm_studio": false` | Start Server was not pressed. `/predict` works, `/query` does not |
+| `"chroma": false` | the `data/index` folder is gone: `git checkout sfss/data/index` |
+| `"indexed_documents": 0` | the index is empty, run `scripts/ingest_documents.py` |
+| the answer takes more than a second | LM Studio is most likely off: the client retries the failed connection |
 
 ---
 
-## Проверка 1б. Данные для дашборда
+## Check 1b. Dashboard data
 
 ```bash
 curl -s http://localhost:8000/dashboard | head -c 400
 ```
 
-Должны прийти три секции. Быстрая сверка ключевых чисел:
+Three sections should come back. A quick check of the key numbers:
 
-| Поле | Ожидается |
+| Field | Expected |
 |---|---|
 | `model.trained` | `true` |
 | `model.metrics.r2` | `0.6524` |
 | `dataset.rows` | `273` |
 | `corpus.chunks` | `1131` |
-| `model.units` | `mm^2/s` — латиницей, не `мм²/с` |
+| `model.units` | `mm^2/s`, in ASCII |
 
-`trained: false` — модель не обучена. `rows: 0` — не собран датасет
-(`scripts/build_flex_dataset.py`). `chunks: 0` — пуст индекс.
+`trained: false`: the model is not trained. `rows: 0`: the dataset was not built
+(`scripts/build_flex_dataset.py`). `chunks: 0`: the index is empty.
 
 ---
 
-## Проверка 2. Модель fiery — цифры должны совпасть точно
+## Check 2. The fiery model: the numbers must match exactly
 
 ```bash
 curl -s -X POST http://localhost:8000/predict \
@@ -100,7 +101,7 @@ curl -s -X POST http://localhost:8000/predict \
       }}'
 ```
 
-**Должно прийти ровно это:**
+**Exactly this should come back:**
 
 ```
 risk_score      = 0.491539
@@ -110,169 +111,162 @@ target          = burn_rate_mm2s
 is_heuristic    = false
 ```
 
-**Это самая надёжная проверка во всём списке.** Модель детерминирована
-(`random_state=42`), поэтому числа обязаны совпасть до шестого знака при любом
-числе повторов. Если они разошлись — значит модель переобучили или подменили
-данные, и это надо объяснить, а не списать на случайность.
+**This is the most reliable check on the list.** The model is deterministic (`random_state=42`),
+so the numbers must match to the sixth decimal on any number of repeats. If they differ, the model
+was retrained or the data was replaced, and that needs an explanation, not a shrug.
 
-`is_heuristic: true` означает, что отдаётся **заглушка, а не модель**. Показывать
-такой результат как предсказание нельзя.
+`is_heuristic: true` means a **stub, not the model**, is answering. Such a result must not be
+shown as a prediction.
 
-Смотреть нужно на `predicted_value` — это скорость горения в мм²/с.
-`risk_score` это то же число, растянутое на шкалу 0..1.
+Look at `predicted_value`: the burning rate in mm²/s. `risk_score` is the same number stretched to
+a 0..1 scale.
 
 ---
 
-## Проверка 3. Вопрос по документам
+## Check 3. A question to the documents
 
 ```bash
 curl -s -X POST http://localhost:8000/query \
   -H 'Content-Type: application/json' \
-  -d '{"question": "Как концентрация кислорода влияет на скорость горения?"}'
+  -d '{"question": "How does oxygen concentration affect the burning rate?", "language": "en"}'
 ```
 
-Идёт **35-50 секунд**. Это нормально, не зависание.
+It takes **25-50 seconds**. That is normal, not a hang.
 
-**Так выглядел настоящий ответ:**
+**A real answer looked like this** (translated):
 
-> Скорость горения зависит от режима:
-> - **Теплово-затопленный режим**: скорость не зависит от плотности поверхности топлива [doc_id: 20000030678, стр. 91].
-> - **Теплово-тонкий режим**: скорость обратно пропорциональна плотности топлива [doc_id: 20000030678, стр. 91].
+> The burning rate depends on the regime:
+> - **Thermally thick regime**: the rate does not depend on the fuel surface density [NTRS-20000030678, p. 91].
+> - **Thermally thin regime**: the rate is inversely proportional to the fuel density [NTRS-20000030678, p. 91].
 >
-> Кислородная концентрация влияет на переходный режим, где искривлённый фронт
-> горения увеличивает площадь контакта с кислородом, ускоряя процесс.
+> Oxygen concentration affects the transitional regime, where a curved flame front increases the
+> contact area with oxygen and speeds the process up.
 >
-> При 21% O₂ в He-разбавленной атмосфере — затухание пламени [doc_id: 20000030678, стр. 97].
+> At 21% O₂ in a He-diluted atmosphere the flame goes out [NTRS-20000030678, p. 97].
 
-Источники:
+Sources:
 
 ```
-NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra, стр. 91
-NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra, стр. 97
-NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-, стр. 138
+NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra, p. 91
+NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra, p. 97
+NTRS-20210011385-Burning-and-Suppression-of-Solids-II-BASS-II-, p. 138
 ```
 
-Дословного совпадения не ждите — модель каждый раз формулирует иначе.
-Сверять надо признаки, а не текст:
+Do not expect a word-for-word match: the model words it differently every time. Check the
+features, not the text:
 
-**Хороший ответ:**
-- про горение, кислород, режимы — то есть по теме корпуса;
-- ссылки вида `[NTRS-20000030678, стр. N]` внутри текста, с настоящим номером
-  отчёта, а не словом `doc_id`;
-- номера страниц правдоподобные (в отчётах их 8-314);
-- 3 источника в поле `sources`.
+**A good answer:**
+- is about combustion, oxygen, regimes: on topic for the corpus;
+- has references like `[NTRS-20000030678, p. N]` inside the text, with a real report number;
+- has plausible page numbers (the reports have 8-314 pages);
+- has 3 sources in the `sources` field.
 
-**Косметика, на которую можно не обращать внимания** — модель всего на 3 млрд
-параметров, такое бывает:
-- покорёженные слова, смесь латиницы с кириллицей («плame»);
-- калька с английского («теплово-тонкий» вместо «термически тонкий»);
-- неровное форматирование списков.
+**Cosmetics you can ignore**: the model has only 3 billion parameters, and in Russian answers
+there can be odd words, Latin letters inside Russian ones, literal translations of terms, uneven
+list formatting.
 
-**Тревожно:**
-- числа, которых нет ни в одном источнике;
-- `doc_id`, которого нет в `data/raw/`;
-- номер страницы больше, чем страниц в документе;
-- ответ не про горение вообще.
+**Alarming:**
+- numbers that are in none of the sources;
+- a `doc_id` that is not in `data/raw/`;
+- a page number larger than the document;
+- an answer not about combustion at all.
 
 ---
 
-## Проверка 4. Контрольная — не врёт ли модель
+## Check 4. Control: does the model lie?
 
-Главная проверка на здравость. Спрашиваем заведомо постороннее:
+The main sanity check. Ask something obviously unrelated:
 
 ```bash
 curl -s -X POST http://localhost:8000/query \
   -H 'Content-Type: application/json' \
-  -d '{"question": "Кто выиграл чемпионат мира по футболу 2022 года?"}'
+  -d '{"question": "Who won the 2022 FIFA World Cup?", "language": "en"}'
 ```
 
-**Модель обязана отказаться.** Настоящий ответ:
+**The model must refuse.** A real answer (translated):
 
-> Контекст не содержит информации о горении в невесомости или экспериментах на ISS.
-> Данные о чемпионате мира 2022 года не упоминаются ни в одном из документов.
+> The context contains no information about combustion in microgravity or experiments on the ISS.
+> The 2022 World Cup is not mentioned in any of the documents.
 >
-> [Нет источника для ответа]
+> [No source for an answer]
 
-**Если она назвала Аргентину — система сломана.** Значит модель отвечает по
-своим внутренним знаниям, а не по документам, и всему остальному, что она
-говорит, верить нельзя. Чинить надо системный промпт в `app/config.py`
-(`llm_system_prompt`) либо менять модель.
+**If it names Argentina, the system is broken.** It means the model answers from its own knowledge,
+not from the documents, and nothing else it says can be trusted. Fix the system prompt in
+`app/config.py` (`llm_system_prompt`) or change the model.
 
-### Важная тонкость
+### An important subtlety
 
-В `sources` и здесь вернулось **3 источника**. Это не ошибка и не признак того,
-что ответ обоснован: поиск всегда отдаёт три ближайших фрагмента, даже если они
-не по делу. Отказывается отвечать уже сама модель, прочитав их.
+`sources` returned **3 sources** here too. That is not an error and not a sign that the answer is
+grounded: search always returns the three nearest chunks, even when they are off topic. It is the
+model that refuses after reading them.
 
-**Вывод: непустой `sources` не означает, что ответ на чём-то основан.** Фронт
-должен показывать источники как «на чём модель смотрела», а не как «чем это
-доказано».
+**Conclusion: non-empty `sources` does not mean the answer is based on anything.** A front end
+should show the sources as "what the model looked at", not as "what proves it".
 
 ---
 
-## Проверка 5. Ловушка — главный тест при смене модели
+## Check 5. The trap: the main test when changing the model
 
-Футбольный вопрос слишком лёгкий: он очевидно не по теме, и отказаться от него
-несложно. Настоящая проверка — вопрос **по теме, правдоподобный, но которого
-в корпусе нет**. Эксперимента Saffire у нас не скачано, а модель могла читать
-о нём при обучении:
+The football question is too easy: it is obviously off topic and easy to refuse. The real check is
+a question **on topic, plausible, but absent from the corpus**. We have not downloaded the Saffire
+experiment, and the model may have read about it during training:
 
 ```bash
 curl -s -X POST http://localhost:8000/query \
   -H 'Content-Type: application/json' \
-  -d '{"question": "Каковы результаты эксперимента Saffire-IV на борту Cygnus?"}'
+  -d '{"question": "What are the results of the Saffire-IV experiment aboard Cygnus?", "language": "en"}'
 ```
 
-**Правильное поведение** (так ответила Ministral 3B):
+**Correct behaviour** (Ministral 3B, translated):
 
-> Результаты эксперимента по горению в невесомости на борту *Cygnus* (включая
-> Saffire-IV) не представлены в предоставленном контексте. Доступно только
-> описание аппаратуры. Для детальных данных требуется дополнительный контекст.
+> The results of the microgravity combustion experiment aboard *Cygnus* (including Saffire-IV)
+> are not in the provided context. Only a description of the hardware is available. Detailed data
+> would need more context.
 
-**Провал** (так ответила gemma-3-1b):
+**Failure** (gemma-3-1b, translated):
 
-> Результаты эксперимента Saffire-IV на борту Cygnus оказались успешными.
-> [NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra, стр. 209]
+> The results of the Saffire-IV experiment aboard Cygnus were successful.
+> [NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra, p. 209]
 
-Модель выдумала результат и **подставила к нему ссылку на документ, который
-этого не содержит**. Ответ выглядит обоснованным, а обоснования нет. Это самый
-опасный вид отказа: заметить его без знания корпуса невозможно.
+The model made up a result and **attached a reference to a document that does not contain it**. The
+answer looks grounded, but there is no grounding. This is the most dangerous kind of failure: you
+cannot spot it without knowing the corpus.
 
-### Что показал замер моделей
+### What the model comparison showed
 
-Одинаковые три вопроса, один и тот же промпт и корпус:
+The same three questions, the same prompt and corpus:
 
 | | gemma-3-1b | Ministral 3B |
 |---|---|---|
-| вопрос по корпусу | **выродился** — вернул одну ссылку без ответа, 73 символа | связный ответ, 567 символов |
-| футбол | вернул ссылку на посторонний документ, отказа нет | корректно отказалась |
-| **ловушка Saffire-IV** | **выдумала результат и ссылку** | корректно отказалась |
+| question from the corpus | **degenerated**: returned one reference without an answer, 73 characters | a coherent answer, 567 characters |
+| football | returned a reference to an unrelated document, no refusal | refused correctly |
+| **Saffire-IV trap** | **made up a result and a reference** | refused correctly |
 
-**Вывод: соблюдение регламента — это способность модели, а не свойство
-промпта.** Одна и та же инструкция «отвечай только по контексту» на 3B
-работает, на 1B — нет. Нижнюю границу размера подбирать замером, а не на глаз.
+**Conclusion: following the rules is a capability of the model, not a property of the prompt.**
+The same instruction "answer only from the context" works on 3B and does not on 1B. Find the lower
+size limit by measuring, not by eye.
 
-Оговорка: это по одному прогону на модель, а не полноценная оценка. Но разница
-качественная — не «хуже формулирует», а «выдумывает факты с поддельной ссылкой».
+Caveat: one run per model, not a full evaluation. But the difference is qualitative: not "words
+it worse" but "makes up facts with a fake reference".
 
-**При любой смене модели прогоняйте эту проверку первой.**
+**Whenever you change the model, run this check first.**
 
 ---
 
-## Быстрый прогон целиком
+## The whole run at once
 
 ```bash
 curl -s http://localhost:8000/health
 curl -s -X POST http://localhost:8000/predict -H 'Content-Type: application/json' \
   -d '{"parameters":{"pressure_mmhg":760.0,"oxygen_level":0.21,"n2":0.75,"co2":0.0,"he":0.0,"d_initial_mm":3.0,"fuel_heptane":1.0,"fuel_methanol":0.0}}'
 curl -s -X POST http://localhost:8000/query -H 'Content-Type: application/json' \
-  -d '{"question":"Как концентрация кислорода влияет на скорость горения?"}'
+  -d '{"question":"How does oxygen concentration affect the burning rate?","language":"en"}'
 curl -s -X POST http://localhost:8000/query -H 'Content-Type: application/json' \
-  -d '{"question":"Кто выиграл чемпионат мира по футболу 2022 года?"}'
+  -d '{"question":"Who won the 2022 FIFA World Cup?","language":"en"}'
 curl -s -X POST http://localhost:8000/query -H 'Content-Type: application/json' \
-  -d '{"question":"Каковы результаты эксперимента Saffire-IV на борту Cygnus?"}'
+  -d '{"question":"What are the results of the Saffire-IV experiment aboard Cygnus?","language":"en"}'
 ```
 
-Займёт около полутора минут — два последних запроса ждут модель.
+It takes about a minute and a half: the last requests wait for the model.
 
-Полное описание полей и кодов ошибок — [`API.md`](API.md).
+All fields and error codes: [`API.md`](API.md).

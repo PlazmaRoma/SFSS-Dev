@@ -1,5 +1,3 @@
-"""/v1/documents — какие отчёты в корпусе, загрузка новых, страница как PDF."""
-
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 
 from app.dependencies import get_document_service
@@ -24,10 +22,10 @@ def list_documents(
 
 @router.post("/documents", response_model=DocumentInfo, status_code=status.HTTP_201_CREATED)
 def add_document(
-    file: UploadFile = File(description="PDF с текстовым слоем"),
+    file: UploadFile = File(description="A PDF with a text layer"),
     service: DocumentService = Depends(get_document_service),
 ) -> DocumentInfo:
-    """Добавляет PDF в корпус. Отвечает, когда документ уже доступен для поиска."""
+    """Adds a PDF to the reports. Answers once the document is searchable."""
     try:
         return service.add(file.filename or "", file.file)
     except DocumentExistsError as exc:
@@ -54,7 +52,7 @@ def document_page(
     page: int,
     service: DocumentService = Depends(get_document_service),
 ) -> Response:
-    """Одна страница отчёта отдельным PDF, чтобы открыть источник рядом с ответом."""
+    """One report page as a separate PDF, to open the source next to the answer."""
     try:
         content = service.page_pdf(doc_id, page)
     except DocumentNotFoundError as exc:

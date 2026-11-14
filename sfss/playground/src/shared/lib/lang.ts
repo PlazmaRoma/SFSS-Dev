@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Lang } from "../types";
 
-/** Язык Площадки: по умолчанию английский, выбор запоминается между запусками.
- *  localStorage может быть недоступен (приватное окно, запрет в настройках): тогда
- *  язык просто не запоминается, а страница работает. */
 const KEY = "sfss.lang";
 export const DEFAULT_LANG: Lang = "en";
 
@@ -22,7 +19,6 @@ export function useLang(): [Lang, (lang: Lang) => void] {
     try {
       localStorage.setItem(KEY, lang);
     } catch {
-      // без памяти о языке страница всё равно работает
     }
     document.documentElement.lang = lang;
   }, [lang]);

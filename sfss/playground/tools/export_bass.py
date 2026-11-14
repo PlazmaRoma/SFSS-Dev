@@ -1,8 +1,3 @@
-"""BASS-II -> fixtures/bass_experiments.json для фронтенда.
-
-Это НЕ предсказание модели, а факты из опытов NASA BASS-II.
-Формулировать в UI надо как «в опыте №X при таком кислороде произошло Y».
-"""
 import json
 from pathlib import Path
 
@@ -49,10 +44,8 @@ for _, r in df.iterrows():
         "material_ru": RU_MATERIAL.get(r["material"], r["material"]),
         "shape": r["shape"],
         "shape_ru": RU_SHAPE.get(r["shape"], r["shape"]),
-        # доля (0.21) — в таком виде её ждёт /predict; процент — для показа человеку
         "oxygen_level": num(r["oxygen_level"]),
         "oxygen_pct": None if pd.isna(r["oxygen_level"]) else round(float(r["oxygen_level"]) * 100, 2),
-        # co2_initial в паркете уже в процентах (0-1.85), в отличие от oxygen_level
         "co2_pct": num(r["co2_initial"]),
         "flow_config": r["flow_config"],
         "flow_config_ru": RU_FLOW.get(r["flow_config"], r["flow_config"]),

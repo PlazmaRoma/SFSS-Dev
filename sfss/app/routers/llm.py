@@ -1,5 +1,3 @@
-"""Управлять нейросетью, не открывая её рантайм: загрузка модели и настройки."""
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.config import Settings, get_settings
@@ -20,7 +18,7 @@ def _model_answer(llm: LLMService) -> LoadModelResponse:
 
 @router.post("/llm/load", response_model=LoadModelResponse)
 def load_model(llm: LLMService = Depends(get_llm_service)) -> LoadModelResponse:
-    """Уже загруженная с нужным контекстом модель не трогается, повтор безопасен."""
+    """A model already loaded with the right context is left alone; safe to repeat."""
     try:
         llm.load_model()
     except ModelLoadError as exc:
@@ -30,7 +28,7 @@ def load_model(llm: LLMService = Depends(get_llm_service)) -> LoadModelResponse:
 
 @router.post("/llm/unload", response_model=LoadModelResponse)
 def unload_model(llm: LLMService = Depends(get_llm_service)) -> LoadModelResponse:
-    """Уже выгруженная модель не ошибка, повтор безопасен."""
+    """An already unloaded model is not an error; safe to repeat."""
     try:
         llm.unload_model()
     except ModelLoadError as exc:
@@ -43,7 +41,6 @@ def _config_answer(llm: LLMService, settings: Settings) -> LLMConfigResponse:
     available = None
     if reachable:
         try:
-            # Выгруженная модель тоже есть у рантайма: смотрим список, а не состояние
             available = any(
                 entry["id"] in (llm.config.model.name, f"{llm.config.model.name}:latest")
                 for entry in llm.models()
@@ -76,10 +73,9 @@ def change_config(
     llm: LLMService = Depends(get_llm_service),
     settings: Settings = Depends(get_settings),
 ) -> LLMConfigResponse:
-    """Только то, что меняется: рантайм и модель настраиваются независимо.
+    """Only what changes: runtime and model are set independently.
 
-    Рантайм, который сейчас не отвечает, не ошибка: его могут запустить позже.
-    """
+    A runtime that is not answering right now is not an error: it may be started later."""
     try:
         llm.update_config(patch)
     except ConfigError as exc:
@@ -94,7 +90,7 @@ def reset_config(
     llm: LLMService = Depends(get_llm_service),
     settings: Settings = Depends(get_settings),
 ) -> LLMConfigResponse:
-    """Назад к значениям из .env."""
+    """Back to the values from .env."""
     try:
         llm.reset_config()
     except ModelBusyError as exc:
@@ -104,7 +100,7 @@ def reset_config(
 
 @router.get("/llm/models", response_model=LLMModelsResponse)
 def list_models(llm: LLMService = Depends(get_llm_service)) -> LLMModelsResponse:
-    """Что лежит на диске у рантайма. Запрещённые регламентом модели здесь не показываются."""
+    """Models the runtime has on disk. Models banned by the hackathon rules are not listed."""
     try:
         models = llm.models()
     except ModelLoadError as exc:

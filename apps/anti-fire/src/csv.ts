@@ -1,5 +1,3 @@
-/** CSV без библиотеки: нужны только кавычки и переводы строк внутри них. */
-
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -25,7 +23,6 @@ const quote = (cell: string) => (/[",\n\r]/.test(cell) ? `"${cell.replace(/"/g, 
 
 export const toCsv = (rows: string[][]) => rows.map((row) => row.map(quote).join(",")).join("\n") + "\n";
 
-/** Строки CSV как словари: заголовок даёт имена колонок. */
 export function csvRecords(text: string): Record<string, string>[] {
   const [header, ...rows] = parseCsv(text);
   if (!header) return [];

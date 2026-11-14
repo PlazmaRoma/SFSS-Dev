@@ -1,5 +1,3 @@
-"""Парсинг и индексация документов из data/raw (раздел 5 ТЗ)."""
-
 import hashlib
 import logging
 import re
@@ -14,34 +12,17 @@ from app.services.rag_service import RagService
 
 logger = logging.getLogger(__name__)
 
-# --- восстановление сдвинутой кодировки ------------------------------------
-#
-# Бывают PDF со шрифтами Type0/Identity-H без таблицы ToUnicode, у которых и во
-# встроенном шрифте нет cmap. Тогда pypdf отдаёт вместо букв номера глифов, и
-# если глифы в подмножестве шрифта шли по порядку ASCII, текст сдвинут на
-# константу: в FLEX-отчёте (NTRS-20120015928) «FLEX» читается как «*0)<», сдвиг
-# −28. Из самого PDF правильное соответствие не восстановить, но сдвиг легко
-# найти перебором: у нормального английского текста ~20–30 % слов служебные,
-# у сдвинутого — ноль.
 
-# Без однобуквенного «a»: при «чужом» сдвиге текст рассыпается на одиночные
-# буквы, и «a» среди них набирало бы очки.
 _STOPWORDS = frozenset(
     "the of and to in is for that with on as by are was be this from at or an "
     "it which were have has not can".split()
 )
 _WORD_RE = re.compile(r"[A-Za-z]+")
-# Пробелы и переводы строк pypdf вставляет сам по геометрии страницы — это не
-# глифы шрифта, их не сдвигаем. Оборотная сторона: глифы, чей номер совпал с
-# кодом пробела или перевода строки («<» и «&» при сдвиге 28), теряются.
 _LAYOUT_CHARS = frozenset(" \n")
 _DETECT_SAMPLE_CHARS = 20_000
 _DETECT_MIN_WORDS = 200
 _GARBLED_MAX_SHARE = 0.05
 _DECODED_MIN_SHARE = 0.15
-# Верный сдвиг переводит почти все символы в печатный ASCII (в FLEX за его
-# пределами остались ~0.1 % — лигатуры и кавычки). Сдвиг, выбрасывающий больше,
-# заведомо не тот, как бы он ни набирал служебные слова.
 _DECODED_MAX_UNMAPPED = 0.05
 
 
@@ -60,12 +41,6 @@ def _unmapped_share(text: str, shift: int) -> float:
 
 
 def shift_text(text: str, shift: int) -> str:
-    """Сдвигает коды символов на shift.
-
-    Символ, который после сдвига не попадает в печатный ASCII, — глиф без
-    восстановимого соответствия (лигатуры fi/fl, типографские кавычки, градус,
-    значки сносок). Угадывать его не берёмся и ставим пробел.
-    """
     out = []
     for ch in text:
         if ch in _LAYOUT_CHARS:
@@ -77,14 +52,6 @@ def shift_text(text: str, shift: int) -> str:
 
 
 def detect_shift(text: str) -> int | None:
-    """Сдвиг кодировки, если текст выглядит сдвинутым английским, иначе None.
-
-    Решение принимается по образцу из начала документа, а не постранично:
-    кодировка — свойство шрифтов, а на коротких страницах и таблицах доля
-    служебных слов шумит. Перебор запускается, только если в исходном тексте
-    служебных слов почти нет, так что нормальные документы проходят за один
-    regex.
-    """
     sample = text[:_DETECT_SAMPLE_CHARS]
     share, _ = _stopword_share(sample)
     if share >= _GARBLED_MAX_SHARE:
@@ -107,14 +74,8 @@ class IngestService:
         self.settings.raw_dir.mkdir(parents=True, exist_ok=True)
         self.settings.processed_dir.mkdir(parents=True, exist_ok=True)
 
-    # --- чанкинг ---------------------------------------------------------
 
     def chunk(self, text: str) -> list[str]:
-        """Чанки ~chunk_size слов с перекрытием chunk_overlap.
-
-        Приближение по словам, а не по токенам: для MVP достаточно, при
-        необходимости заменить на tiktoken/токенизатор эмбеддера.
-        """
         words = text.split()
         if not words:
             return []
@@ -122,7 +83,6 @@ class IngestService:
         step = max(size - self.settings.chunk_overlap, 1)
         return [" ".join(words[i : i + size]) for i in range(0, len(words), step)]
 
-    # --- PDF -------------------------------------------------------------
 
     def ingest_pdf(self, path: Path) -> int:
         doc_id = path.stem
@@ -132,7 +92,7 @@ class IngestService:
         shift = detect_shift("\n".join(pages))
         if shift is not None:
             logger.warning(
-                "%s: кодировка шрифтов сдвинута, текст восстановлен сдвигом %+d",
+                "%s: shifted font encoding, text restored with shift %+d",
                 path.name,
                 shift,
             )
@@ -142,8 +102,6 @@ class IngestService:
         documents: list[str] = []
         metadatas: list[dict] = []
 
-        # strip() только после сдвига: управляющие символы \x1c–\x1f Python
-        # считает пробельными, а в сдвинутом тексте это цифры 8, 9 и «:», «;».
         for page_number, text in enumerate(pages, start=1):
             for idx, chunk in enumerate(self.chunk(text.strip())):
                 digest = hashlib.sha1(chunk.encode("utf-8")).hexdigest()[:10]
@@ -153,31 +111,25 @@ class IngestService:
                     {"doc_id": doc_id, "source": path.name, "page": page_number}
                 )
 
-        # В ID чанка входит хеш текста, поэтому при изменившемся извлечении
-        # upsert не перезапишет старые чанки, а добавит новые рядом. Убираем
-        # прежнюю версию документа целиком.
         self.rag.collection.delete(where={"source": path.name})
 
         if not documents:
-            logger.warning("Из %s не извлечён текст (возможно, скан — нужен OCR)", path.name)
+            logger.warning("No text extracted from %s (possibly a scan that needs OCR)", path.name)
             return 0
 
         self.rag.collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
         return len(documents)
 
-    # --- CSV -------------------------------------------------------------
 
     def ingest_csv(self, path: Path) -> Path:
-        """Очистка и приведение типов, результат — в data/processed."""
         df = pd.read_csv(path)
         df = df.dropna(how="all").drop_duplicates()
         df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
         out_path = self.settings.processed_dir / f"{path.stem}.csv"
         df.to_csv(out_path, index=False)
-        logger.info("CSV %s → %s (%d строк)", path.name, out_path.name, len(df))
+        logger.info("CSV %s → %s (%d rows)", path.name, out_path.name, len(df))
         return out_path
 
-    # --- оркестрация -----------------------------------------------------
 
     def run(self, force: bool = False) -> IngestResponse:
         indexed: list[str] = []

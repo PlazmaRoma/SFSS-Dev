@@ -1,9 +1,3 @@
-"""Ленивые синглтоны сервисов для FastAPI Depends.
-
-Модели эмбеддингов и joblib-артефакты грузятся один раз на процесс;
-в тестах провайдеры подменяются через app.dependency_overrides.
-"""
-
 from functools import lru_cache
 
 from app.services.dashboard_service import DashboardService

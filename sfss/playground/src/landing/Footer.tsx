@@ -1,13 +1,8 @@
 import type { Lang } from "../shared/types";
 import { tr } from "../shared/i18n";
 import twinbyte from "../shared/media/twinbyte.png";
-// Отметка участия, не знак поддержки: оговорка стоит последней строкой подвала
 import spaceapps from "../shared/media/spaceapps.png";
 
-/** Подвал: кто сделал, откуда данные, чего инструмент не умеет и как
- *  это проверить. Порядок именно такой: сначала происхождение данных,
- *  потом границы применимости. Для этого проекта они и есть аргумент.
- */
 const SOURCES = [
   { name: "NASA NTRS", detail: "16 reports · 998 pages", href: "https://ntrs.nasa.gov/" },
   { name: "NASA PSI", detail: "PSI-25 · BASS-II · 129 runs", href: "https://psi.nasa.gov/" },
@@ -27,8 +22,6 @@ export function Footer({ lang }: { lang: Lang }) {
         </div>
 
         <div className="credit">
-          {/* Эмблемы NASA здесь нет: правила Space Apps запрещают фирменный
-              стиль NASA в созданном с ИИ. Чьи это данные, говорят названия. */}
           <h4>{tr("footSources", lang)}</h4>
           <ul>
             {SOURCES.map((s) => (
@@ -43,8 +36,6 @@ export function Footer({ lang }: { lang: Lang }) {
         <div className="footer-rows">
           <div>
             <h4>{tr("footTeam", lang)}</h4>
-            {/* Логотип уже говорит «TwinByte», поэтому в тексте рядом
-                название команды не повторяем. */}
             <img className="team-logo" src={twinbyte} alt="TwinByte" width={132} height={39} />
             <p>{tr("footTeamNote", lang)}</p>
           </div>

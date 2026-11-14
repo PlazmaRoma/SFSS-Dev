@@ -1,15 +1,15 @@
-Anti-Fire для Linux (x86_64)
+Anti-Fire for Linux (x86_64)
 
-Запуск: распакуйте архив и запустите файл anti-fire.
+Start: unpack the archive and run the anti-fire file.
 
     tar -xzf Anti-Fire-linux-x86_64.tar.gz
     ./Anti-Fire/anti-fire
 
-Нужна системная библиотека WebKitGTK 4.1:
+The window needs the WebKitGTK 4.1 library:
 
     Fedora:  sudo dnf install webkit2gtk4.1
     Ubuntu:  sudo apt install libwebkit2gtk-4.1-0
 
-Anti-Fire — клиент сервиса SFSS. Сервис ставится отдельно, из репозитория:
-./install.sh. Тогда кнопка «Запустить SFSS» в программе найдёт команду sfss сама.
-Подробности: docs/install/linux.md в репозитории.
+Anti-Fire is a client of the SFSS service. Install the service from the repository with
+./install.sh, and the "Start SFSS" button will find the sfss command by itself.
+Details: docs/install/linux.md in the repository.

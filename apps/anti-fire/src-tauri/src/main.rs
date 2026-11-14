@@ -1,7 +1,3 @@
-// Окно вокруг программы. Вся логика лежит внутри страницы. Окно заводится из кода ради
-// скачивания: без обработчика WKWebView молча игнорирует ссылку с download, и кнопка
-// «Выгрузить» ничего не делала. Команды две: выключенный SFSS не может запустить себя
-// сам, поэтому это умеет только окно, а страница о процессах ничего не знает.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::io::{BufRead, BufReader, Read};
@@ -13,17 +9,14 @@ use std::thread;
 use tauri::{Emitter, WebviewWindowBuilder, Window};
 
 const NOT_FOUND: &str = "sfss-not-found";
-/// Событие на каждую строку вывода: страница печатает её сразу, а не после прогрева
+
 const OUTPUT_EVENT: &str = "sfss-output";
 
-/// Имена команды: на Windows установщик кладёт sfss.cmd, pip — sfss.exe
 #[cfg(windows)]
 const SFSS_NAMES: &[&str] = &["sfss.cmd", "sfss.exe"];
 #[cfg(not(windows))]
 const SFSS_NAMES: &[&str] = &["sfss"];
 
-/// У приложения из Finder в PATH нет ни ~/.local/bin, ни Homebrew: там команду и ищем.
-/// На Windows установщик кладёт её в %LOCALAPPDATA%\sfss\bin.
 fn find_sfss(home: Option<PathBuf>, path: Option<String>) -> Option<PathBuf> {
     let mut places: Vec<PathBuf> = Vec::new();
     if let Some(home) = home {
@@ -41,27 +34,23 @@ fn find_sfss(home: Option<PathBuf>, path: Option<String>) -> Option<PathBuf> {
         .find(|file| file.is_file())
 }
 
-/// Домашняя папка: HOME на macOS и Linux, USERPROFILE на Windows
 fn home_dir() -> Option<PathBuf> {
     std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).map(PathBuf::from)
 }
 
-/// Строки команды по мере появления, из stdout и stderr вперемешку, как в терминале.
-/// Раньше вывод приходил целиком после выхода: «Прогрев моделей...» появлялся, когда прогрев
-/// уже закончился. Возвращается весь текст. Пустой вывод не считается ошибкой.
 fn run(sfss: &Path, args: &[String], on_line: &(dyn Fn(&str) + Sync)) -> Result<String, String> {
     let mut command = Command::new(sfss);
-    // Без этого на Windows при каждом запуске мелькало бы чёрное окно консоли
+
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        command.creation_flags(0x0800_0000);
     }
     let mut child = command
         .args(args)
-        // sfss печатает по-русски, а труба на Windows иначе была бы в кодировке системы
+
         .env("PYTHONUTF8", "1")
-        // В трубу Python пишет stdout блоками, а не построчно: строки опаздывали бы до выхода
+
         .env("PYTHONUNBUFFERED", "1")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -94,8 +83,6 @@ fn run_installed(window: &Window, args: &[String]) -> Result<String, String> {
     })
 }
 
-// async: запуск ждёт прогрева моделей, окно всё это время не должно висеть.
-// Адрес не передаётся: окно управляет только сервисом на этой машине.
 #[tauri::command(async)]
 fn sfss_start(window: Window, port: u16) -> Result<String, String> {
     run_installed(&window, &["start".to_string(), "--port".to_string(), port.to_string()])
@@ -106,23 +93,16 @@ fn sfss_stop(window: Window) -> Result<String, String> {
     run_installed(&window, &["stop".to_string()])
 }
 
-/// Отступ от краёв рабочей области, если окно в неё не помещается
 const SCREEN_MARGIN: f64 = 24.0;
-/// Заголовок окна поверх внутренней высоты: на macOS 28, на Windows около 32
+
 const TITLE_BAR: f64 = 32.0;
 
-/// Внутренний размер окна, который помещается в рабочую область: экран без Дока, меню
-/// и панели задач. На 13-дюймовом Mac с Доком справа видно 1337 точек, а окно было 1360:
-/// система ставила его с отрицательным отступом, и оно съезжало влево. Меньше
-/// минимального размера окно не становится, даже если экран ещё меньше.
 fn fit_size(wanted: (f64, f64), min: (f64, f64), area: (f64, f64)) -> (f64, f64) {
     let max_w = area.0 - 2.0 * SCREEN_MARGIN;
     let max_h = area.1 - 2.0 * SCREEN_MARGIN - TITLE_BAR;
     (wanted.0.min(max_w).max(min.0), wanted.1.min(max_h).max(min.1))
 }
 
-/// Левый верхний угол окна по центру рабочей области, в физических пикселях. Если окно
-/// больше области, угол прижимается к её началу: заголовок не уходит за край экрана.
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 fn center_in(area_pos: (i32, i32), area_size: (u32, u32), window: (u32, u32)) -> (i32, i32) {
     let x = area_pos.0 + (area_size.0 as i32 - window.0 as i32).max(0) / 2;
@@ -130,17 +110,12 @@ fn center_in(area_pos: (i32, i32), area_size: (u32, u32), window: (u32, u32)) ->
     (x, y)
 }
 
-/// Центр окна. На macOS — силами системы, `NSWindow center`: она сама учитывает Док с любой
-/// стороны, меню и выбранный экран. На Linux — силами GTK: место считается при показе окна,
-/// вместе с рамкой, которую рисует оконный менеджер. Наш расчёт до показа там промахивался:
-/// у скрытого окна ещё нет рамки, и под XWayland окно вставало не по центру. На Windows ставим
-/// сами, по рабочей области монитора, на котором окно открылось.
 fn center(window: &tauri::WebviewWindow) -> tauri::Result<()> {
     #[cfg(target_os = "macos")]
     {
         use objc2::{msg_send, runtime::AnyObject};
         let ns_window = window.ns_window()? as *mut AnyObject;
-        // setup идёт в главном потоке, а AppKit только его и принимает
+
         if let Some(ns_window) = unsafe { ns_window.as_ref() } {
             let _: () = unsafe { msg_send![ns_window, center] };
         }
@@ -170,13 +145,6 @@ fn center(window: &tauri::WebviewWindow) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Настройки окружения для Linux под Wayland, пока GTK ещё не запущен.
-///
-/// Под GNOME на Wayland кнопки окна рисует сама программа, и с WebKitGTK на NVIDIA они не
-/// нажимались: закрыть окно можно было только из меню. Через XWayland рамку рисует GNOME,
-/// как у обычных окон. Отрисовка DMA-BUF на тех же картах давала белое окно, которое
-/// медленно обрастало интерфейсом. Проверено на Fedora 44, GNOME, GTX 1650.
-/// Что человек задал сам, не трогаем. Возвращает пары, которые выставили.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 fn linux_wayland_env(
     get: impl Fn(&str) -> Option<String>,
@@ -206,28 +174,25 @@ fn main() {
                 let min = (config.min_width.unwrap_or(0.0), config.min_height.unwrap_or(0.0));
                 size = fit_size(size, min, (area.width, area.height));
             }
-            // Окно создаётся скрытым ("visible": false) и показывается уже на месте,
-            // без прыжка. Файл попадает в «Загрузки», одноимённые файлы не перезаписываются.
+
             let window = WebviewWindowBuilder::from_config(app.handle(), &config)?
                 .inner_size(size.0, size.1)
                 .on_download(|_, _| true)
                 .build()?;
             center(&window)?;
             window.show()?;
-            // Окно создавалось скрытым и показывалось без фокуса: macOS рисовал его
-            // неактивным, и кнопки закрытия и сворачивания были серыми до наведения мыши
+
             window.set_focus()?;
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("не удалось запустить окно");
+        .expect("could not start the window");
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // Тесты запуска подделывают команду sfss скриптом sh: это есть только на Unix
     #[cfg(unix)]
     mod with_fake_command {
     use super::super::*;
@@ -256,7 +221,7 @@ mod tests {
         let temp = std::env::temp_dir();
         let path = temp.join("sfss-test-empty").display().to_string();
         let found = find_sfss(Some(temp.join("sfss-test-missing")), Some(path));
-        // Системные папки проверяются всегда, и там команда может быть на самом деле
+
         assert!(!found.is_some_and(|file| file.starts_with(&temp)));
     }
 
@@ -271,7 +236,6 @@ mod tests {
 
     #[test]
     fn lines_arrive_before_the_command_ends() {
-        // Строка из stderr до долгой паузы, как «Прогрев моделей...» перед прогревом
         let (home, file) = fake_command("stream", "#!/bin/sh\necho warming >&2\nsleep 1\necho done\n");
         let started = std::time::Instant::now();
         let seen = Mutex::new(Vec::new());
@@ -310,7 +274,6 @@ mod tests {
 
     #[test]
     fn window_shrinks_to_the_screen_without_dock() {
-        // 13-дюймовый Mac, Док справа: видно 1337 × 851
         assert_eq!(fit_size((1360.0, 860.0), (1024.0, 680.0), (1337.0, 851.0)), (1289.0, 771.0));
     }
 
@@ -326,7 +289,6 @@ mod tests {
 
     #[test]
     fn center_counts_from_the_work_area() {
-        // Панель задач слева шириной 100: центр сдвигается вместе с областью
         assert_eq!(center_in((100, 0), (1820, 1040), (1360, 900)), (330, 70));
     }
 

@@ -1,15 +1,16 @@
-# Установка на Linux
+# Installing on Linux
 
-Ставятся две вещи: **SFSS** — сервис, который считает и отвечает, и **Anti-Fire** — программа
-с окном. Обе ставит один скрипт, без sudo: всё ложится в домашнюю папку.
+Two things get installed: **SFSS**, the service that calculates and answers, and **Anti-Fire**,
+the app with a window. One script installs both, without sudo: everything goes into your home
+folder.
 
-Проверено вживую на Fedora 44 Workstation (GNOME, Wayland, NVIDIA): с нуля 44 секунды. В GitHub
-Actions установка и удаление проверяются на чистой Ubuntu. Готовая сборка Anti-Fire есть для
+Tested on Fedora 44 Workstation (GNOME, Wayland, NVIDIA): 44 seconds from scratch. GitHub
+Actions tests installation and removal on a clean Ubuntu. The ready Anti-Fire build is for
 x86_64.
 
-## Что нужно заранее
+## Prerequisites
 
-- **git** и **curl** (или wget):
+- **git** and **curl** (or wget):
 
   ```bash
   sudo dnf install git curl                # Fedora
@@ -19,8 +20,8 @@ x86_64.
   sudo apt install git curl                # Ubuntu, Debian
   ```
 
-- **WebKitGTK 4.1** — для окна Anti-Fire. На Fedora Workstation и Ubuntu Desktop он обычно уже
-  есть, установщик проверит и подскажет:
+- **WebKitGTK 4.1** for the Anti-Fire window. Fedora Workstation and Ubuntu Desktop usually have
+  it already; the installer checks and tells you what to run:
 
   ```bash
   sudo dnf install webkit2gtk4.1           # Fedora
@@ -30,23 +31,23 @@ x86_64.
   sudo apt install libwebkit2gtk-4.1-0     # Ubuntu, Debian
   ```
 
-Python ставить не нужно: установщик скачает Python 3.12, если его нет. Системный Python не
-используется и не трогается.
+You do not need to install Python: the installer downloads Python 3.12 if it is missing. The
+system Python is neither used nor touched.
 
-## Что скачается
+## What gets downloaded
 
-| Что | Объём |
+| What | Size |
 |---|---|
-| Репозиторий: код, 16 отчётов NASA, готовый индекс, модель расчёта, Anti-Fire | около 150 МБ |
-| uv — установщик пакетов, если его ещё нет | около 20 МБ |
-| Python 3.12, если его нет | около 35 МБ |
-| Библиотеки SFSS, 56 пакетов | около 100 МБ, на диске 330 МБ |
-| Модель поиска по отчётам | 130 МБ |
-| Нейросеть Ministral 3B, по желанию | около 3 ГБ |
+| The repository: code, 16 NASA reports, ready index, prediction model, Anti-Fire | about 150 MB |
+| uv, the package installer, if not present yet | about 20 MB |
+| Python 3.12, if not present | about 35 MB |
+| SFSS libraries, 56 packages | about 100 MB, 330 MB on disk |
+| Search model for the reports | 130 MB |
+| Ministral 3B language model, optional | about 3 GB |
 
-После установки сеть не нужна.
+No network is needed after installation.
 
-## Установка
+## Installation
 
 ```bash
 git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git ~/SFSS-Dev
@@ -56,27 +57,27 @@ git clone --depth 1 https://github.com/PlazmaRoma/SFSS-Dev.git ~/SFSS-Dev
 cd ~/SFSS-Dev && ./install.sh
 ```
 
-Шаги пронумерованы, у каждой загрузки видно, сколько осталось. Установщик задаст два вопроса,
-на оба можно нажать Enter:
+Steps are numbered, and every download shows its progress. The installer asks two questions;
+pressing Enter answers yes to both:
 
-1. **Поставить Anti-Fire в `~/.local/share/anti-fire`?** Появятся команда `anti-fire` и ярлык
-   в меню программ.
-2. **Скачать Ministral 3B?** Вопрос будет, только если стоит LM Studio или Ollama.
+1. **Install Anti-Fire into `~/.local/share/anti-fire`?** You get the `anti-fire` command and an
+   entry in the applications menu.
+2. **Download Ministral 3B?** Asked only when LM Studio or Ollama is installed.
 
-В конце установщик запускает сервис и делает один расчёт. Если связь оборвалась, запустите
-`./install.sh` снова: скачанное не пропадёт, готовые шаги пропускаются.
+At the end the installer starts the service and runs one calculation. If the connection drops,
+run `./install.sh` again: downloads are kept and finished steps are skipped.
 
-Если установщик пишет, что `~/.local/bin` нет в `PATH`, добавьте в `~/.bashrc` (или `~/.zshrc`)
-строку, которую он напечатал, и откройте новый терминал.
+If the installer says `~/.local/bin` is not in `PATH`, add the line it prints to `~/.bashrc` (or
+`~/.zshrc`) and open a new terminal.
 
-| Параметр | Что делает |
+| Option | What it does |
 |---|---|
-| `--yes` | отвечает «да» на все вопросы |
-| `--no-llm` | не трогает нейросеть |
-| `--no-app` | не ставит Anti-Fire |
-| `--uninstall` | убирает всё, что поставил |
+| `--yes` | answers yes to every question |
+| `--no-llm` | leaves the language model alone |
+| `--no-app` | skips Anti-Fire |
+| `--uninstall` | removes everything it installed |
 
-## Проверка
+## Checking
 
 ```bash
 sfss status
@@ -84,86 +85,89 @@ sfss predict --o2 0.30 --psi 8.2
 sfss playground
 ```
 
-Ожидается: в индексе 1131 фрагмент, скорость горения 0.676 мм²/с, в 1,33 раза быстрее
-обычного воздуха; в браузере открывается Площадка.
+Expected: 1131 chunks in the index, a burning rate of 0.676 mm²/s, 1.33 times faster than
+normal air; the Playground opens in a browser.
 
-**Anti-Fire** — в меню программ или командой `anti-fire`. Программа сама находит команду
-`sfss`, поэтому кнопки «Start SFSS» и «Stop SFSS» работают сразу.
+**Anti-Fire** is in the applications menu or the `anti-fire` command. It finds the `sfss` command
+by itself, so the "Start SFSS" and "Stop SFSS" buttons work right away.
 
-Под Wayland окно открывается через XWayland: иначе с WebKitGTK на картах NVIDIA не нажимались
-кнопки окна и окно долго оставалось белым. Вернуть родной Wayland: `GDK_BACKEND=wayland anti-fire`.
-При запуске окно на мгновение бывает белым — это WebKitGTK, на работу не влияет.
+Under Wayland the window opens through XWayland: otherwise, with WebKitGTK on NVIDIA cards, the
+window buttons did not respond and the window stayed white for a long time. To use native
+Wayland: `GDK_BACKEND=wayland anti-fire`. The window may flash white for an instant at start;
+that is WebKitGTK and does not affect anything.
 
-## Нейросеть
+## Language model
 
-Ответы на вопросы пишет нейросеть на этой же машине, в Ollama или LM Studio. Без неё работает
-всё остальное: расчёт, CSV, Площадка. Модели нужно около 3 ГБ видеопамяти или памяти.
+Answers are written by a language model on the same machine, in Ollama or LM Studio. Everything
+else works without it: calculations, CSV, the Playground. The model needs about 3 GB of video
+memory or RAM.
 
-**Ollama.** Установить с [ollama.com](https://ollama.com). Если установщик её нашёл, он уже
-переключил SFSS на Ollama; останется скачать модель:
+**Ollama.** Install it from [ollama.com](https://ollama.com). If the installer found it, it has
+already switched SFSS to Ollama; what is left is the model:
 
 ```bash
 ollama pull ministral-3:3b
 sfss config model ministral-3:3b
 ```
 
-**LM Studio.** Установить с [lmstudio.ai](https://lmstudio.ai) и один раз открыть.
+**LM Studio.** Install it from [lmstudio.ai](https://lmstudio.ai) and open it once.
 
 ```bash
 lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF
 sfss load
 ```
 
-Проще всего — запустить `./install.sh` ещё раз: он найдёт Ollama или LM Studio и предложит
-скачать модель сам. Проверка: `sfss ask "How does helium in the atmosphere affect combustion?"`.
+The simplest way is to run `./install.sh` again: it finds Ollama or LM Studio and offers to
+download the model. Check: `sfss ask "How does helium in the atmosphere affect combustion?"`.
 
-## Удаление
+## Removal
 
 ```bash
 cd ~/SFSS-Dev && ./install.sh --uninstall
 ```
 
-Убирает:
+It removes:
 
-- сервис: останавливает его;
-- команду `sfss`;
-- Python с библиотеками, модель поиска;
-- uv из `.tools` вместе с его кэшем и скачанным Python, если uv ставил установщик;
-- Anti-Fire: программу, команду `anti-fire`, ярлык в меню и её данные.
+- the service: stops it;
+- the `sfss` command;
+- Python with its libraries and the search model;
+- uv from `.tools`, together with its cache and the Python it downloaded, if the installer put
+  uv there;
+- Anti-Fire: the app, the `anti-fire` command, the menu entry and its data.
 
-Остаются клон с отчётами NASA и индексом, `sfss/.env` и настройки нейросети. Клон после этого
-можно удалить: `rm -rf ~/SFSS-Dev`. Нейросеть в Ollama или LM Studio не трогается: её удаляют
-там же.
+What stays: the clone with the NASA reports and the index, `sfss/.env` and the model settings.
+You can then delete the clone: `rm -rf ~/SFSS-Dev`. The language model in Ollama or LM Studio is
+not touched; remove it there.
 
-В меню программ GNOME у Anti-Fire нет кнопки «Удалить». Такая кнопка есть только у того, что
-поставил менеджер пакетов (dnf, apt, Flatpak), а Anti-Fire — файлы в домашней папке. Поэтому
-её убирает та же команда, что и ставила.
+The GNOME applications menu has no "Uninstall" button for Anti-Fire. That button exists only for
+what a package manager installed (dnf, apt, Flatpak), and Anti-Fire is just files in your home
+folder. So the same command that installed it removes it.
 
-## Обновление
+## Updating
 
 ```bash
 cd ~/SFSS-Dev && git pull && ./install.sh
 ```
 
-## Если что-то пошло не так
+## Troubleshooting
 
-| Что видно | Что делать |
+| What you see | What to do |
 |---|---|
-| «Could not download uv» | проверить сеть; за прокси uv ставится вручную: https://docs.astral.sh/uv/ |
-| `sfss: command not found` | открыть новый терминал; проверить `PATH`, см. «Установка» |
-| «Port 8000 is taken» | `sfss start --port 8010` |
-| «Could not download the search model» | проверить сеть и запустить `./install.sh` снова |
-| «The window needs the WebKitGTK 4.1 library» | поставить WebKitGTK, см. «Что нужно заранее» |
-| Ollama «not answering» | `ollama serve` или `systemctl start ollama`, затем `sfss load` |
-| Anti-Fire: «The sfss command was not found» | сначала поставить SFSS |
-| Готовой сборки под вашу архитектуру нет (ARM) | собрать из исходников, см. ниже |
+| "Could not download uv" | check the network; behind a proxy install uv by hand: https://docs.astral.sh/uv/ |
+| `sfss: command not found` | open a new terminal; check `PATH`, see "Installation" |
+| "Port 8000 is taken" | `sfss start --port 8010` |
+| "Could not download the search model" | check the network and run `./install.sh` again |
+| "The window needs the WebKitGTK 4.1 library" | install WebKitGTK, see "Prerequisites" |
+| Ollama "not answering" | `ollama serve` or `systemctl start ollama`, then `sfss load` |
+| Anti-Fire: "The sfss command was not found" | install SFSS first |
+| No ready build for your architecture (ARM) | build from source, see below |
 
-Лог сервиса: `sfss logs`.
+Service log: `sfss logs`.
 
-## Сборка Anti-Fire из исходников
+## Building Anti-Fire from source
 
-Нужна для ARM или тем, кто меняет программу. Нужен Node 22+, Rust скрипт поставит сам, в
-`~/.cargo`, без sudo. Сначала библиотеки для сборки:
+For ARM or for those who change the app. You need Node 22+; the script installs Rust itself,
+into `~/.cargo`, without sudo. First the build libraries:
 
 ```bash
 sudo dnf install webkit2gtk4.1-devel gtk3-devel librsvg2-devel libappindicator-gtk3-devel   # Fedora
@@ -178,4 +182,4 @@ npm ci
 bash apps/anti-fire/build.sh
 ```
 
-Готовый файл — `apps/anti-fire/src-tauri/target/release/anti-fire`.
+The result is `apps/anti-fire/src-tauri/target/release/anti-fire`.
