@@ -1,67 +1,67 @@
-# Подключение к SFSS
+# Connecting to SFSS
 
-SFSS — сервис, который работает в фоне и считает. Программа Anti-Fire, Площадка
-и команда `sfss` ходят в него по одному и тому же API. Ваша программа может так же.
+SFSS is a service that runs in the background and does the calculations. The Anti-Fire app, the
+Playground and the `sfss` command all use the same API. Your program can too.
 
-## От нуля до первого ответа
+## From zero to the first answer
 
 ```bash
-./install.sh                # один раз, из корня репозитория: docs/install
+./install.sh                # once, from the repository root: docs/install
 sfss start --with-llm
 curl -X POST http://127.0.0.1:8000/v1/predict -H 'Content-Type: application/json' \
   -d '{"parameters": {"oxygen_level": 0.30, "n2": 0.70}}'
 ```
 
-Интерактивная схема всех запросов: http://127.0.0.1:8000/docs.
+Interactive schema of all requests: http://127.0.0.1:8000/docs.
 
-## Что можно спросить
+## What you can ask
 
-| Запрос | Что делает | Нужна нейросеть |
+| Request | What it does | Needs the language model |
 |---|---|---|
-| `GET /v1/health` | состояние сервиса, индекса и модели | нет |
-| `GET /v1/dashboard` | опыты FLEX, качество модели, состав корпуса | нет |
-| `POST /v1/predict` | скорость горения при одних условиях, с графиком по кислороду | нет |
-| `POST /v1/predict/batch` | много условий одним запросом, JSON или CSV | нет |
-| `POST /v1/query` | ответ по отчётам NASA со ссылками, целиком | **да** |
-| `POST /v1/query/stream` | то же, текст приходит по мере генерации | **да** |
-| `GET`, `PATCH`, `DELETE /v1/llm/config` | настройки нейросети: LM Studio или Ollama, порт, модель | нет |
-| `GET /v1/documents` | какие отчёты в корпусе | нет |
-| `POST /v1/documents` | добавить PDF в корпус | нет |
-| `GET /v1/documents/{doc_id}/pages/{n}` | одна страница отчёта как PDF | нет |
+| `GET /v1/health` | state of the service, index and model | no |
+| `GET /v1/dashboard` | FLEX experiments, model quality, corpus contents | no |
+| `POST /v1/predict` | burning rate for one set of conditions, with an oxygen chart | no |
+| `POST /v1/predict/batch` | many conditions in one request, JSON or CSV | no |
+| `POST /v1/query` | an answer from the NASA reports with references, in one piece | **yes** |
+| `POST /v1/query/stream` | the same, with the text arriving as it is generated | **yes** |
+| `GET`, `PATCH`, `DELETE /v1/llm/config` | model settings: LM Studio or Ollama, port, model | no |
+| `GET /v1/documents` | which reports are in the corpus | no |
+| `POST /v1/documents` | add a PDF to the corpus | no |
+| `GET /v1/documents/{doc_id}/pages/{n}` | one report page as a PDF | no |
 
-Подробно о полях ответов — в [`API.md`](API.md).
+Response fields in detail: [`API.md`](API.md).
 
-## Расчёт
+## Calculations
 
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/predict/batch -H 'Content-Type: text/csv' \
   --data-binary @runs.csv
 ```
 
-Колонки CSV называются как признаки модели: `oxygen_level`, `n2`, `co2`, `he`,
-`pressure_mmhg`, `d_initial_mm`, `fuel_heptane`, `fuel_methanol`. Пустая ячейка
-значит «не задано». Плохая строка получает поле `error`, остальные считаются.
-То же из терминала, с записью таблицы результатов:
+CSV columns are named like the model features: `oxygen_level`, `n2`, `co2`, `he`,
+`pressure_mmhg`, `d_initial_mm`, `fuel_heptane`, `fuel_methanol`. An empty cell means "not set".
+A bad row gets an `error` field; the others are calculated. The same from the terminal, writing
+a results table:
 
 ```bash
 sfss predict --csv runs.csv --out results.csv
 ```
 
-**Читайте `warnings`.** Там написано, почему числу стоит доверять меньше:
+**Read `warnings`.** They say why the number deserves less trust:
 
-- условия вне диапазона обучения. Модель обучена на кислороде 0.12–0.34, выше она
-  выходит на плато и не растёт;
-- сумма долей газов не равна единице. **API сам азот не досчитывает**:
-  `{"oxygen_level": 0.30}` значит 30 % кислорода и воздушные 79 % азота, всего 109 %.
-  Передавайте `n2` явно. `sfss predict` дополняет его сам.
+- conditions outside the training range. The model is trained on oxygen 0.12–0.34; above that it
+  plateaus and does not grow;
+- gas fractions do not add up to one. **The API does not fill in nitrogen by itself**:
+  `{"oxygen_level": 0.30}` means 30 % oxygen plus the 79 % nitrogen of air, 109 % in total. Pass
+  `n2` explicitly. `sfss predict` fills it in for you.
 
-Модель считает **капли топлива** из опытов FLEX. Материалов (ткань, пластик,
-кабели) в ней нет.
+The model covers **fuel droplets** from the FLEX experiments. Materials (fabric, plastic, cables)
+are not in it.
 
-## Вопрос по отчётам из Python
+## Asking the reports from Python
 
-Нужен только `httpx`. Ответ модели идёт десятки секунд: первые слова русского
-ответа появляются примерно через 50 с, поэтому тайм-аут длинный.
+Only `httpx` is needed. The model takes tens of seconds to answer: the first words of a Russian
+answer appear after about 50 s, hence the long timeout.
 
 ```python
 import json
@@ -84,66 +84,65 @@ for source in sources:
     print(source["doc_id"], source["page"])
 ```
 
-Ошибка LM Studio посреди ответа приходит событием `error`: код 200 к этому моменту
-уже отправлен, поэтому проверки статуса мало.
+A runtime failure in the middle of an answer arrives as an `error` event: status 200 has already
+been sent by then, so checking the status is not enough.
 
-Числа в ссылках вида `[NTRS-20000030678, p. 97]` ведут на страницу:
+The numbers in references like `[NTRS-20000030678, p. 97]` lead to the page:
 `GET /v1/documents/NTRS-20000030678/pages/97`.
 
-## Свои документы
+## Your own documents
 
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/documents -F file=@report.pdf
 ```
 
-Ответ приходит, когда документ уже находится поиском: большой отчёт индексируется
-минуты. Нужен текстовый слой: скан вернёт 422, OCR не подключён. Предел — 100 МБ
-(`MAX_UPLOAD_MB`). Файл с таким именем уже есть — 409.
+The answer arrives once the document is searchable: a large report takes minutes to index. A
+text layer is required: a scan returns 422, there is no OCR. The limit is 100 MB
+(`MAX_UPLOAD_MB`). A file with the same name already exists: 409.
 
-## Доступ
+## Access
 
-- **С этой машины ключ не нужен.**
-- **С другого адреса нужен ключ.** Задайте `SFSS_API_KEY` в `.env`, запустите
-  `sfss start --host 0.0.0.0` и передавайте `X-API-Key: <ключ>` или
-  `Authorization: Bearer <ключ>`. Без ключа в `.env` такой запуск откажется стартовать.
-  Трафик не шифруется: для недоверенной сети нужен прокси с TLS. Прокси на той же
-  машине отключает проверку адреса, потому что для сервиса все его запросы идут
-  с 127.0.0.1, поэтому на нём ключ надо проверять отдельно.
-- **Страницы в браузере.** Без ключа доверяются только `localhost`, `127.0.0.1`,
-  окно Tauri и HTML-файл с диска. Для других сайтов задайте регулярное выражение
-  `ALLOWED_ORIGINS`, иначе браузер не отдаст им ответ.
+- **From this machine, no key is needed.**
+- **From another address, a key is needed.** Set `SFSS_API_KEY` in `.env`, run
+  `sfss start --host 0.0.0.0` and send `X-API-Key: <key>` or `Authorization: Bearer <key>`.
+  Without a key in `.env`, such a start refuses to run. Traffic is not encrypted: an untrusted
+  network needs a TLS proxy. A proxy on the same machine disables the address check, because all
+  its requests come from 127.0.0.1, so it must check the key itself.
+- **Pages in a browser.** Without a key only `localhost`, `127.0.0.1`, the Tauri window and an
+  HTML file from disk are trusted. For other sites set the `ALLOWED_ORIGINS` regular expression,
+  otherwise the browser will not hand them the response.
 
-## Пример сторонней программы
+## A third-party example
 
-[`examples/telemetry_monitor.py`](../examples/telemetry_monitor.py): условный монитор
-атмосферы на станции, около сотни строк, нужен только `httpx`. Читает телеметрию, шлёт
-пакетами в `/v1/predict/batch`, при превышении порога спрашивает отчёты NASA:
+[`examples/telemetry_monitor.py`](../examples/telemetry_monitor.py): a mock station atmosphere
+monitor, about a hundred lines, only `httpx` needed. It reads telemetry, sends it in batches to
+`/v1/predict/batch` and asks the NASA reports when the threshold is exceeded:
 
 ```bash
 .venv/bin/python examples/telemetry_monitor.py
 ```
 
-Телеметрия вымышленная, порог условный.
+The telemetry is made up and the threshold is arbitrary.
 
-## Посмотреть без своей программы
+## Looking without your own program
 
-- `sfss playground` открывает Площадку: поиграться и увидеть идею.
-- Программа Anti-Fire — рабочий клиент: расчёт, CSV, вопросы по отчётам, терминал,
-  где виден каждый запрос.
+- `sfss playground` opens the Playground: play with it and see the idea.
+- The Anti-Fire app is a working client: calculations, CSV, questions to the reports, and a
+  terminal that shows every request.
 
-## Если что-то не работает
+## When something does not work
 
 ```bash
 sfss status
 sfss logs -n 100
 ```
 
-| Что видите | Что это | Что делать |
+| What you see | What it is | What to do |
 |---|---|---|
-| соединение отклонено | демон не запущен | `sfss start` |
-| 401 | чужой адрес или сайт без ключа | ключ, см. «Доступ» |
-| 503 на `/v1/query` | модель не загрузилась, причина в `detail` | `sfss load` покажет то же самое |
-| 503 на `/v1/predict` | модель не обучена | `scripts/train_model.py`, см. README |
-| 413 | больше 10 000 строк или 100 МБ | разбить запрос |
-| 422 | неверный параметр или файл | причина в поле `detail` |
-| вопрос идёт минуты | большой контекст модели или своп | `sfss load` перезагрузит с контекстом 8192, `sfss status` |
+| connection refused | the daemon is not running | `sfss start` |
+| 401 | another address or a site without a key | a key, see "Access" |
+| 503 on `/v1/query` | the model did not load, the reason is in `detail` | `sfss load` shows the same |
+| 503 on `/v1/predict` | the model is not trained | `scripts/train_model.py`, see README |
+| 413 | more than 10 000 rows or 100 MB | split the request |
+| 422 | a wrong parameter or file | the reason is in `detail` |
+| a question takes minutes | a large model context or swapping | `sfss load` reloads with context 8192, `sfss status` |

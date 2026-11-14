@@ -1,65 +1,64 @@
-# API — справочник
+# API reference
 
-Пять эндпоинтов. Сервер поднимается на `http://localhost:8000`, интерактивная
-документация — `http://localhost:8000/docs`.
+The server listens on `http://localhost:8000`; interactive documentation is at
+`http://localhost:8000/docs`.
 
-Перед запросами должен работать **LM Studio** (для `/query`) — см.
-[`../README.md`](../README.md), раздел «LM Studio».
+`/query` needs a running model runtime (**LM Studio** or Ollama), see
+[`../README.md`](../README.md), "LM Studio".
 
-| Метод | Путь | Что делает | Нужен LM Studio | Время |
+| Method | Path | What it does | Needs the runtime | Time |
 |---|---|---|---|---|
-| GET | `/health` | статус сервиса и зависимостей | нет | мгновенно |
-| GET | `/dashboard` | данные для отрисовки страницы | нет | мгновенно |
-| POST | `/query` | ответ по документам NASA со ссылками | **да** | 33-46 с |
-| POST | `/predict` | предсказание скорости горения | нет | мгновенно |
-| POST | `/v1/llm/load` | загрузить модель в память, поднять сервер LM Studio | нет | до минуты |
-| POST | `/v1/llm/unload` | выгрузить модель из памяти | нет | секунды |
-| GET | `/v1/llm/config` | настройки нейросети: рантайм и модель | нет | мгновенно |
-| PATCH | `/v1/llm/config` | изменить настройки, сразу и без перезапуска | нет | до минуты, если выгружает прежнюю модель |
-| DELETE | `/v1/llm/config` | вернуть значения из `.env` | нет | так же |
-| GET | `/v1/llm/models` | какие модели есть у рантайма | **да** | мгновенно |
-| POST | `/ingest` | переиндексация `data/raw` | нет | минуты |
+| GET | `/health` | service and dependency status | no | instant |
+| GET | `/dashboard` | data for drawing a page | no | instant |
+| POST | `/query` | an answer from NASA documents with references | **yes** | 33-46 s |
+| POST | `/predict` | burning rate prediction | no | instant |
+| POST | `/v1/llm/load` | load the model, start the LM Studio server | no | up to a minute |
+| POST | `/v1/llm/unload` | unload the model from memory | no | seconds |
+| GET | `/v1/llm/config` | model settings: runtime and model | no | instant |
+| PATCH | `/v1/llm/config` | change settings at once, without a restart | no | up to a minute if it unloads the previous model |
+| DELETE | `/v1/llm/config` | back to the values from `.env` | no | same |
+| GET | `/v1/llm/models` | models the runtime has | **yes** | instant |
+| POST | `/ingest` | re-index `data/raw` | no | minutes |
 
 ---
 
-Все пути доступны с префиксом `/v1`, и новому коду стоит ходить через него. Путь
-без префикса скрыт из схемы и оставлен для Площадки и снятых фикстур. Пакетный
-расчёт и документы есть только в `/v1`. Как подключить свою программу и как
-устроен доступ — в [`INTEGRATION.md`](INTEGRATION.md).
+All paths are available with the `/v1` prefix, and new code should use it. Paths without the
+prefix are hidden from the schema and kept for the Playground and recorded fixtures. Batch
+prediction and documents exist only under `/v1`. How to connect your program and how access
+works: [`INTEGRATION.md`](INTEGRATION.md).
 
-## Если вы делаете фронт — прочитайте это первым
+## Building a front end? Read this first
 
-**Порядок при загрузке страницы:**
+**Order on page load:**
 
-1. `GET /health` — проверить, что бэкенд жив. Отвечает за миллисекунды.
-   Сервер прогревается при старте (4–16 с), поэтому правило простое:
-   **порт открыт — значит готов**. Если соединения нет, показывайте экран
-   «бэкенд не запущен» с командой, а не спиннер.
-2. `GET /dashboard` — всё, что нужно нарисовать: точки экспериментов,
-   качество модели, состав корпуса. Один вызов, ~47 КБ.
-3. Дальше `POST /predict` на каждое движение ползунка — он мгновенный.
+1. `GET /health` to check that the back end is alive. It answers in milliseconds. The server
+   warms up at start (a few seconds), so the rule is simple: **if the port is open, it is
+   ready**. If there is no connection, show a "back end not running" screen with the command,
+   not a spinner.
+2. `GET /dashboard`: everything to draw — experiment points, model quality, corpus contents. One
+   call, about 47 KB.
+3. Then `POST /predict` on every slider move: it is instant.
 
-**`POST /query` никогда не вызывать при загрузке.** Он отвечает 33-46 секунд.
-Только по явному действию пользователя, с честной индикацией ожидания. Для
-интерфейса лучше `POST /query/stream`: текст приходит по мере генерации.
-Таймаут в `fetch`/`axios` поднять минимум до 90 секунд, иначе запрос оборвётся
-на середине генерации.
+**Never call `POST /query` on page load.** It takes 33-46 seconds. Only on an explicit user
+action, with an honest waiting indicator. For a UI `POST /query/stream` is better: the text
+arrives as it is generated. Raise the `fetch`/`axios` timeout to at least 90 seconds, otherwise
+the request breaks off mid-generation.
 
-**Четыре правила, которые легко нарушить:**
+**Four rules that are easy to break:**
 
 | | |
 |---|---|
-| показывать `predicted_value` с единицами из `model.units`, а не `risk_score` | «0.55 mm^2/s» значит что-то, «0.49» — нет |
-| `is_heuristic: true` обязан менять подпись в интерфейсе | иначе заглушка выглядит предсказанием модели |
-| непустой `sources` не означает обоснованность | поиск всегда возвращает 3 фрагмента, даже когда модель отказалась отвечать |
-| показывать `defaults_applied` | пользователь должен знать, какие условия выбраны за него |
+| show `predicted_value` with units from `model.units`, not `risk_score` | "0.55 mm^2/s" means something, "0.49" does not |
+| `is_heuristic: true` must change the label in the UI | otherwise a stub looks like a model prediction |
+| non-empty `sources` does not mean the answer is grounded | search always returns 3 chunks, even when the model refused to answer |
+| show `defaults_applied` | the user must know which conditions were chosen for them |
 
 ---
 
 ## GET /health
 
-Проверяет, что сервис жив и обе зависимости отвечают. Первое, что стоит дёрнуть,
-если что-то не работает.
+Checks that the service is alive and both dependencies answer. The first thing to call when
+something does not work.
 
 ```bash
 curl http://localhost:8000/health
@@ -70,34 +69,34 @@ curl http://localhost:8000/health
   "status": "ok",
   "chroma": true,
   "lm_studio": true,
-  "model": "mlx-community/ministral-3-3b-instruct-2512",
+  "model": "ministral-3-3b-instruct-2512",
   "indexed_documents": 1131
 }
 ```
 
-| Поле | Смысл |
+| Field | Meaning |
 |---|---|
-| `status` | `ok` — обе зависимости живы; `degraded` — хотя бы одна недоступна |
-| `chroma` | индекс по отчётам на месте; имя поля прежнее ради совместимости |
-| `lm_studio` | рантайм нейросети отвечает. Имя старое: раньше рантайм был один |
-| `runtime`, `runtime_name`, `runtime_address` | какой рантайм настроен: `ollama`, `Ollama`, `localhost:11434` |
-| `model` | какая модель настроена (не обязательно загружена) |
-| `indexed_documents` | сколько чанков в индексе; `null`, если индекса нет |
-| `model_loaded` | модель уже в памяти; `false` — сервис загрузит её при первом вопросе; `null` — сервер не сообщает состояние (не LM Studio) |
-| `model_context_length` | длина контекста загруженной модели. Нужно 8192: на большей машина с 8 ГБ уходит в своп |
-| `model_context_limit` | контекст из настроек; `null`, если его задаёт сам рантайм (Ollama) |
-| `model_loading` | сервис прямо сейчас загружает модель |
+| `status` | `ok`: both dependencies are alive; `degraded`: at least one is unavailable |
+| `chroma` | the report index is in place; the name is kept for compatibility |
+| `lm_studio` | the model runtime answers. The old name dates from when there was one runtime |
+| `runtime`, `runtime_name`, `runtime_address` | which runtime is configured: `ollama`, `Ollama`, `localhost:11434` |
+| `model` | which model is configured (not necessarily loaded) |
+| `indexed_documents` | how many chunks are in the index; `null` if there is no index |
+| `model_loaded` | the model is in memory; `false`: the service loads it on the first question; `null`: the runtime does not report its state (not LM Studio) |
+| `model_context_length` | context length of the loaded model. 8192 is needed: with more, an 8 GB machine starts swapping |
+| `model_context_limit` | the context from the settings; `null` if the runtime sets it (Ollama) |
+| `model_loading` | the service is loading the model right now |
 
-**`lm_studio: false`** — сервер рантайма не запущен. Код ответа всё равно 200: сервис
-жив, а сервер он поднимет сам при первом вопросе или по `POST /v1/llm/load`.
+**`lm_studio: false`**: the runtime server is not running. The status is still 200: the service
+is alive and starts the server itself on the first question or on `POST /v1/llm/load`.
 
 ---
 
 ## POST /v1/llm/load
 
-Запускает сервер LM Studio, если он выключен, и загружает модель с контекстом 8192.
-Модель с большим контекстом перезагружается. Уже загруженная как надо не трогается,
-поэтому повтор безопасен. Тела нет, ответ приходит, когда модель готова.
+Starts the LM Studio server if it is off and loads the model with context 8192. A model loaded
+with a larger context is reloaded. One already loaded correctly is left alone, so repeating is
+safe. No body; the answer arrives when the model is ready.
 
 ```bash
 curl -X POST http://localhost:8000/v1/llm/load
@@ -107,14 +106,14 @@ curl -X POST http://localhost:8000/v1/llm/load
 {"model": "ministral-3-3b-instruct-2512", "model_loaded": true, "model_context_length": 8192}
 ```
 
-503 с причиной в `detail`: нет команды `lms` или `ollama`, модель не скачана, рантайм на другой
-машине.
+503 with the reason in `detail`: no `lms` or `ollama` command, the model is not downloaded, the
+runtime is on another machine.
 
 ## POST /v1/llm/unload
 
-Выгружает модель и освобождает память. Ответ такой же. Уже выгруженная модель не ошибка.
-Ответ, который пишется в этот момент, оборвётся событием `error`. Следующий вопрос загрузит
-модель снова.
+Unloads the model and frees memory. Same response. An already unloaded model is not an error. An
+answer being written at that moment ends with an `error` event. The next question loads the model
+again.
 
 ## GET /v1/llm/config
 
@@ -132,13 +131,14 @@ curl -X POST http://localhost:8000/v1/llm/load
 }
 ```
 
-`available` — есть ли модель у рантайма; `null`, если он не отвечает. `controls_context: false`
-значит, что контекст задаётся в самом рантайме (Ollama), а `context_length` на него не влияет.
-`embedding_model` только для чтения: со сменой нужна новая индексация отчётов.
+`available`: whether the runtime has the model; `null` if it does not answer.
+`controls_context: false` means the context is set in the runtime itself (Ollama) and
+`context_length` does not affect it. `embedding_model` is read only: changing it needs a new
+index of the reports.
 
 ## PATCH /v1/llm/config
 
-Передаётся только то, что меняется. Рантайм и модель независимы.
+Send only what changes. Runtime and model are independent.
 
 ```bash
 curl -X PATCH http://localhost:8000/v1/llm/config -H 'Content-Type: application/json' \
@@ -147,18 +147,18 @@ curl -X PATCH http://localhost:8000/v1/llm/config -H 'Content-Type: application/
   -d '{"model": {"name": "ministral-3:3b", "max_tokens": 256}}'
 ```
 
-Ответ такой же, как у `GET`. При смене рантайма без `port` ставится его стандартный порт. Смена
-рантайма, модели или контекста выгружает прежнюю модель: на 8 ГБ две не помещаются. Рантайм,
-который сейчас не отвечает, не ошибка: его могут запустить позже.
+The response is the same as for `GET`. Changing the runtime without `port` sets its default port.
+Changing the runtime, model or context unloads the previous model: two do not fit into 8 GB. A
+runtime that is not answering now is not an error: it may be started later.
 
-| Код | Когда |
+| Code | When |
 |---|---|
-| 422 | значение не подошло, причина в `detail`: порт вне диапазона, адрес с `http://`, запрещённая регламентом модель |
-| 409 | модель сейчас загружается |
+| 422 | the value does not fit, the reason is in `detail`: port out of range, a host with `http://`, a model banned by the hackathon rules |
+| 409 | the model is loading right now |
 
 ## DELETE /v1/llm/config
 
-Забывает настройки и возвращает значения из `.env`. Ответ такой же, как у `GET`.
+Forgets the settings and goes back to the values from `.env`. Same response as `GET`.
 
 ## GET /v1/llm/models
 
@@ -168,22 +168,22 @@ curl -X PATCH http://localhost:8000/v1/llm/config -H 'Content-Type: application/
 ]}
 ```
 
-Без моделей эмбеддингов и без запрещённых регламентом. 503, если рантайм не отвечает.
+Without embedding models and without banned ones. 503 if the runtime does not answer.
 
 ---
 
 ## GET /dashboard
 
-Всё, что фронт рисует при загрузке: реальные опыты для графиков, качество
-модели и состав корпуса. Один вызов вместо трёх, ~47 КБ, отвечает мгновенно.
+Everything a front end draws on load: real experiments for the charts, model quality and corpus
+contents. One call instead of three, about 47 KB, instant.
 
 ```bash
 curl -s http://localhost:8000/dashboard
 ```
 
-Три секции.
+Three sections.
 
-**`model`** — что предсказывает модель и насколько ей можно верить:
+**`model`**: what the model predicts and how much it can be trusted:
 
 ```json
 {
@@ -204,23 +204,23 @@ curl -s http://localhost:8000/dashboard
 }
 ```
 
-Все значения в `metrics` — числа с плавающей точкой, в том числе `rows` и
-`folds`: схема объявляет поле как `dict[str, float]`.
+Every value in `metrics` is a float, including `rows` and `folds`: the schema declares the field
+as `dict[str, float]`.
 
-`mae` рядом с `mae_baseline` — это честное сравнение с константным ответом:
-0.055 против 0.106, то есть вдвое меньшая ошибка. Показывать стоит обе цифры.
+`mae` next to `mae_baseline` is an honest comparison with a constant answer: 0.055 versus 0.106,
+half the error. Show both numbers.
 
-`feature_importance` — готовая панель «что влияет на горение»: кислород 35 %,
-начальный диаметр капли 23 %, гелий 18 %.
+`feature_importance` is a ready "what drives combustion" panel: oxygen 35 %, initial droplet
+diameter 23 %, helium 18 %.
 
-`defaults` — чем инициализировать ползунки. Это стандартный воздух, а не
-медианы выборки: FLEX намеренно перебирал необычные атмосферы, и покоординатная
-медиана дала бы смесь с суммой долей 0.86, которой физически не бывает.
+`defaults` is what to initialise the sliders with. It is standard air, not sample medians: FLEX
+deliberately went through unusual atmospheres, and a per-coordinate median would give a mixture
+whose fractions add up to 0.86, which is physically impossible.
 
-**`trained: false`** означает, что модель не обучена: `/predict` вернёт 503,
-и панель предсказания надо скрыть или заблокировать.
+**`trained: false`** means the model is not trained: `/predict` returns 503, and the prediction
+panel should be hidden or disabled.
 
-**`dataset`** — 273 реальных опыта FLEX, по одному объекту на опыт:
+**`dataset`**: 273 real FLEX experiments, one object per experiment:
 
 ```json
 {
@@ -235,73 +235,71 @@ curl -s http://localhost:8000/dashboard
 }
 ```
 
-Это данные NASA, а не предсказания. Их стоит рисовать точками на том же
-графике, что и предсказание модели: видно, ложится ли оно на реальные опыты.
-Часть полей может быть `null` — в исходной таблице они пустые.
+These are NASA data, not predictions. Draw them as points on the same chart as the model
+prediction: you can see whether the prediction fits the real experiments. Some fields may be
+`null`: they are empty in the source table.
 
-**Все значения в ответе — ASCII.** Русский в проекте оставлен там, где текст
-читает человек: документация, логи, и поле `answer` у `/query`. Значения,
-которые разбирает код фронта, — латиницей: их нельзя локализовать на стороне
-бэкенда, а кириллическая «с» неотличима от латинской «c» при сравнении строк.
-Подписи единиц берите из `model.units` и переводите у себя.
+**All values in the response are ASCII.** Values that front-end code parses are Latin: the back
+end cannot localise them, and a Cyrillic "с" is indistinguishable from a Latin "c" when comparing
+strings. Take unit labels from `model.units` and translate them on your side.
 
-**`corpus`** — что лежит в векторной базе:
+**`corpus`**: what is in the index:
 
 ```json
 {"chunks": 1131, "documents": ["NTRS-20210011385-....pdf"],
  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2"}
 ```
 
-`chunks: 0` означает пустой индекс — `/query` отвечать не сможет.
+`chunks: 0` means an empty index: `/query` cannot answer.
 
 ---
 
 ## POST /query
 
-Отвечает на вопрос по проиндексированным отчётам NASA. Ответ строится **только**
-по найденным фрагментам, с указанием документа и страницы.
+Answers a question from the indexed NASA reports. The answer is built **only** from the chunks
+found, with the document and page.
 
-Как это работает внутри — [`ARCHITECTURE.md`](ARCHITECTURE.md), раздел 4.
+How it works inside: [`ARCHITECTURE.md`](ARCHITECTURE.md), section 4.
 
-**Запрос**
+**Request**
 
 ```json
 {
-  "question": "Как концентрация кислорода влияет на распространение пламени?",
+  "question": "How does oxygen concentration affect flame spread?",
   "filters": null,
-  "language": "ru"
+  "language": "en"
 }
 ```
 
-| Поле | Тип | Обязательно | Смысл |
+| Field | Type | Required | Meaning |
 |---|---|---|---|
-| `question` | строка | да | вопрос; пустая строка → 422 |
-| `filters` | объект или `null` | нет | фильтр по метаданным фрагмента, как `where` у Chroma: равенство, `$in`, `$and`, `$or`. Например `{"doc_id": "NTRS-20210011385-..."}` |
-| `language` | `"ru"`, `"en"` или `null` | нет | язык ответа; другое значение → 422 |
+| `question` | string | yes | the question; an empty string → 422 |
+| `filters` | object or `null` | no | a filter on chunk metadata, like a Chroma `where`: equality, `$in`, `$and`, `$or`. For example `{"doc_id": "NTRS-20210011385-..."}` |
+| `language` | `"ru"`, `"en"` or `null` | no | answer language; any other value → 422 |
 
-**Язык ответа задавайте полем `language`, а не просьбой в тексте вопроса.**
-Вопрос целиком векторизуется для поиска, и приписанное к нему «Ответь
-по-русски, переводи термины так: ...» уводит поиск на страницы, похожие на
-саму просьбу: на восьми проверочных темах из 24 найденных фрагментов с
-поиском по голому вопросу совпадал один. Поле уходит только в промпт LLM.
+**Set the answer language with the `language` field, not with a request in the question text.**
+The whole question is vectorised for search, and appending "Answer in Russian, translate the terms
+like this: ..." pulls the search toward pages resembling the request itself: on eight test topics
+only one of 24 chunks matched the search with the bare question. The field goes only into the
+model prompt.
 
-Русский вопрос ищется по английскому переводу: корпус английский, и так
-находится заметно больше нужного. Перевод стоит около двух секунд и
-возвращается в поле `search_query`.
+A Russian question is searched by its English translation: the corpus is English, and this finds
+noticeably more of what is needed. The translation takes about two seconds and comes back in
+`search_query`.
 
-С `language: "ru"` модель пишет ответ по-английски и переводит его: латиницы в
-русском тексте меньше, и выходит даже быстрее прямого русского ответа
+With `language: "ru"` the model writes the answer in English and translates it: fewer Latin words
+end up in the Russian text, and it is even faster than a direct Russian answer
 ([`ARCHITECTURE.md`](ARCHITECTURE.md), § 7.12).
 
-Без `language` модель обычно отвечает по-русски — системный промпт русский —
-даже на английский вопрос. Для `ru` к промпту добавляется словарь терминов:
-без него модель на 3B переводит microgravity как «микроскопия».
+Without `language` the model usually answers in Russian, because the system prompt is Russian,
+even to an English question. For `ru` a glossary of terms is added to the prompt: without it the
+3B model translates "microgravity" as "microscopy".
 
-**Ответ**
+**Response**
 
 ```json
 {
-  "answer": "1. Уменьшение задержки воспламенения при увеличении концентрации кислорода: согласно [doc_id: NTRS-20000030678, стр. 91] ...",
+  "answer": "Ignition delay decreases as oxygen concentration increases [NTRS-20000030678, p. 91] ...",
   "sources": [
     {
       "doc_id": "NTRS-20000030678-Cooperative-Research-Projects-in-the-Microgra",
@@ -309,90 +307,85 @@ curl -s http://localhost:8000/dashboard
       "page": 91
     }
   ],
-  "search_query": "How does oxygen concentration affect flame spread?"
+  "search_query": null
 }
 ```
 
-`search_query` — английский перевод, по которому шёл поиск; `null`, если
-вопрос был не русский или перевод не удался и искали по самому вопросу.
+`search_query`: the English translation used for search; `null` if the question was not Russian
+or the translation failed and the question itself was used.
 
-Фрагментов возвращается до трёх (`top_k` в `app/config.py`).
+Up to three chunks come back (`top_k` in `app/config.py`).
 
-`sources` возвращается всегда — даже если модель не процитировала источники
-в тексте, фронт может показать, на чём построен ответ. 
+`sources` is always returned: even if the model did not cite the sources in the text, a front end
+can show what the answer is based on.
 
-**Вопрос задавать можно по-русски**, хотя документы англоязычные: модель
-эмбеддингов многоязычная и находит английские фрагменты по русскому запросу.
+**Questions may be in Russian** although the documents are in English: the embedding model is
+multilingual and finds English chunks for a Russian query.
 
-**Ответ «в проиндексированных документах нет данных»** означает, что retrieval
-ничего не нашёл. До LM Studio запрос в этом случае не доходит.
+**The answer "there is no data in the indexed documents"** means retrieval found nothing. The
+request does not reach the model in that case.
 
-**Ошибки**
+**Errors**
 
-| Код | Когда |
+| Code | When |
 |---|---|
-| 422 | пустой `question` |
-| 503 | LM Studio не отвечает или в `.env` указана модель, которой нет в LM Studio |
+| 422 | empty `question` |
+| 503 | the runtime does not answer, or `.env` names a model the runtime does not have |
 
-Запрос занимает **33-46 секунд** — это работа локальной модели, не ошибка.
-Основное время уходит на обработку контекста, а не на генерацию.
+A request takes **33-46 seconds** on an 8 GB Mac: that is the local model at work, not an error.
+Most of the time goes into processing the context, not generation.
 
-**Первый запрос после долгого простоя может занять ещё +20 с:** LM Studio
-выгружает модель из памяти по таймауту и грузит её заново. Перед демонстрацией
-стоит сделать один прогревочный запрос.
+**The first request after a long idle period may take 20 s more:** LM Studio unloads the model on
+a timeout and loads it again. Before a demo, make one warm-up request.
 
 ---
 
 ## POST /query/stream
 
-То же, что `/query`, но ответ приходит **потоком**: текст можно показывать по
-мере генерации, а не через полминуты целиком. Запрос такой же.
+The same as `/query`, but the answer comes **as a stream**: the text can be shown as it is
+generated rather than after half a minute. The request is the same.
 
-Ответ — `application/x-ndjson`: одна строка JSON на событие.
+The response is `application/x-ndjson`: one JSON line per event.
 
 ```
 {"type": "stage", "stage": "loading"}
 {"type": "stage", "stage": "searching"}
-{"type": "sources", "sources": [{"doc_id": "...", "excerpt": "...", "page": 5}], "search_query": "How does helium ..."}
+{"type": "sources", "sources": [{"doc_id": "...", "excerpt": "...", "page": 5}], "search_query": null}
 {"type": "stage", "stage": "answering"}
-{"type": "stage", "stage": "translating"}
-{"type": "delta", "text": "Гелий повышает "}
-{"type": "delta", "text": "скорость горения..."}
-{"type": "done", "answer": "Гелий повышает скорость горения..."}
+{"type": "delta", "text": "Helium raises "}
+{"type": "delta", "text": "the burning rate..."}
+{"type": "done", "answer": "Helium raises the burning rate..."}
 ```
 
-| Событие | Когда | Что делать фронту |
+| Event | When | What the front end does |
 |---|---|---|
-| `sources` | сразу после поиска | показать источники, пока модель думает |
-| `stage` | `loading` — модели не было в памяти, сервис её загружает, затем `searching`; `answering` — модель пишет ответ; `translating` — переводит его на русский | подпись ожидания |
-| `delta` | кусок текста | дописать к ответу |
-| `done` | последним, `answer` — весь текст | заменить собранное на `answer` |
-| `error` | модель не загрузилась или LM Studio упал посреди ответа | показать ошибку; `done` не придёт |
+| `sources` | right after search | show the sources while the model thinks |
+| `stage` | `loading`: the model was not in memory and the service loads it, then `searching`; `answering`: the model writes the answer; `translating`: it translates the answer into Russian | a waiting label |
+| `delta` | a piece of text | append to the answer |
+| `done` | last; `answer` is the whole text | replace what was collected with `answer` |
+| `error` | the model did not load or the runtime failed mid-answer | show the error; `done` will not come |
 
-Ошибка рантайма приходит событием `error`, а не кодом 503: к этому моменту
-ответ уже начат со статусом 200. 422 на пустой вопрос — как у `/query`.
+A runtime error comes as an `error` event, not as 503: the answer has already started with
+status 200 by then. An empty question gets 422, as with `/query`.
 
-Для `language: "ru"` модель сначала целиком пишет ответ по-английски (событие
-`stage: answering`, текста в это время нет), потом потоком идёт перевод. Первый
-русский текст поэтому появляется не сразу, а через 10–20 секунд, но дальше
-идёт по словам.
+For `language: "ru"` the model first writes the whole answer in English (`stage: answering`, no
+text meanwhile), and then the translation streams. So the first Russian text appears after 10–20
+seconds, but then flows word by word.
 
-Читать поток в браузере — через `fetch` и `response.body.getReader()`, резать
-по `\n`. `EventSource` не подойдёт: он умеет только GET.
+Read the stream in a browser with `fetch` and `response.body.getReader()`, splitting on `\n`.
+`EventSource` will not do: it only does GET.
 
 ---
 
 ## POST /predict
 
-Предсказывает **скорость горения капли топлива** в мм²/с по составу атмосферы
-и размеру капли. Модель называется `fiery`, обучена на данных эксперимента
-FLEX (МКС). Почему именно эта задача — [`ARCHITECTURE.md`](ARCHITECTURE.md),
-раздел 7.7.
+Predicts the **burning rate of a fuel droplet** in mm²/s from the atmosphere composition and the
+droplet size. The model is called `fiery` and is trained on the FLEX experiment data (ISS). Why
+this task: [`ARCHITECTURE.md`](ARCHITECTURE.md), section 7.7.
 
-**Достаточно передать то, что пользователь меняет.** Остальное подставится
-значениями по умолчанию — стандартная атмосфера на уровне моря и типичная
-капля метанола. Стартовые значения для ползунков берите из `model.defaults`
-в `/dashboard`.
+**Pass only what the user changes.** The rest is filled with defaults: the standard sea-level
+atmosphere and a typical methanol droplet. Take the starting slider values from `model.defaults`
+in `/dashboard`.
 
 ```bash
 curl -s -X POST http://localhost:8000/predict \
@@ -400,9 +393,8 @@ curl -s -X POST http://localhost:8000/predict \
   -d '{"parameters": {"oxygen_level": 0.30}}'
 ```
 
-В ответе придёт `defaults_applied` — список признаков, которых не было
-в запросе. **Это стоит показать пользователю:** иначе он не поймёт, что
-половину условий за него выбрали.
+The response includes `defaults_applied`, the features missing from the request. **Show this to
+the user:** otherwise they will not realise half the conditions were chosen for them.
 
 ```json
 {"predicted_value": 0.6415,
@@ -410,19 +402,18 @@ curl -s -X POST http://localhost:8000/predict \
                       "fuel_heptane", "fuel_methanol"]}
 ```
 
-Пустой запрос `{"parameters": {}}` тоже валиден — вернёт предсказание для
-стандартного воздуха.
+An empty request `{"parameters": {}}` is valid too: it returns a prediction for standard air.
 
-**Неизвестное имя параметра — ошибка 422, а не игнорирование:**
+**An unknown parameter name is a 422 error, not ignored:**
 
 ```json
 {"detail": "Unknown parameters: ['oxigen_level']. Expected any of: [...]"}
 ```
 
-Сделано намеренно: опечатка иначе молча заменилась бы значением по умолчанию,
-и пользователь получил бы правдоподобное, но неверное число.
+On purpose: otherwise a typo would silently be replaced with a default, and the user would get a
+plausible but wrong number.
 
-**Полный запрос со всеми параметрами**
+**A full request with every parameter**
 
 ```bash
 curl -X POST http://localhost:8000/predict \
@@ -439,20 +430,20 @@ curl -X POST http://localhost:8000/predict \
       }}'
 ```
 
-| Параметр | Единицы | Пример | Смысл |
+| Parameter | Units | Example | Meaning |
 |---|---|---|---|
-| `pressure_mmhg` | мм рт. ст. | 760 | давление среды |
-| `oxygen_level` | мольная доля | 0.21 | кислород; **главный признак модели** |
-| `n2` | мольная доля | 0.75 | азот |
-| `co2` | мольная доля | 0.0 | углекислый газ |
-| `he` | мольная доля | 0.0 | гелий как разбавитель |
-| `d_initial_mm` | мм | 3.0 | начальный диаметр капли |
-| `fuel_heptane` | 0 или 1 | 1.0 | топливо — гептан |
-| `fuel_methanol` | 0 или 1 | 0.0 | топливо — метанол |
+| `pressure_mmhg` | mmHg | 760 | ambient pressure |
+| `oxygen_level` | mole fraction | 0.21 | oxygen; **the model's main feature** |
+| `n2` | mole fraction | 0.75 | nitrogen |
+| `co2` | mole fraction | 0.0 | carbon dioxide |
+| `he` | mole fraction | 0.0 | helium as a diluent |
+| `d_initial_mm` | mm | 3.0 | initial droplet diameter |
+| `fuel_heptane` | 0 or 1 | 1.0 | fuel is heptane |
+| `fuel_methanol` | 0 or 1 | 0.0 | fuel is methanol |
 
-Два последних — one-hot: ровно один из них равен 1.
+The last two are one-hot: exactly one of them is 1.
 
-**Ответ**
+**Response**
 
 ```json
 {
@@ -465,37 +456,37 @@ curl -X POST http://localhost:8000/predict \
 }
 ```
 
-| Поле | Смысл |
+| Field | Meaning |
 |---|---|
-| `predicted_value` | **само предсказание в физических единицах** — 0.546 мм²/с |
-| `target` | что именно предсказано: `burn_rate_mm2s` |
-| `risk_score` | то же значение, нормированное в 0..1 по диапазону обучающей выборки |
-| `cluster` | номер кластера KMeans, к которому отнесены условия |
-| `chart_data` | 20 точек: как меняется риск при изменении кислорода от 0.15 до 0.40 |
-| `defaults_applied` | какие признаки подставлены за пользователя |
-| `is_heuristic` | `false` — обученная модель; `true` — эвристика-заглушка |
+| `predicted_value` | **the prediction itself in physical units**: 0.546 mm²/s |
+| `target` | what is predicted: `burn_rate_mm2s` |
+| `risk_score` | the same value scaled to 0..1 over the training range |
+| `cluster` | the KMeans cluster the conditions fall into |
+| `chart_data` | 20 points: how the risk changes as oxygen goes from 0.15 to 0.40 |
+| `defaults_applied` | which features were filled in for the user |
+| `is_heuristic` | `false`: the trained model; `true`: a heuristic stub |
 
-**Смотреть нужно на `predicted_value`.** `risk_score` существует, потому что его
-требует контракт из ТЗ, но само по себе число 0.49 ничего не говорит — это просто
-положение на шкале от минимума до максимума обучающих данных.
+**Look at `predicted_value`.** `risk_score` exists because the original contract requires it, but
+the number 0.49 by itself says nothing: it is just a position between the training minimum and
+maximum.
 
-**Флаг `is_heuristic`** — важная защита. Если модель обучали без целевой
-переменной, сохраняется эвристика, и флаг становится `true`. Фронт не должен
-показывать такой результат как предсказание модели.
+**The `is_heuristic` flag** is an important safeguard. If the model was trained without a target
+variable, a heuristic is saved and the flag becomes `true`. A front end must not present such a
+result as a model prediction.
 
-**Ошибки**
+**Errors**
 
-| Код | Когда |
+| Code | When |
 |---|---|
-| 422 | неизвестное имя параметра, либо признак модели, у которого нет значения по умолчанию |
-| 503 | модель не обучена — нет `data/models/fiery.joblib`; в тексте команда для обучения |
+| 422 | an unknown parameter name, or a model feature with no default |
+| 503 | the model is not trained, there is no `data/models/fiery.joblib`; the text has the training command |
 
 ---
 
 ## POST /ingest
 
-Служебный эндпоинт, **не для фронта**. Переиндексирует содержимое `data/raw`:
-PDF идут в векторную базу, CSV — в `data/processed/*.csv`.
+A maintenance endpoint, **not for front ends**. Re-indexes `data/raw`: PDFs go into the index,
+CSVs into `data/processed/*.csv`.
 
 ```bash
 curl -X POST http://localhost:8000/ingest -H 'Content-Type: application/json' -d '{"force": false}'
@@ -509,13 +500,12 @@ curl -X POST http://localhost:8000/ingest -H 'Content-Type: application/json' -d
 }
 ```
 
-`force: false` пропускает файлы, уже присутствующие в индексе. `force: true`
-переиндексирует всё заново.
+`force: false` skips files already in the index. `force: true` re-indexes everything.
 
-**Осторожно:** на полном корпусе это минуты работы и оно меняет состояние базы.
-То же самое удобнее делать скриптом: `python scripts/ingest_documents.py`.
+**Careful:** on the full corpus this takes about a minute and changes the index. The script is
+handier for the same job: `python scripts/ingest_documents.py`.
 
-**Смена модели поиска требует полной переиндексации**, дописать поверх нельзя:
+**Changing the search model requires a full re-index**; you cannot add on top:
 
 ```bash
 python scripts/ingest_documents.py --force
@@ -523,13 +513,13 @@ python scripts/ingest_documents.py --force
 
 ---
 
-## Чем это отличается от ТЗ
+## Differences from the specification
 
-В [`anti-fire-backend-mvp.md`](anti-fire-backend-mvp.md), раздел 4, контракт
-описан короче. Отличия — только добавленные поля, ничего не убрано:
+[`anti-fire-backend-mvp.md`](anti-fire-backend-mvp.md), section 4, describes a shorter contract.
+The differences are only added fields; nothing was removed:
 
-| Поле | Зачем добавлено |
+| Field | Why it was added |
 |---|---|
-| `predicted_value`, `target` в `/predict` | модель решает регрессию; без физической величины `risk_score` нечитаем |
-| `is_heuristic` в `/predict` | требование п. 5.3 ТЗ: не выдавать эвристику за предсказание модели |
-| `model`, `indexed_documents` в `/health` | диагностика: видно, какая модель указана и наполнен ли индекс |
+| `predicted_value`, `target` in `/predict` | the model is a regression; without the physical value `risk_score` is unreadable |
+| `is_heuristic` in `/predict` | the specification requires not presenting a heuristic as a model prediction |
+| `model`, `indexed_documents` in `/health` | diagnostics: which model is configured and whether the index is filled |
