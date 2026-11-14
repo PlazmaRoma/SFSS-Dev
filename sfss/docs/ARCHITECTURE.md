@@ -1,60 +1,60 @@
-# Anti-Fire Backend — как устроено и почему
+# SFSS: how it works and why
 
-Рабочая документация по backend-части. Этот документ отвечает на вопросы
-«что сделано», «почему именно так» и «как оно работает внутри».
+The working documentation of the service. This document answers "what was done", "why exactly
+this way" and "how it works inside".
 
-Остальное: запуск — [`../README.md`](../README.md), эндпоинты —
-[`API.md`](API.md), назначение каждого файла с кодом — [`CODEMAP.md`](CODEMAP.md),
-исходное задание — [`anti-fire-backend-mvp.md`](anti-fire-backend-mvp.md).
+Everything else: running it in [`../README.md`](../README.md), endpoints in [`API.md`](API.md),
+the purpose of every code file in [`CODEMAP.md`](CODEMAP.md), the original assignment in
+[`anti-fire-backend-mvp.md`](anti-fire-backend-mvp.md).
 
-Состояние на 19 сентября 2026, коммит `ad6c5d2`.
+Sections 1-6 describe the current state (November 2026). Section 7 is the decision log in the order
+the decisions were made, so its early entries describe the system as it was then.
 
 ---
 
-## 1. Что это за система
+## 1. What the system is
 
-Сервис отвечает на вопросы по данным NASA об экспериментах с горением в невесомости и
-оценивает риск возгорания по параметрам среды. Две независимые половины:
+The service answers questions from NASA data on combustion experiments in microgravity and
+estimates the fire risk from the environment parameters. Two independent halves:
 
-| Половина | Вопрос, на который отвечает | Технология |
+| Half | The question it answers | Technology |
 |---|---|---|
-| **RAG** (`/query`) | «Что известно из отчётов NASA про X?» | ChromaDB + локальная LLM |
-| **ML** (`/predict`) | «Насколько опасны вот эти условия?» | scikit-learn, модель **fiery** |
+| **RAG** (`/query`) | "What do the NASA reports say about X?" | own vector index + a local LLM |
+| **ML** (`/predict`) | "How dangerous are these conditions?" | scikit-learn, the **fiery** model |
 
-Ключевое ограничение всей системы: **всё работает локально**. Ни один запрос с данными
-не уходит во внешние API — ни эмбеддинги, ни генерация. LLM крутится в LM Studio на
-этой же машине.
+The key constraint of the whole system: **everything runs locally**. No request with data goes to
+an external API: neither embeddings nor generation. The LLM runs in LM Studio or Ollama on the same
+machine.
 
 ---
 
-## 2. Текущий статус
+## 2. Current status
 
-По критериям готовности из раздела 7 ТЗ:
+Against the readiness criteria from section 7 of the specification:
 
-| Критерий | Статус |
+| Criterion | Status |
 |---|---|
-| `/health` возвращает 200 при поднятых LM Studio и ChromaDB | ✅ проверено |
-| Минимум 1 документ проиндексирован, `/query` отвечает со ссылкой на источник | ✅ 1131 чанк из 16 отчётов |
-| Минимум 1 датасет обработан, `/predict` даёт не-заглушечный результат | ✅ fiery обучена на FLEX, R² 0.65 |
-| Эндпоинты покрыты pytest (happy path) | ✅ 57 тестов |
-| README с инструкцией запуска | ✅ |
+| `/health` returns 200 with the model runtime and the index up | ✅ checked |
+| At least 1 document indexed, `/query` answers with a source reference | ✅ 1131 chunks from 16 reports |
+| At least 1 dataset processed, `/predict` gives a non-stub result | ✅ fiery trained on FLEX, R² 0.65 |
+| Endpoints covered by pytest (happy path) | ✅ 242 tests |
+| A README with startup instructions | ✅ plus installers for three systems |
 
-**Все критерии MVP закрыты.** Данных больше не ждём: всё нужное уже на диске (§ 7.6).
+**All MVP criteria are met.** No more data is expected: everything needed is on disk (§ 7.6).
 
-`fiery` предсказывает **скорость горения капли топлива** (мм²/с) по составу атмосферы
-и размеру капли; на кросс-валидации R² = 0.65 против нуля у константы. Почему задача
-именно такая, а не классификация исхода по BASS-II — см. § 7.7.
+`fiery` predicts the **burning rate of a fuel droplet** (mm²/s) from the atmosphere composition and
+the droplet size; in cross-validation R² = 0.65 versus zero for a constant. Why this task rather
+than classifying the BASS-II outcome: § 7.7.
 
-Корпус проиндексирован целиком: все 16 PDF из `data/raw/` (около 1000 страниц)
-дали 1131 чанк.
+The corpus is indexed in full: all 16 PDFs in `data/raw/` (about 1000 pages) gave 1131 chunks.
 
 ---
 
-## 3. Архитектура
+## 3. Architecture
 
 ```
                           ┌──────────────┐
-   HTTP :8000             │  app/main.py │  FastAPI, CORS, роутеры
+   HTTP :8000             │  app/main.py │  FastAPI, CORS, routers
                           └──────┬───────┘
           ┌──────────────┬───────┴────────┬──────────────┐
           ▼              ▼                ▼              ▼
@@ -63,903 +63,905 @@
           │              ▼                ▼              ▼
           │        RagService        MLService     IngestService
           │              │                │              │
-          │              ├─ эмбеддинг     ├─ fiery.joblib├─ pypdf
-          │              │  запроса       │              │  чанкинг
+          │              ├─ ONNX model    ├─ fiery.joblib├─ pypdf
+          │              │  embeds query  │              │  chunking
           │              ▼                ▼              ▼
-          │         ┌─────────┐     ┌──────────┐   ┌──────────┐
-          └────────▶│ ChromaDB│     │data/models│  │ data/raw │
-                    │data/chroma    └──────────┘   └──────────┘
-                    └─────────┘
+          │        ┌───────────┐    ┌───────────┐  ┌──────────┐
+          └───────▶│VectorStore│    │data/models│  │ data/raw │
+                   │data/index │    └───────────┘  └──────────┘
+                   └───────────┘
                          │
-                    LLMService ──▶ LM Studio :1234 (Ministral 3B, MLX)
+                    LLMService ──▶ LM Studio :1234 or Ollama :11434 (Ministral 3B)
 ```
 
-Сервисы создаются лениво и живут по одному экземпляру на процесс
-(`app/dependencies.py`, `@lru_cache`). Причина: модель эмбеддингов весит сотни мегабайт
-и грузится секунды — создавать её на каждый запрос недопустимо. В тестах те же
-провайдеры подменяются заглушками через `app.dependency_overrides`.
+Services are created lazily and live as one instance per process (`app/dependencies.py`,
+`@lru_cache`): the search model and the indexes must not be loaded per request. In tests the same
+providers are replaced with stubs through `app.dependency_overrides`.
 
-**Прогрев при старте.** Ленивая загрузка означала, что первый же запрос платил
-12.6 с, и фронт, опрашивающий `/health`, принимал сервер за зависший. Поэтому
-`lifespan` в `app/main.py` прогревает модель эмбеддингов и `fiery` до того, как
-uvicorn начнёт принимать соединения.
+**Warm-up at start.** Lazy loading meant the very first request paid for the loading, and a front
+end polling `/health` took the server for hung. So `lifespan` in `app/main.py` builds the keyword
+index and loads the search model and `fiery` before uvicorn starts accepting connections. With the
+ONNX search model this takes about 3 seconds (it was 12-16 s with PyTorch, § 7.23).
 
-| | без прогрева | с прогревом |
-|---|---|---|
-| старт сервера | ~4 с | **16.1 с** |
-| первый `/health` | **12 620 мс** | **5 мс** |
+The contract for front ends becomes honest: if the port is open, the service is ready, and
+`/health` can be polled even every 200 ms. It is switched off with `WARMUP_ON_STARTUP=false`, which
+the tests do.
 
-Замер от сентября 2026. При проверке 29 октября прогрев занимал 4–10 с: модель
-уже в дисковом кэше системы, и с `HF_HUB_OFFLINE` старт не ждёт сеть.
-
-Контракт для фронта становится честным: раз порт открыт — сервис готов, и
-`/health` можно опрашивать хоть каждые 200 мс. Отключается флагом
-`WARMUP_ON_STARTUP=false` — так сделано в тестах, иначе они платили бы те же 12 с.
-
-Если LM Studio выключен, `/health` стоит ~1.3 с вместо 5 мс: openai-клиент
-повторяет неудачную попытку соединения. На работоспособность это не влияет.
+If the runtime is off, `/health` takes about a second instead of 5 ms: the connection check waits
+for its timeout. It does not affect anything else.
 
 ---
 
-## 4. Как работает `/query`
+## 4. How `/query` works
 
-Пять шагов, весь путь занимает 33–46 секунд. Узкое место — LLM, причём не
-генерация, а обработка промпта (§ 11, п. 1).
+Five steps; the whole path takes 25-50 seconds on an 8 GB Mac. The bottleneck is the LLM, and not
+generation but prompt processing (§ 11, item 1).
 
-**Шаг 1. Векторизация вопроса.** Русский вопрос сначала переводится на английский
-(`LLMService.search_query()`, около двух секунд в LM Studio): корпус английский, и
-по переводу поиск находит заметно больше нужного (§ 7.11). Английский вопрос идёт
-как есть. `RagService.retrieve()` передаёт текст в ChromaDB, та сама прогоняет его
-через `paraphrase-multilingual-MiniLM-L12-v2` и получает вектор на 384 измерения.
-Отвечает модель на исходный вопрос, перевод нужен только поиску; он возвращается
-в поле `search_query` ответа.
+**Step 1. Vectorising the question.** A Russian question is first translated into English
+(`LLMService.search_query()`, about two seconds): the corpus is English, and the translation finds
+noticeably more of what is needed (§ 7.11). An English question goes as is. `RagService.retrieve()`
+turns the text into a 384-dimensional vector with `paraphrase-multilingual-MiniLM-L12-v2` in ONNX.
+The model answers the original question; the translation is only for search and is returned in the
+`search_query` field.
 
-**Шаг 2. Поиск.** Гибридный (§ 7.13): 20 ближайших по косинусной близости
-(`hnsw:space: cosine`) и 20 лучших по BM25 — поиску по словам, — слитые в один
-список методом RRF. Из него берутся top-3 чанка (`top_k`, было 5 — снижено ради
-скорости, § 11). Если передан `filters`, поиск только векторный: фильтр уходит в
-Chroma как `where` — можно ограничить поиск конкретным документом.
-Если коллекция пуста, возвращается пустой список и в лог пишется предупреждение.
+**Step 2. Search.** Hybrid (§ 7.13): the 20 nearest by cosine similarity and the 20 best by BM25,
+keyword search, fused into one list with RRF. The top 3 chunks are taken from it (`top_k`; it was
+5, lowered for speed, § 11). With `filters` the search is vector only: the filter works like a
+Chroma `where` and can limit the search to one document. An empty index returns an empty list and
+a log warning.
 
-**Шаг 3. Сборка промпта.** `LLMService.build_context()` склеивает чанки в блоки вида:
+**Step 3. Building the prompt.** `LLMService.build_context()` joins the chunks into blocks like:
 
 ```
-[NTRS-20160000593, стр. 7]
-<текст чанка>
+[NTRS-20160000593, p. 7]
+<chunk text>
 
 ---
 
-[NTRS-20150023456, стр. 26]
-<текст чанка>
+[NTRS-20150023456, p. 26]
+<chunk text>
 ```
 
-Системный промпт (задаётся в `config.py`) требует отвечать **только** по контексту,
-честно признавать нехватку данных и ссылаться на источники. Это не косметика: без такой
-инструкции модель на 3 млрд параметров охотно досочиняет правдоподобные числа.
+For a Russian answer the label is `стр.` instead of `p.`. The system prompt (in `config.py`)
+requires answering **only** from the context, admitting missing data honestly and citing sources.
+This is not cosmetic: without such an instruction a 3-billion-parameter model happily invents
+plausible numbers.
 
-Если в запросе есть `language`, в конец пользовательского промпта добавляется
-инструкция о языке (`LANGUAGE_INSTRUCTIONS` в `llm_service.py`), для русского —
-со словарём терминов. Именно в промпт, а не в вопрос: вопрос уходит в поиск, и
-любой лишний текст в нём меняет найденные страницы (§ 7.10).
+With a `language` in the request, a language instruction is appended to the user prompt
+(`LANGUAGE_INSTRUCTIONS` in `llm_service.py`), for Russian with a glossary of terms. Into the
+prompt, not the question: the question goes to search, and any extra text in it changes the pages
+found (§ 7.10).
 
-**Шаг 4. Генерация.** POST в LM Studio через `openai`-совместимый клиент,
-`temperature=0.2` — нам нужна воспроизводимость, а не разнообразие.
+**Step 4. Generation.** A POST to the runtime through the `openai`-compatible client,
+`temperature=0.2`: we need reproducibility, not variety.
 
-Для `language="ru"` ответ пишется по-английски, на английский вариант вопроса, и
-переводится второй просьбой к той же модели (§ 7.12). Если перевод не удался,
-модель отвечает по-русски напрямую.
+For `language="ru"` the answer is written in English, to the English version of the question, and
+translated with a second request to the same model (§ 7.12). If the translation fails, the model
+answers in Russian directly.
 
-**Шаг 5. Ответ.** `{"answer": ..., "sources": [{doc_id, excerpt, page}]}`. Источники
-возвращаются всегда — даже если модель их в тексте не процитировала, фронт может
-показать, на чём ответ построен.
+**Step 5. The answer.** `{"answer": ..., "sources": [{doc_id, excerpt, page}]}`. Sources are always
+returned: even when the model did not cite them in the text, a front end can show what the answer
+is built on.
 
-У `/query/stream` те же шаги, но ответ уходит потоком NDJSON (§ 7.14): сначала
-источники, потом текст по мере генерации.
+`/query/stream` has the same steps, but the answer goes out as an NDJSON stream (§ 7.14): sources
+first, then the text as it is generated.
 
-**Короткое замыкание:** если retrieval не нашёл ничего, до LM Studio дело не доходит —
-сразу отдаётся «в проиндексированных документах нет данных». Экономит минуту ожидания.
+**Short circuit:** if retrieval found nothing, the model is not called: "there is no data in the
+indexed documents" comes back at once. That saves a minute of waiting.
 
-**Обработка ошибок:** любое исключение от LM Studio превращается в `503` с текстом
-ошибки, а не в `500`. Практически это почти всегда означает «не та модель в
-`LM_STUDIO_MODEL`» или «LM Studio не запущен».
+**Error handling:** any runtime exception becomes `503` with the error text, not `500`. In
+practice it almost always means "the wrong model in the settings" or "the runtime is not running".
 
 ---
 
-## 5. Как работает `/predict` — модель fiery
+## 5. How `/predict` works: the fiery model
 
-**Артефакты.** `data/models/fiery.joblib` (скоринг риска) и `fiery_clusters.joblib`
-(KMeans). Имя задано константой `MODEL_NAME` в `app/services/ml_service.py`, все пути
-собираются из неё — переименование модели правится в одном месте.
+**Artifacts.** `data/models/fiery.joblib` (risk scoring) and `fiery_clusters.joblib` (KMeans). The
+name is the `MODEL_NAME` constant in `app/services/ml_service.py`; all paths are built from it, so
+renaming the model is a one-place change.
 
-**Формат bundle.** В `fiery.joblib` лежит не голая модель, а словарь:
+**Bundle format.** `fiery.joblib` holds a dictionary, not a bare model:
 
 ```python
 {
     "model": <sklearn pipeline>,
     "features": ["pressure_mmhg", "oxygen_level", ...],
     "is_heuristic": False,
-    "task": "regression",             # регрессия или классификация
-    "target": "burn_rate_mm2s",       # уходит в ответ /predict как target
-    "target_range": (0.05, 1.06),     # для нормировки risk_score в 0..1
-    "metrics": {...},                 # качество на кросс-валидации
-    "feature_importance": {...},      # для /dashboard
+    "task": "regression",             # regression or classification
+    "target": "burn_rate_mm2s",       # returned by /predict as target
+    "target_range": (0.05, 1.06),     # for scaling risk_score into 0..1
+    "metrics": {...},                 # cross-validated quality
+    "feature_importance": {...},      # for /dashboard
 }
 ```
 
-`metrics` и `feature_importance` кладёт `train_model.py`, `/dashboard` отдаёт
-их как есть — в коде они не зашиты.
+`train_model.py` puts in `metrics` and `feature_importance`; `/dashboard` returns them as they are,
+nothing is hard-coded.
 
-`features` критичны: порядок колонок при обучении и при инференсе обязан совпадать.
-`MLService._vectorize()` собирает из входного словаря `pandas.DataFrame` **с именами
-колонок** — не numpy-массив. Так sklearn-пайплайн видит ту же схему, что при обучении, и
-не сыплет предупреждениями о несовпадении признаков.
+`features` is critical: the column order at training and at inference must match.
+`MLService._vectorize()` builds a `pandas.DataFrame` **with column names** from the input
+dictionary, not a numpy array. So the sklearn pipeline sees the same schema as at training and does
+not spew warnings about mismatched features.
 
-**Флаг `is_heuristic`** — важная часть контракта, прямо из п. 5.3 ТЗ. Если при обучении
-не передали `--target`, модель риска не обучается: сохраняется эвристика (линейная
-комбинация нормированных признаков) и флаг выставляется в `True`. Ответ `/predict` этот
-флаг возвращает наружу. Смысл: фронт не должен иметь возможности выдать эвристику за
-предсказание модели. Заглушка честно называет себя заглушкой.
+**The `is_heuristic` flag** is an important part of the contract, straight from item 5.3 of the
+specification. If `--target` was not given at training, no risk model is trained: a heuristic (a
+linear combination of normalised features) is saved and the flag is set to `True`. `/predict`
+returns the flag. The point: a front end must not be able to present a heuristic as a model
+prediction. The stub honestly calls itself a stub.
 
-**`chart_data`** — свип риска по `oxygen_level` от 0.15 до 0.40, 20 точек, остальные
-параметры зафиксированы на переданных значениях. Готовые данные для графика «как растёт
-риск с ростом концентрации кислорода». Если признака `oxygen_level` в модели нет,
-возвращается пустой график, а не ошибка.
+**`chart_data`** is a sweep of the risk over `oxygen_level` from 0.15 to 0.40, 20 points, with the
+other parameters fixed at the given values. Ready data for a "how the risk grows with oxygen" chart.
+If the model has no `oxygen_level` feature, an empty chart comes back, not an error.
 
-**Коды ответов:** `503` — модель не обучена (с подсказкой, что запустить); `422` —
-не хватает обязательных признаков, в тексте перечислены недостающие.
-
----
-
-## 6. Как работает индексация
-
-`IngestService.run()` обходит `data/raw`:
-
-**PDF** → текст постранично через `pypdf` → чанки → upsert в Chroma. Метаданные каждого
-чанка: `doc_id` (имя файла без расширения), `source` (имя файла), `page` (номер страницы
-с единицы). Именно отсюда берутся ссылки в ответах `/query`. ID чанка детерминирован:
-`{doc_id}-p{страница}-c{индекс}-{sha1[:10]}`. Перед записью все прежние чанки того же
-`source` удаляются: хеш текста входит в ID, и если извлечение текста изменилось, upsert
-иначе оставил бы старые чанки рядом с новыми.
-
-**Сдвинутая кодировка шрифтов.** Перед чанкингом `detect_shift()` проверяет, не сдвинуты
-ли коды символов (§ 11, п. 7). Если в начале документа служебных английских слов
-(`the`, `of`, `and`…) почти нет, перебираются сдвиги от −64 до +64 и выбирается тот, при
-котором их становится больше 15 %. Сдвиг, выводящий за печатный ASCII больше 5 %
-символов, отбрасывается. Нормальный документ проходит проверку за миллисекунду: перебор
-запускается только у подозрительных.
-
-**CSV** → `pandas` → удаление пустых строк и дублей, нормализация имён колонок
-(`Oxygen Level` → `oxygen_level`) → `data/processed/<имя>.csv`.
-
-**Чанкинг** — ~500 **слов** с перекрытием 50, не токенов. Сознательное упрощение для
-MVP: точный подсчёт токенов потребовал бы тащить токенизатор, а на качество retrieval
-при таких размерах влияет слабо. Место помечено комментарием в коде.
-
-**Повторные запуски.** Без `--force` файлы, чей `source` уже есть в коллекции,
-пропускаются. С `--force` переиндексируются все.
+**Response codes:** `503`: the model is not trained (with a hint about what to run); `422`: an
+unknown parameter or a missing feature without a default, listed in the text.
 
 ---
 
-## 7. Журнал решений — что меняли и почему
+## 6. How indexing works
 
-Хронологически, каждое решение проверялось замерами, а не выбиралось по умолчанию.
+`IngestService.run()` walks through `data/raw`:
+
+**PDF** → text per page through `pypdf` → chunks → upsert into the index. Each chunk's metadata:
+`doc_id` (the file name without the extension), `source` (the file name), `page` (the page number
+from one). That is where the references in `/query` answers come from. The chunk id is
+deterministic: `{doc_id}-p{page}-c{index}-{sha1[:10]}`. Before writing, all previous chunks of the
+same `source` are removed: the text hash is part of the id, and if text extraction changed, an
+upsert would otherwise leave the old chunks next to the new ones.
+
+**Shifted font encoding.** Before chunking, `detect_shift()` checks whether the character codes are
+shifted (§ 11, item 7). If the start of the document has almost no English stop words (`the`,
+`of`, `and`…), shifts from −64 to +64 are tried and the one that makes them more than 15 % wins. A
+shift that pushes more than 5 % of the characters out of printable ASCII is discarded. A normal
+document passes the check in a millisecond: the search only runs for suspicious ones.
+
+**CSV** → `pandas` → drop empty rows and duplicates, normalise column names
+(`Oxygen Level` → `oxygen_level`) → `data/processed/<name>.csv`.
+
+**Chunking** is about 500 **words** with an overlap of 50, not tokens. A deliberate simplification
+for the MVP: counting tokens exactly would mean dragging in the tokenizer, and at these sizes it
+barely affects retrieval quality.
+
+**Repeat runs.** Without `--force`, files whose `source` is already indexed are skipped. With
+`--force`, everything is re-indexed. The ready index for the 16 reports is in git
+(`data/index/`), so installation does not index anything.
+
+---
+
+## 7. Decision log: what changed and why
+
+In chronological order; every decision was checked by measurement, not picked by default.
 
 ### 7.1. Qwen → Ministral 3B
-**Почему:** запрет на использование всего, что аффилировано с Китаем.
-**Что сделано:** `LM_STUDIO_MODEL` переведён на Ministral 3B от Mistral AI (Франция).
-Кода это не коснулось — интеграция идёт через OpenAI-совместимый API, модель меняется
-одной переменной окружения.
+**Why:** a ban on anything affiliated with China.
+**What was done:** `LM_STUDIO_MODEL` was switched to Ministral 3B by Mistral AI (France). The code
+was not affected: integration goes through an OpenAI-compatible API, and the model changes with one
+environment variable.
 
-Позже модель вернулась к Qwen, но локальной (§ 7.15), а после запрета в любом виде снова
-к Ministral.
+Later the model went back to Qwen, a local one (§ 7.15), and after the ban "in any form", to
+Ministral again.
 
-### 7.2. GGUF → MLX сборка Ministral
-**Почему:** замеры на этой машине (Apple Silicon):
+### 7.2. GGUF → the MLX build of Ministral
+**Why:** measurements on this machine (Apple Silicon):
 
-| Сборка | Прогретый запрос |
+| Build | Warm request |
 |---|---|
-| `mistralai/ministral-3-3b` (GGUF Q4_K_M) | **~120 с** |
-| `mlx-community/ministral-3-3b-instruct-2512` (MLX 4bit) | **3–7 с** |
+| `mistralai/ministral-3-3b` (GGUF Q4_K_M) | **~120 s** |
+| `mlx-community/ministral-3-3b-instruct-2512` (MLX 4bit) | **3–7 s** |
 
-GGUF упиралась в клиентский таймаут 120 с, и `/query` стабильно отдавал 503.
-Первая гипотеза — раздутый контекст на 262144 токена — **не подтвердилась**: у MLX-сборки
-контекст ровно такой же, а она быстрая. Дело в самом GGUF-рантайме на этом железе.
-GGUF-версия впоследствии удалена из LM Studio.
+GGUF hit the 120 s client timeout, and `/query` kept returning 503. The first hypothesis, an
+inflated context of 262144 tokens, **was not confirmed**: the MLX build has exactly the same context
+and is fast. It is the GGUF runtime itself on this hardware. The GGUF version was later removed
+from LM Studio.
 
 ### 7.3. all-MiniLM-L6-v2 → paraphrase-multilingual-MiniLM-L12-v2
-**Почему:** корпус NASA англоязычный, а вопросы задаются по-русски. Одноязычная модель
-плохо сопоставляет русский запрос с английским текстом.
-**Проверка:** запрос «Как скорость потока воздуха влияет на распространение пламени?»
-находит чанк «Residence Time Driven Flame Spread… radiative quenching when flow velocity
-goes below…». Кросс-язычный поиск работает.
-**Цена:** размерность вектора та же (384), но векторы несовместимы со старыми, поэтому
-коллекция Chroma была снесена и построена заново. Это общее правило: **смена модели
-эмбеддингов всегда требует полной переиндексации**, дописать поверх нельзя.
+**Why:** the NASA corpus is in English, and questions are asked in Russian. A monolingual model
+matches a Russian query with English text poorly.
+**Check:** a Russian question "How does air flow speed affect flame spread?" finds the chunk
+"Residence Time Driven Flame Spread… radiative quenching when flow velocity goes below…".
+Cross-language search works.
+**Cost:** the vector size is the same (384), but the vectors are incompatible with the old ones, so
+the index was rebuilt from scratch. A general rule: **changing the embedding model always requires
+a full re-index**; you cannot add on top.
 
-### 7.4. numpy → DataFrame в инференсе fiery
-**Почему:** модель обучается на DataFrame с именами колонок, а предсказание шло по голому
-`np.array` — 21 предупреждение `X does not have valid feature names` на каждый запрос.
-На результат не влияло, но маскировало бы реальную ошибку несовпадения схемы.
+### 7.4. numpy → DataFrame in fiery inference
+**Why:** the model is trained on a DataFrame with column names, but prediction used a bare
+`np.array`: 21 `X does not have valid feature names` warnings per request. It did not affect the
+result but would have masked a real schema mismatch.
 
-### 7.5. Имя модели вынесено в константу
-`MODEL_NAME = "fiery"` — переименование артефактов правится в одной строке, а не поиском
-по репозиторию.
-
----
-
-### 7.6. Датасет BASS-II собран из PDF, а не скачан с PSI
-
-Таблица экспериментов PSI-25 отдаётся сайтом **усечённой**: в ней нет колонки
-«Test observations and anomalies», то есть нет целевой переменной. Полная версия
-(`BASS-II Test Matrix by PI Final.xlsx`, 29 КБ) лежит в разделе Raw Data, но:
-
-* весь раздел весит **274.6 ГБ**, из которых 99.94 % — 266 архивов и 296 видео;
-* интерфейс PSI не даёт зайти внутрь папки, только скачать целиком;
-* страница строит дерево на 274 ГБ в браузере и съедает всю память;
-* прямые ссылки S3, которые отдаёт API, возвращают `NoSuchKey` — проверено
-  на выборке из 14 файлов, доступно 0.
-
-Решение: та же матрица целиком напечатана в **Приложении A отчёта
-`NTRS-20210011385`** (стр. 111-122, таблицы A.1-A.6 по числу PI), который уже
-скачан с NTRS. Из 129 тестов таблицы PSI там нашлись **126**; не хватает только
-O20-O22 — это тесты февраля 2016, они появились после выхода отчёта.
-
-`scripts/build_bass_dataset.py` соединяет два источника и собирает датасет.
-Скачивать 274 ГБ не понадобилось.
+### 7.5. The model name became a constant
+`MODEL_NAME = "fiery"`: renaming the artifacts is a one-line change, not a search through the
+repository.
 
 ---
 
-### 7.8. Нижняя планка размера LLM вместо универсальности
+### 7.6. The BASS-II dataset was built from a PDF, not downloaded from PSI
 
-Проверено замером: три одинаковых вопроса, один промпт, один корпус, отличалась
-только модель.
+The PSI-25 experiment table is served **truncated** by the website: it lacks the "Test observations
+and anomalies" column, that is, the target variable. The full version
+(`BASS-II Test Matrix by PI Final.xlsx`, 29 KB) is in the Raw Data section, but:
+
+* the whole section weighs **274.6 GB**, of which 99.94 % are 266 archives and 296 videos;
+* the PSI interface does not let you go inside the folder, only download it whole;
+* the page builds a 274 GB tree in the browser and eats all the memory;
+* the direct S3 links the API returns give `NoSuchKey`: checked on a sample of 14 files, 0
+  available.
+
+Solution: the same matrix is printed in full in **Appendix A of report `NTRS-20210011385`**
+(pp. 111-122, tables A.1-A.6 by PI), already downloaded from NTRS. Of the 129 tests in the PSI table
+**126** were found there; only O20-O22 are missing, the February 2016 tests that appeared after the
+report.
+
+`scripts/build_bass_dataset.py` joins the two sources and builds the dataset. Downloading 274 GB was
+not needed.
+
+---
+
+### 7.8. A lower limit on LLM size instead of universality
+
+Checked by measurement: three identical questions, one prompt, one corpus, only the model differed.
 
 | | gemma-3-1b | Ministral 3B |
 |---|---|---|
-| вопрос по корпусу | выродился — одна ссылка без ответа, 73 символа | связный ответ, 567 символов |
-| контрольный (футбол) | ссылка на посторонний документ, отказа нет | корректно отказалась |
-| ловушка (Saffire-IV) | **выдумала результат и ссылку на стр. 209** | корректно отказалась |
+| a corpus question | degenerated: one reference without an answer, 73 characters | a coherent answer, 567 characters |
+| control (football) | a reference to an unrelated document, no refusal | refused correctly |
+| trap (Saffire-IV) | **invented a result and a reference to p. 209** | refused correctly |
 
-Ловушка — вопрос по теме и правдоподобный, но отсутствующий в корпусе. 1B на нём
-сочинила факт и приклеила ссылку на документ, который этого не содержит.
+The trap is a question that is on topic and plausible but absent from the corpus. The 1B model made
+up a fact and attached a reference to a document that does not contain it.
 
-**Соблюдение регламента — способность модели, а не свойство промпта.** Одна и та
-же инструкция «отвечай только по контексту» на 3B работает, на 1B нет.
+**Following the rules is a capability of the model, not a property of the prompt.** The same "answer
+only from the context" instruction works on 3B and not on 1B.
 
-Ломаться можно двумя разными способами:
+There are two different ways to break:
 
-* *слишком сжатая модель* — по неспособности: выдумывает факт с правдоподобной
-  ссылкой. Ответ выглядит обоснованным, обоснования нет;
-* *слишком большая модель* — по осведомлённости: отвечает верно из собственных
-  знаний, не заглядывая в документы. Хуже, потому что ошибки не видно: ответ
-  правильный, но ценность «обосновано отчётами NASA» утрачена.
+* *a model that is too compressed* fails from inability: it invents a fact with a plausible
+  reference. The answer looks grounded, but there is no grounding;
+* *a model that is too large* fails from knowledge: it answers correctly from its own knowledge
+  without looking at the documents. Worse, because the error is invisible: the answer is right, but
+  the value of "grounded in NASA reports" is lost.
 
-Отсюда политика: **планка снизу, проверяемая замером, и отсутствие планки
-сверху** — сверху ограничивает железо, а риск утечки знаний лечится не запретом
-на размер, а обязательной проверкой на ловушку (`SMOKE-TEST.md`, проверка 5)
-при каждой смене модели.
+Hence the policy: **a lower limit checked by measurement and no upper limit**. The hardware limits
+from above, and the risk of knowledge leaking in is handled not by banning size but by a mandatory
+trap check (`SMOKE-TEST.md`, check 5) whenever the model changes.
 
-Оговорка: один прогон на модель, не полноценная оценка. Но разница
-качественная — не «хуже формулирует», а «выдумывает факты с поддельной ссылкой».
+Caveat: one run per model, not a full evaluation. But the difference is qualitative: not "words it
+worse" but "invents facts with a fake reference".
 
-### 7.9. Кириллица не пересекает границу API
+### 7.9. Cyrillic does not cross the API boundary
 
-Правило: **русский для людей, ASCII для машин.**
+The rule: **human language for people, ASCII for machines.**
 
-Остаётся русским: документация, комментарии, логи, системный промпт LLM и поле
-`answer` у `/query` — везде текст читает человек.
+What a person reads may be in Russian: the LLM system prompt and the `answer` field of `/query`.
 
-Переведено на ASCII: значения полей в JSON (`units`, `dataset.source`) и
-`detail` ошибок HTTP. Это разбирает код фронта, и локализовать их на стороне
-бэкенда он не может.
+In ASCII: JSON field values (`units`, `dataset.source`) and the `detail` of HTTP errors. Front-end
+code parses these and cannot localise them on the back end's behalf.
 
-Две технические причины помимо языка: кириллическая «с» (U+0441) неотличима от
-латинской «c» при сравнении строк, а надстрочный `²` ломается при копировании
-в терминал и CSV. Поэтому `mm^2/s`, а не `мм²/с`.
+Two technical reasons besides language: a Cyrillic "с" (U+0441) is indistinguishable from a Latin
+"c" when comparing strings, and a superscript `²` breaks when copied into a terminal or CSV. Hence
+`mm^2/s`, not `мм²/с`.
 
-Сторож — `tests/test_api_ascii.py`: проверяет, что весь JSON `/dashboard` и
-значения `TARGET_UNITS` остаются в ASCII.
+The guard is `tests/test_api_ascii.py`: it checks that the whole `/dashboard` JSON and the
+`TARGET_UNITS` values stay ASCII. (In November the documentation, logs and command output moved to
+English and the code comments were removed; the Russian version lives in the `dev(ru)` branch.)
 
-### 7.10. Язык ответа — поле запроса, а не приписка к вопросу
+### 7.10. The answer language is a request field, not an addition to the question
 
-Фронт добивался нужного языка, приписывая к вопросу просьбу: «Answer in
-English.» или длинное «Ответь по-русски... Переводи термины так: microgravity
-— невесомость, ...». Бэкенд при этом не менялся, но вопрос векторизуется для
-поиска целиком, вместе с припиской.
+The front end got the right language by appending a request to the question: "Answer in English."
+or a long "Answer in Russian... Translate the terms like this: microgravity → невесомость, ...". The
+back end did not change, but the question is vectorised for search whole, together with the
+addition.
 
-Замер на восьми темах фронта, по три фрагмента на тему:
+Measured on the front end's eight topics, three chunks per topic:
 
-| | совпало с поиском по голому вопросу |
+| | matches with the search by the bare question |
 |---|---|
-| короткая английская приписка | 19 из 24 |
-| русская приписка со словарём | **1 из 24** |
+| a short English addition | 19 of 24 |
+| a Russian addition with a glossary | **1 of 24** |
 
-С русским словарём поиск почти на любой вопрос находил одни и те же страницы,
-похожие на сам словарь, и модель отвечала не по тем документам. Например, на
-вопрос о размере капли рассказывала про стержни из оргстекла в BASS-II.
+With the Russian glossary the search found the same pages for almost any question, pages resembling
+the glossary itself, and the model answered from the wrong documents. For example, to a question
+about droplet size it talked about PMMA rods in BASS-II.
 
-Поэтому язык теперь задаётся полем `language` и уходит только в промпт LLM.
-Заодно словарь получил запрет английских слов: формат «microgravity —
-невесомость» модель читала как разрешение оставлять термины по-английски.
+So the language is now set with the `language` field and goes only into the LLM prompt. At the same
+time the glossary got a ban on English words: the model read the "microgravity → невесомость"
+format as permission to leave terms in English.
 
-Без поля поведение прежнее, старые клиенты не ломаются.
+Without the field the behaviour is unchanged; old clients do not break.
 
-#### Ссылки в ответах
+#### References in answers
 
-Модель копирует заголовок фрагмента из контекста в ссылки ответа как есть.
-Отсюда три правки:
+The model copies the chunk header from the context into the answer's references as is. Hence three
+fixes:
 
-- Подпись страницы на языке ответа: английский ответ выходил со ссылками
-  `[..., стр. 97]`, для `en` теперь `p. N`.
-- В заголовке номер отчёта (`NTRS-20000030678`), а не имя файла в 60 символов.
-- Из промпта убран шаблон `[doc_id, стр. N]`: модель копировала его буквально,
-  и в русских ответах 16 ссылок из 26 выходили со словом `doc_id` вместо
-  номера. Теперь промпт просит повторять заголовок фрагмента. На тех же
-  восьми темах буквальных `doc_id` не осталось.
+- The page label is in the answer language: English answers came out with `[..., стр. 97]`
+  references; for `en` it is now `p. N`.
+- The header holds the report number (`NTRS-20000030678`), not a 60-character file name.
+- The `[doc_id, стр. N]` template was removed from the prompt: the model copied it literally, and in
+  Russian answers 16 references of 26 came out with the word `doc_id` instead of a number. Now the
+  prompt asks to repeat the chunk header. On the same eight topics no literal `doc_id` was left.
 
-Без номера остаются ссылки вида `[Olson 1988]`: модель берёт их из текста
-самих отчётов. Они не выдуманы, но в корпус не ведут.
+References like `[Olson 1988]` stay without a number: the model takes them from the text of the
+reports themselves. They are not made up, but they do not lead into the corpus.
 
-### 7.11. Русский вопрос ищется по английскому переводу
+### 7.11. A Russian question is searched by its English translation
 
-Корпус целиком английский, а `paraphrase-multilingual-MiniLM-L12-v2` сводит
-русский вопрос с английским текстом заметно хуже, чем английский. Так, русский
-вопрос о размере капли не находил ни одной страницы из тех, что находит
-английский.
+The corpus is entirely in English, and `paraphrase-multilingual-MiniLM-L12-v2` matches a Russian
+question with English text noticeably worse than an English one. For example, the Russian question
+about droplet size found none of the pages the English one finds.
 
-Метрика: сколько из найденного русским вопросом совпадает с найденным
-английским вопросом той же темы. Восемь тем фронта:
+The metric: how much of what the Russian question finds matches what the English question on the
+same topic finds. The front end's eight topics:
 
-| вариант | top-3 | top-8 |
+| option | top-3 | top-8 |
 |---|---|---|
-| русский вопрос как есть | 8 из 24 | 26 из 64 |
-| ручной перевод (потолок метрики: даже английский пересказ ищется иначе) | 14 из 24 | 40 из 64 |
-| перевод Ministral со схемой JSON | **15 из 24** | **43 из 64** |
-| `multilingual-e5-small` вместо MiniLM, без перевода | 5 из 24 | 11 из 64 |
+| the Russian question as is | 8 of 24 | 26 of 64 |
+| a manual translation (the metric's ceiling: even an English paraphrase searches differently) | 14 of 24 | 40 of 64 |
+| Ministral translation with a JSON schema | **15 of 24** | **43 of 64** |
+| `multilingual-e5-small` instead of MiniLM, no translation | 5 of 24 | 11 of 64 |
 
-Перевод упирается в потолок ручного, замена модели эмбеддингов на маленькую не
-помогает. Крупные модели (`bge-m3`, 2.2 ГБ) не мерились: они потребовали бы
-переиндексации и скачивания модели всей командой, а перевод уже у потолка.
+The translation reaches the ceiling of the manual one; replacing the embedding model with a small
+one does not help. Large models (`bge-m3`, 2.2 GB) were not measured: they would require
+re-indexing and the whole team downloading the model, and translation is already at the ceiling.
 
-Обычной просьбой «переведи» модель на 3B в половине случаев отвечала на вопрос
-вместо перевода, и поиск шёл по её ответу. Схема ответа `{"english": ...}`
-через `response_format` и подача вопроса как `Query: ...` дали 13 переводов из
-13 при среднем времени 2.4 с.
+With a plain "translate" request, the 3B model answered the question instead of translating it half
+the time, and search used its answer. An answer schema `{"english": ...}` through `response_format`
+and feeding the question as `Query: ...` gave 13 translations out of 13 at 2.4 s on average.
 
-Если LM Studio не ответил или прислал не то, поиск идёт по исходному вопросу.
-Выключается `TRANSLATE_QUERIES=false`.
+If the runtime did not answer or sent something else, search uses the original question. Switched
+off with `TRANSLATE_QUERIES=false`.
 
-### 7.12. Русский ответ — английский ответ плюс перевод
+### 7.12. A Russian answer is an English answer plus a translation
 
-Модели на 3–4B рассуждают и пишут по-английски заметно лучше, чем по-русски.
-Сравнивались два режима и две модели на восьми темах фронта и ловушке Saffire-IV
-(SMOKE-TEST, проверка 5). Найденные фрагменты одинаковые для всех прогонов,
-меняется только генерация.
+3–4B models reason and write in English noticeably better than in Russian. Two modes and two models
+were compared on the front end's eight topics and the Saffire-IV trap (SMOKE-TEST, check 5). The
+retrieved chunks are the same in all runs; only generation changes.
 
-| модель, режим | ссылок без номера отчёта | английских слов в русском тексте | время, с |
+| model, mode | references without a report number | English words in the Russian text | time, s |
 |---|---|---|---|
-| Ministral 3B, по-русски, прежний промпт | 11 из 27 | 18 | 42.8 |
-| Ministral 3B, по-русски, промпт без шаблона ссылки | 9 из 18 | 6 | 21.9 |
-| **Ministral 3B, по-английски + перевод** | 3 из 14 | **1** | **18.0** |
-| Qwen3-VL-4B, по-русски | 1 из 11 | 6 | 44.1 |
-| Qwen3-VL-4B, по-английски + перевод | 1 из 13 | 2 | 36.2 |
+| Ministral 3B, in Russian, old prompt | 11 of 27 | 18 | 42.8 |
+| Ministral 3B, in Russian, prompt without the reference template | 9 of 18 | 6 | 21.9 |
+| **Ministral 3B, in English + translation** | 3 of 14 | **1** | **18.0** |
+| Qwen3-VL-4B, in Russian | 1 of 11 | 6 | 44.1 |
+| Qwen3-VL-4B, in English + translation | 1 of 13 | 2 | 36.2 |
 
-Перевод выигрывает у обеих моделей и при этом быстрее прямого русского ответа:
-кириллица стоит модели больше токенов на слово. «Ссылки без номера» в основном
-честные, вида `[Olson 1988]` — модель берёт их из текста самих отчётов.
+Translation wins for both models and is even faster than a direct Russian answer: Cyrillic costs the
+model more tokens per word. "References without a number" are mostly honest ones like
+`[Olson 1988]`, taken from the text of the reports.
 
-Ловушку проходят все прогоны, но перевод сначала её ломал: честный отказ «No
-data provided about Saffire-IV» модель «перевела» в список из пяти выдуманных
-пунктов, собранный из словаря терминов. Как и с переводом вопроса, помогла
-схема ответа JSON и подача текста как `Text: ...`.
+Every run passes the trap, but translation broke it at first: the honest refusal "No data provided
+about Saffire-IV" was "translated" by the model into a list of five made-up items built from the
+glossary. As with translating the question, an answer schema in JSON and feeding the text as
+`Text: ...` helped.
 
-**Ministral досочиняет, Qwen — нет.** На темах «давление» и «гелий» в найденных
-фрагментах этих слов нет вовсе (см. § 11, п. 12). Qwen в обоих случаях честно
-отвечает, что в контексте этого нет. Ministral на давление подменила пониженное
-давление невесомостью, а на гелий в прежнем режиме дописала «в общем случае
-гелий может замедлять горение» — из общих знаний, а не из контекста. Цена Qwen —
-примерно вдвое дольше ответ. Модель выбирается в `.env` (`LM_STUDIO_MODEL`).
+**Ministral fills in, Qwen does not.** On the "pressure" and "helium" topics these words are absent
+from the retrieved chunks altogether (see § 11, item 12). Qwen honestly says in both cases that the
+context does not have it. Ministral substituted microgravity for reduced pressure, and for helium in
+the old mode added "in general, helium may slow combustion": from general knowledge, not from the
+context. The price of Qwen is about twice the answer time. The model is chosen in `.env`
+(`LM_STUDIO_MODEL`).
 
-Gemma 4 E2B проверить не удалось: на машине с 8 ГБ LM Studio её не загружает
-(ошибка AutoFit при подборе длины контекста).
+Gemma 4 E2B could not be tested: on the 8 GB machine LM Studio does not load it (an AutoFit error
+when choosing the context length).
 
-Остаётся предел маленьких моделей в самом русском тексте: «buoyancy-driven
-flows» вышло как «буйностно-дренирующие потоки». Поэтому в словарь перевода
-добавлено buoyancy = плавучесть.
+The limit of small models in Russian text itself remains: "buoyancy-driven flows" came out as
+nonsense in Russian. So buoyancy = плавучесть was added to the translation glossary.
 
-Выключается `ANSWER_RU_VIA_ENGLISH=false`.
+Switched off with `ANSWER_RU_VIA_ENGLISH=false`.
 
-#### Повторный замер после гибридного поиска (§ 7.13)
+#### A repeat measurement after hybrid search (§ 7.13)
 
-Гибридный поиск начал находить гелий и давление, и сравнение моделей пришлось
-повторить: Ministral досочиняла именно там, где поиск ничего не находил.
-Режимы — как в продукте: английский ответ напрямую, русский через перевод.
+Hybrid search started finding helium and pressure, and the model comparison had to be repeated:
+Ministral filled in exactly where search found nothing. The modes are as in the product: an English
+answer directly, a Russian one through translation.
 
 | | Ministral 3B | Qwen3-VL-4B |
 |---|---|---|
-| английский ответ, среднее время | 30.1 с | 25.1 с |
-| русский ответ, среднее время | 46.9 с | 34.4 с |
-| средняя длина английского ответа | 398 симв. | 788 симв. |
-| ссылок без номера отчёта (ru / en) | 1 / 2 | 0 / 0 |
-| ловушка Saffire-IV | честный отказ | честный отказ |
-| гелий | по отчёту о каплях метанола, со ссылками | то же, но без ссылок |
+| English answer, mean time | 30.1 s | 25.1 s |
+| Russian answer, mean time | 46.9 s | 34.4 s |
+| mean English answer length | 398 chars | 788 chars |
+| references without a report number (ru / en) | 1 / 2 | 0 / 0 |
+| Saffire-IV trap | honest refusal | honest refusal |
+| helium | from the methanol droplet report, with references | the same, without references |
 
-Qwen теперь не медленнее: Ministral при длинном контексте тратит больше времени
-на обработку промпта. Но у Qwen нашёлся дефект именно русского режима: в
-переводе ответа о давлении она вставила китайские иероглифы и английские слова
-(«поведение пламени受影响 residual buoyancy effects»). Это воспроизводится при
-`temperature=0` и не лечится просьбой в промпте перевода. У Ministral свой
-дефект: в одном ответе она приписала к ссылке [Olson 1988] выдуманный DOI.
+Qwen is not slower any more: with a long context Ministral spends more time processing the prompt.
+But Qwen had a defect specific to Russian mode: in the translation of the pressure answer it
+inserted Chinese characters and English words. This reproduces at `temperature=0` and is not cured
+by a request in the translation prompt. Ministral has its own defect: in one answer it attached a
+made-up DOI to the [Olson 1988] reference.
 
-Вывод: по умолчанию остаётся Ministral 3B. Qwen3-VL-4B — разумная замена для
-английского режима, но в русском её перевод надо проверять глазами.
+Conclusion: Ministral 3B stays the default. Qwen3-VL-4B is a reasonable replacement for English
+mode, but its Russian translation must be checked by eye.
 
-Поиск по открытым источникам (октябрь 2026) замеров на русском для моделей на
-4B не дал. Для машины с 8 ГБ чаще всего советуют Qwen3.5-4B и
-Qwen3-4B-Instruct-2507 — текстовую модель без визуальной части, которая есть у
-VL-версии, — и Gemma 3 4B. Если пробовать замену, начинать с них и этого же
-замера: восемь тем, ловушка, иероглифы в русском тексте.
+A search of open sources (October 2026) gave no Russian-language measurements for 4B models. For an
+8 GB machine the most common advice is Qwen3.5-4B and Qwen3-4B-Instruct-2507 (a text model without
+the visual part of the VL version) and Gemma 3 4B. To try a replacement, start with them and this
+same measurement: eight topics, the trap, Chinese characters in Russian text.
 
-#### Третий замер: все модели при контексте 8192
+#### A third measurement: all models at context 8192
 
-Два предыдущих замера Ministral шли при контексте 262 144, который LM Studio
-ставит при загрузке по запросу; на 8 ГБ это своп (§ 11, п. 1). Здесь каждая
-модель загружена одна, с контекстом 8192. Поиск тот же, гибридный.
+The two previous Ministral measurements ran at context 262 144, which LM Studio sets when loading on
+demand; on 8 GB that means swapping (§ 11, item 1). Here each model was loaded alone, with context
+8192. The same hybrid search.
 
 | | Ministral 3B | Qwen3-4B-Instruct-2507 |
 |---|---|---|
-| английский ответ, среднее время | **21.7 с** | 31.6 с |
-| русский ответ, среднее время | **37.8 с** | 50.5 с |
-| средняя длина русского ответа | 444 симв. | 689 симв. |
-| ссылок без номера отчёта (en / ru) | 10 из 22 / 2 из 14 | **0 из 13 / 0 из 17** |
-| иероглифы в русском тексте | нет | нет |
-| ловушка Saffire-IV | отказ, но на английский вопрос — по-русски | отказ, на языке вопроса |
+| English answer, mean time | **21.7 s** | 31.6 s |
+| Russian answer, mean time | **37.8 s** | 50.5 s |
+| mean Russian answer length | 444 chars | 689 chars |
+| references without a report number (en / ru) | 10 of 22 / 2 of 14 | **0 of 13 / 0 of 17** |
+| Chinese characters in Russian text | none | none |
+| Saffire-IV trap | refusal, but in Russian to an English question | refusal, in the question language |
 
-- Контекст 8192 ускорил Ministral примерно на четверть: 30.1 → 21.7 с по-английски,
-  46.9 → 37.8 с по-русски.
-- «Ссылки без номера» у Ministral — в основном названия разделов вместо номера
-  отчёта: `[BASS-II Summary Report (p. 9)]`, `[Burning Rates]`.
-- В русском тексте Ministral оставляет «buoyancy» без перевода; Qwen3-4B
-  переводит его неверно, как «всплеск», хотя в словаре стоит «плавучесть».
-- Qwen3-4B-Instruct-2507, текстовая версия, не повторяет дефект Qwen3-VL-4B: ни
-  одного иероглифа.
+- Context 8192 sped Ministral up by about a quarter: 30.1 → 21.7 s in English, 46.9 → 37.8 s in
+  Russian.
+- Ministral's "references without a number" are mostly section titles instead of a report number:
+  `[BASS-II Summary Report (p. 9)]`, `[Burning Rates]`.
+- In Russian text Ministral leaves "buoyancy" untranslated; Qwen3-4B translates it wrongly
+  although the glossary has the right term.
+- Qwen3-4B-Instruct-2507, the text version, does not repeat the Qwen3-VL-4B defect: not a single
+  Chinese character.
 
-Вывод: **Qwen3-4B-Instruct-2507 точнее** — ссылки, язык, полнота, — но
-**на треть медленнее**. С потоковым ответом (§ 7.14) лишние 10–13 секунд
-заметны меньше. Она и стала моделью по умолчанию (§ 7.15).
+Conclusion: **Qwen3-4B-Instruct-2507 is more accurate** (references, language, completeness) but
+**a third slower**. With a streamed answer (§ 7.14) the extra 10–13 seconds are less noticeable. It
+became the default (§ 7.15).
 
-Не запустились в LM Studio на 8 ГБ: Gemma 4 E2B и Ternary-Bonsai-2-9B — обе с
-ошибкой AutoFit при подборе контекста. Bonsai к тому же не обычная MLX-модель
-(тип `prism_hadamard_qwen35`): ей нужен собственный загрузчик на Python, и
-подключить её через LM Studio нельзя.
+Did not start in LM Studio on 8 GB: Gemma 4 E2B and Ternary-Bonsai-2-9B, both with an AutoFit error
+when choosing the context. Bonsai is also not an ordinary MLX model (type
+`prism_hadamard_qwen35`): it needs its own Python loader and cannot be plugged in through LM Studio.
 
-#### Словарь перевода: ошибки из настоящих ответов
+#### The translation glossary: errors from real answers
 
-Восемь тем и ловушка по-русски на Qwen3-4B, контекст 8192. «Всплеск» из третьего
-замера не повторился ни на этом прогоне, ни на шести отдельных фразах с buoyancy:
-ошибка, видимо, зависит от текста. Иероглифов нет, латиница только в именах
-(PMMA, BASS, Halon), ловушка — честный отказ.
+Eight topics and the trap in Russian on Qwen3-4B, context 8192. The buoyancy error from the third
+measurement did not repeat, neither in this run nor on six separate phrases with buoyancy: it
+apparently depends on the text. No Chinese characters, Latin letters only in names (PMMA, BASS,
+Halon), the trap is an honest refusal.
 
-Счётчики этого не видят, но при чтении ответов нашлись грубые ошибки в терминах:
+The counters do not see it, but reading the answers revealed gross errors in terms:
 
-| в английском | было в русском | словарь |
+| in English | the Russian translation meant | glossary entry |
 |---|---|---|
-| helium-diluted | «дезинфицированная гелием» | разбавленный |
-| dilution | «дозировка» | разбавление |
-| 380 torr | «380 торт» | торр |
-| extinguishers | «извещатели» | огнетушитель |
-| fires | «огни» | пожары, с запретом «огни» |
-| buoyant convection | «плавучести конвекции» | естественная конвекция |
+| helium-diluted | "disinfected with helium" | diluted |
+| dilution | "dosage" | dilution |
+| 380 torr | "380 cake" | torr |
+| extinguishers | "detectors" | extinguisher |
+| fires | "lights" | fires, with a ban on "lights" |
+| buoyant convection | a literal "buoyancy convection" | natural convection |
 
-Проверка на шести фразах с этими терминами: 0 ошибок. Отказ на Saffire-IV после
-пополнения словаря сохранился; помнить, что словарь один раз уже ломал его (выше).
-Без запрета «never огни» обычного `fire = пожар` модели не хватило.
+A check on six phrases with these terms: 0 errors. The Saffire-IV refusal survived the glossary
+additions; remember that the glossary broke it once already (above). Without the explicit "never
+lights" ban, a plain `fire = пожар` was not enough for the model.
 
-Остаётся: на вопрос о размере капли модель честно отвечает, что данных нет, хотя
-тема в отчётах есть; в одной фразе подпись ссылки стала «с. 10» вместо «p. 10»;
-в ответах встречается «погашение» вместо «погасание». Русский текст стоит
-читать глазами: словарь лечит найденное, а не весь перевод маленькой модели.
+What remains: to the droplet size question the model honestly answers that there is no data,
+although the reports cover the topic; in one phrase the reference label became "с. 10" instead of
+"p. 10"; answers sometimes use a less precise Russian word for "extinction". Russian text should be
+read by eye: the glossary fixes what was found, not the whole translation of a small model.
 
-### 7.13. Гибридный поиск: векторы + слова
+### 7.13. Hybrid search: vectors + keywords
 
-Векторный поиск MiniLM промахивался мимо фрагментов с конкретным термином. В
-корпусе 25 фрагментов про гелий и 11 про пониженное давление, а на вопросы об
-этом топ-3 не находил ни одного, на обоих языках. Модель в ответ честно
-говорила «в контексте этого нет» или досочиняла (§ 7.12).
+MiniLM vector search missed chunks with a specific term. The corpus has 25 chunks about helium and
+11 about reduced pressure, yet for questions on these the top 3 found none of them, in both
+languages. The model then either honestly said "the context does not have it" or filled in
+(§ 7.12).
 
-BM25 — классический поиск по словам — цепляется за сам термин, но на общих
-словах путается: на «why does droplet size **matter**» нашёл детектор частиц
-AMS-02 (dark matter). Поэтому не замена, а слияние: 20 кандидатов от каждого
-способа, затем reciprocal rank fusion — у фрагмента сумма `вес / (60 + место)`
-по обоим спискам. Наверх выходит то, что нашли оба.
+BM25, classic keyword search, catches the term itself but gets confused on common words: for "why
+does droplet size **matter**" it found the AMS-02 particle detector (dark matter). So it is not a
+replacement but a fusion: 20 candidates from each method, then reciprocal rank fusion, where a chunk
+gets the sum of `weight / (60 + rank)` over both lists. What both found rises to the top.
 
-Метрика: сколько из топ-3 содержат ключевые слова темы вопроса. Грубая, поэтому
-сами фрагменты про гелий, давление и каплю прочитаны глазами. 16 вопросов —
-восемь тем фронта на двух языках (русские через перевод, § 7.11); 16 новых —
-вопросы, которых при подборе веса не было: ПММА, срыв пламени, сажа, SoFIE,
-холодные пламёна, тонкое и толстое топливо, CO₂, MSG.
+The metric: how many of the top 3 contain the key words of the question's topic. It is crude, so
+the chunks about helium, pressure and the droplet were read by eye. 16 questions: the front end's
+eight topics in two languages (Russian through translation, § 7.11); 16 new ones: questions not
+used when choosing the weight: PMMA, blowoff, soot, SoFIE, cool flames, thin and thick fuel, CO₂,
+MSG.
 
-| поиск | 16 вопросов фронта | 16 новых |
+| search | 16 front-end questions | 16 new |
 |---|---|---|
-| векторы MiniLM (было) | 30 из 48 | 26 из 48 |
-| только BM25 | 43 из 48 | 37 из 48 |
-| гибрид, вес слов 1.0 | 39 из 48 | 38 из 48 |
-| **гибрид, вес слов 1.5** | **46 из 48** | **41 из 48** |
-| гибрид, вес слов 2.0 | 46 из 48 | 41 из 48 |
+| MiniLM vectors (before) | 30 of 48 | 26 of 48 |
+| BM25 only | 43 of 48 | 37 of 48 |
+| hybrid, keyword weight 1.0 | 39 of 48 | 38 of 48 |
+| **hybrid, keyword weight 1.5** | **46 of 48** | **41 of 48** |
+| hybrid, keyword weight 2.0 | 46 of 48 | 41 of 48 |
 
-Вес 1.5 выбран на вопросах фронта и подтвердился на новых. При весе 3.0 и
-слабом сглаживании мусор AMS-02 снова пролезал в топ-3.
+Weight 1.5 was chosen on the front-end questions and held on the new ones. With weight 3.0 and weak
+smoothing the AMS-02 noise crept into the top 3 again.
 
-Цена: 3 мс на поиск (8 → 11 мс) и 72 мс на построение индекса при старте. Ни
-новой модели, ни переиндексации: индекс собирается из той же коллекции Chroma
-и пересобирается, если после ingest изменилось число чанков.
+The cost: 3 ms per search (8 → 11 ms) and 72 ms to build the index at start. No new model and no
+re-index: the keyword index is built from the same chunks and rebuilt if the number of chunks
+changed after ingest.
 
-Выключается `HYBRID_SEARCH=false`, вес — `KEYWORD_WEIGHT`.
+Switched off with `HYBRID_SEARCH=false`; the weight is `KEYWORD_WEIGHT`.
 
-### 7.14. Потоковый ответ `/query/stream`
+### 7.14. Streamed answer `/query/stream`
 
-Ответ модели идёт 10–60 секунд, и почти всё это время экран пуст. Ускорить саму
-модель нечем (§ 11, п. 1), но можно показывать текст по мере генерации:
-`POST /query/stream` отдаёт NDJSON — источники сразу после поиска, затем куски
-текста, в конце весь ответ. Формат событий — в `API.md`.
+The model answers for 10–60 seconds, and the screen is empty almost all that time. The model itself
+cannot be made faster (§ 11, item 1), but the text can be shown as it is generated:
+`POST /query/stream` returns NDJSON: the sources right after search, then pieces of text, and the
+whole answer at the end. The event format is in `API.md`.
 
-NDJSON, а не SSE: браузерный `EventSource` умеет только GET, а запрос — POST с
-телом. Читать всё равно приходится через `fetch`, а там построчный JSON проще.
+NDJSON, not SSE: the browser's `EventSource` only does GET, and the request is a POST with a body.
+It has to be read through `fetch` anyway, and line-by-line JSON is simpler there.
 
-С русским ответом сложнее: он пишется по-английски и переводится (§ 7.12), а
-перевод идёт со схемой JSON `{"russian": "..."}`. Поэтому английский черновик
-не показывается (событие `stage: answering`), а перевод вынимается из JSON по
-мере прихода (`JsonStringStream`), не дожидаясь закрывающей кавычки. Если перевод
-не дал ни слова, поток честно начинается заново прямым русским ответом; если
-оборвался на середине — показывается то, что успело прийти.
+A Russian answer is harder: it is written in English and translated (§ 7.12), and the translation
+uses the JSON schema `{"russian": "..."}`. So the English draft is not shown (event `stage:
+answering`), and the translation is pulled out of the JSON as it arrives (`JsonStringStream`),
+without waiting for the closing quote. If the translation gave not a single word, the stream
+honestly starts over with a direct Russian answer; if it broke off midway, what arrived is shown.
 
-Ошибка LM Studio посреди ответа приходит событием `error`: статус 200 к этому
-моменту уже отправлен.
+A runtime error mid-answer arrives as an `error` event: status 200 has already been sent by then.
 
-Замер вживую, Ministral 3B: источники приходят через 0.2 с (русский вопрос —
-через 7 с, после перевода), первое слово английского ответа — через 5–28 с:
-быстро, если LM Studio переиспользует закэшированное начало промпта, и долго
-на новом вопросе. Русский текст начинается после английского черновика и
-перевода, примерно через 50 с, весь ответ — около 70 с. Поток не ускоряет
-модель, но убирает полминуты пустого экрана: видно, что поиск сделан и на
-каком этапе модель.
-
+Measured live, Ministral 3B: the sources arrive after 0.2 s (a Russian question after 7 s, after the
+translation), the first word of an English answer after 5–28 s: fast if LM Studio reuses the cached
+start of the prompt, slow on a new question. Russian text starts after the English draft and the
+translation, about 50 s in, and the whole answer takes about 70 s. Streaming does not speed up the
+model, but it removes half a minute of empty screen: you can see that search is done and at which
+stage the model is.
 
 ### 7.15. Ministral 3B → Qwen3-4B-Instruct-2507
 
-**Отменено 2026-11-01:** регламент переписан и запрещает китайские ИИ в любом виде,
-локальные тоже. Модель снова Ministral 3B (§ 7.18). Ниже — запись прежнего решения.
+**Cancelled 2026-11-01:** the rules were rewritten and ban Chinese AI in any form, local models
+included. The model is Ministral 3B again (§ 7.18). Below is the record of the earlier decision.
 
-**Почему:** третий замер (§ 7.12). При одинаковом контексте 8192 Qwen3-4B даёт
-ссылки с номером отчёта во всех ответах (у Ministral без номера 10 из 22 по-
-английски), всегда отвечает на языке вопроса (Ministral на английскую ловушку
-ответила по-русски) и пишет полнее. Цена — около 10 с на ответ: 31.6 против
-21.7 с по-английски, 50.5 против 37.8 с по-русски.
+**Why:** the third measurement (§ 7.12). At the same context of 8192, Qwen3-4B gives references
+with a report number in every answer (Ministral had 10 of 22 without a number in English), always
+answers in the question language (Ministral answered the English trap in Russian) and writes more
+fully. The price is about 10 s per answer: 31.6 versus 21.7 s in English, 50.5 versus 37.8 s in
+Russian.
 
-**Как это сочетается с § 7.1.** Запрет регламента — на сервисы, аффилированные с
-Китаем. Здесь модель скачана один раз и работает локально в LM Studio, наружу
-не уходит ни запроса, за API никому не платится; лицензия весов — Apache 2.0.
-Так решено после сверки с регламентом 2026-10-31.
+**How this fit with § 7.1.** The ban in the rules was on services affiliated with China. Here the
+model is downloaded once and runs locally in LM Studio, not a single request leaves the machine,
+nobody is paid for an API; the weights are licensed Apache 2.0. Decided after checking the rules on
+2026-10-31.
 
-Не путать с Qwen3-VL-4B: в её русском переводе были китайские иероглифы
-(§ 7.12). У текстовой Qwen3-4B-Instruct-2507 их не было ни в одном ответе.
+Not to be confused with Qwen3-VL-4B: its Russian translation had Chinese characters (§ 7.12). The
+text-only Qwen3-4B-Instruct-2507 had none in any answer.
 
-Загружать с контекстом 8192: `lms load qwen3-4b-instruct-2507 --context-length
-8192` (§ 11, п. 1). Ministral остаётся запасной — `LM_STUDIO_MODEL` в `.env`.
+Load with context 8192: `lms load qwen3-4b-instruct-2507 --context-length 8192` (§ 11, item 1).
+Ministral stays as the fallback: `LM_STUDIO_MODEL` in `.env`.
 
-### 7.16. Демон и команда `sfss`
+### 7.16. The daemon and the `sfss` command
 
-После созвона с организаторами суть программы — сервис, который работает в фоне
-и к которому подключаются. Поэтому `app/cli.py`: `sfss start`, `stop`, `status`,
-`logs`, `predict`, `ask`, `help`.
+After the call with the organisers, the substance of the program is a service that runs in the
+background and that others connect to. Hence `app/cli.py`: `sfss start`, `stop`, `status`, `logs`,
+`predict`, `ask`, `help`.
 
-CLI ничего не считает сам и ходит в демон по тому же API, что и сторонняя
-программа. Отсюда мгновенный отклик: модели и индекс в процесс команды не грузятся.
+The CLI computes nothing itself and goes to the daemon over the same API as a third-party program.
+Hence the instant response: models and the index are not loaded into the command's process.
 
-Три решения, которые иначе пришлось бы открывать заново:
+Three decisions that would otherwise have to be reopened:
 
-- **`sfss predict` дополняет азот до единицы.** Демон подставил бы воздушные 0.79,
-  и при 30 % кислорода считалась бы смесь на 109 %. Сам `/predict` это пока
-  не проверяет.
-- **`sfss stop` сверяет, что pid — наш uvicorn.** После перезагрузки номер из
-  `data/run/sfss.json` мог достаться чужому процессу.
-- **`--with-llm` грузит модель через `lms load --context-length 8192`.** Иначе
-  LM Studio поднимет её при первом вопросе с контекстом 262 144 (§ 11, п. 1).
-  `/health` теперь сообщает `model_loaded` и `model_context_length`:
-  `lm_studio: true` не значит, что модель в памяти.
+- **`sfss predict` fills in nitrogen to one.** The daemon would put in the air value of 0.79, and at
+  30 % oxygen it would calculate a 109 % mixture. `/predict` itself does not check this yet.
+- **`sfss stop` checks that the pid is our uvicorn.** After a reboot the number from
+  `data/run/sfss.json` could belong to someone else's process.
+- **`--with-llm` loads the model with `lms load --context-length 8192`.** Otherwise LM Studio brings
+  it up on the first question with context 262 144 (§ 11, item 1). `/health` now reports
+  `model_loaded` and `model_context_length`: `lm_studio: true` does not mean the model is in memory.
 
-Проверено только на macOS: `is_ours` вызывает `ps`.
+At first this was checked only on macOS: `is_ours` called `ps`. Windows support came with the
+installer (§ 7.24).
 
-### 7.17. Внешний API: `/v1`, импорт, доступ
+### 7.17. External API: `/v1`, import, access
 
-Вопрос «где вводить данные и где импорт?» был справедлив: `/predict` считал одну
-точку, а `/ingest` только пересканировал `data/raw`. Руководство для подключения —
-`INTEGRATION.md`.
+The question "where do I enter data and where is the import?" was fair: `/predict` calculated one
+point, and `/ingest` only rescanned `data/raw`. The guide for connecting is `INTEGRATION.md`.
 
-**`/v1` рядом со старыми путями.** Площадка и фикстуры живут на путях без версии,
-и переделывать их незачем: они скрыты из схемы, но работают и охраняются так же.
+**`/v1` next to the old paths.** The Playground and the fixtures live on unversioned paths, and
+there is no reason to redo them: they are hidden from the schema but work and are guarded the same
+way.
 
-**`/predict/batch` вызывает модель один раз на весь пакет.** Лес на одной строке
-стоит миллисекунды, и 10 000 строк шли бы минутами. Замер вживую: 10 000 строк из
-CSV за 0.13 с. Плохая строка получает `error`, остальные считаются.
+**`/predict/batch` calls the model once for the whole batch.** A forest on one row costs
+milliseconds, and 10 000 rows would take minutes. Measured live: 10 000 CSV rows in 0.13 s. A bad
+row gets `error`; the others are calculated.
 
-**`warnings`, а не отказ.** Вне диапазона обучения и при сумме газов не из единицы
-число всё равно считается: Площадка и старые клиенты на это рассчитывают, а
-инженеру часто нужно посмотреть именно край. Диапазоны берутся из
-`data/processed/flex.csv`, без файла предупреждений о них нет.
+**`warnings`, not a refusal.** Outside the training range, or when the gases do not add up to one,
+the number is still calculated: the Playground and old clients rely on it, and an engineer often
+needs to look at exactly the edge. The ranges come from `data/processed/flex.csv`; without the file
+there are no range warnings.
 
-**Азот API не досчитывает, хотя мог бы.** `{"oxygen_level": 0.30}` по-прежнему значит
-смесь на 109 %, теперь с предупреждением. Менять смысл запроса в этой работе не
-стали; `sfss predict` дополняет азот сам. В `pressure_mmhg` выборки есть минимум
-0.00, поэтому снизу давление предупреждением почти не ограничено.
+**The API does not fill in nitrogen, although it could.** `{"oxygen_level": 0.30}` still means a
+109 % mixture, now with a warning. Changing the meaning of a request was not part of this work;
+`sfss predict` fills in nitrogen itself. The sample has a `pressure_mmhg` minimum of 0.00, so the
+pressure warning barely limits it from below.
 
-**Загрузка PDF отвечает, только когда документ уже ищется.** Файл, который не удалось
-проиндексировать, и скан без текста удаляются: иначе он лежал бы в каталоге, а поиск
-его не видел. Заменять документ API не умеет: 409, и это сознательно просто.
-Ни `doc_id`, ни номер страницы не подставляются в путь: `doc_id` сравнивается с
-именами из каталога.
+**PDF upload answers only when the document is already searchable.** A file that failed to index
+and a scan without text are removed: otherwise it would sit in the folder while search could not
+see it. The API cannot replace a document: 409, and that is deliberately simple. Neither `doc_id`
+nor the page number goes into a path: `doc_id` is compared with names from the folder.
 
-**Доступ.** С этой машины без ключа, с других адресов по `SFSS_API_KEY`. Без ключа
-демон на внешнем адресе не стартует.
+**Access.** From this machine without a key, from other addresses with `SFSS_API_KEY`. Without a key
+the daemon does not start on an external address.
 
-**Почему CORS больше не открыт настежь.** Это был безобидный `*`, пока API только
-читал и считал. С загрузкой файлов любая открытая в браузере страница могла бы
-писать в корпус: запрос идёт с 127.0.0.1, а multipart не требует preflight, и CORS
-его не останавливает. Поэтому чужой `Origin` проверяется и в `require_api_key`.
-Остаётся дыра: `Origin: null` разрешён ради Площадки из HTML-файла, а такой же
-`null` у страницы в sandbox-iframe чужого сайта.
+**Why CORS is no longer wide open.** A harmless `*` while the API only read and calculated. With file
+upload, any page open in the browser could write into the corpus: the request comes from 127.0.0.1,
+multipart needs no preflight, and CORS does not stop it. So a foreign `Origin` is checked in
+`require_api_key` as well. A gap remains: `Origin: null` is allowed for the Playground opened as an
+HTML file, and a sandboxed iframe on someone else's site has the same `null`.
 
-Доступ с другого адреса вживую не проверялся, только тестами: открывать порт в
-локальную сеть ради проверки не стали.
+Access from another address was checked only by tests, not live: opening the port to the local
+network just for a check was not worth it.
 
-### 7.18. Китайские модели запрещены: снова Ministral 3B
+### 7.18. Chinese models are banned: Ministral 3B again
 
-**Почему:** 2026-11-01 организаторы переписали регламент: китайские ИИ запрещены в любом
-виде. Довод из § 7.15, что локальная модель не сервис, больше не работает. Заменено всё, что
-создала Qwen: модель по умолчанию и восемь готовых ответов Площадки на двух языках. Кроме неё
-в проекте китайских моделей нет: Ministral 3B сделана Mistral AI (Франция), MiniLM —
-sentence-transformers. Эмбеддинги BGE только упоминаются как непроверенный вариант.
+**Why:** on 2026-11-01 the organisers rewrote the rules: Chinese AI is banned in any form. The
+argument from § 7.15 that a local model is not a service no longer works. Everything Qwen made was
+replaced: the default model and the Playground's eight recorded answers in two languages. There are
+no other Chinese models in the project: Ministral 3B is by Mistral AI (France), MiniLM by
+sentence-transformers. BGE embeddings are only mentioned as an untested option.
 
-Возврат вскрыл то, что § 7.15 ставил Ministral в минус: в английских ответах встречалось
-`[п. 9]` и `[Нет данных]`, а ссылки вида `[3.1]` нельзя открыть. Причина оказалась в нашем
-промпте, а не только в модели:
+Going back exposed what § 7.15 held against Ministral: English answers had `[п. 9]` and
+`[Нет данных]`, and references like `[3.1]` cannot be opened. The cause turned out to be our prompt,
+not only the model:
 
-- для английского ответа весь промпт теперь английский (`llm_system_prompt_en`);
-- в конце промпта перечислены заголовки найденных фрагментов: это единственные разрешённые
-  ссылки.
+- for an English answer the whole prompt is now English (`llm_system_prompt_en`);
+- the end of the prompt lists the headers of the found chunks: the only allowed references.
 
-Русский ответ идёт через английский черновик и выигрывает от этого так же. Восемь тем и
-ловушка Saffire-IV, Ministral 3B, контекст 8192:
+A Russian answer goes through an English draft and gains from this the same way. Eight topics and
+the Saffire-IV trap, Ministral 3B, context 8192:
 
-| | прежний промпт | новый промпт |
+| | old prompt | new prompt |
 |---|---|---|
-| ссылок без номера отчёта, en | 8 из 21 | **0 из 24** |
-| ссылок без номера отчёта, ru | 3 из 23 | **0 из 22** |
-| английский ответ с русскими вставками | 2 из 9 | **0 из 9** |
-| средняя длина английского ответа | 429 симв. | 605 симв. |
-| среднее время, en / ru | 18.7 / 28.0 с | 31.7 / 51.3 с |
+| references without a report number, en | 8 of 21 | **0 of 24** |
+| references without a report number, ru | 3 of 23 | **0 of 22** |
+| English answer with Russian inserts | 2 of 9 | **0 of 9** |
+| mean English answer length | 429 chars | 605 chars |
+| mean time, en / ru | 18.7 / 28.0 s | 31.7 / 51.3 s |
 
-Время нового промпта завышено: на этом прогоне система была в свопе на 3 ГБ, и вопрос о
-безопасности занял 112 и 160 с. При съёмке готовых ответов на восьми темах вышло в среднем
-24.1 с по-английски и 36.1 с по-русски, разброс от 11 до 92 с. Отдельно цену промпта не
-мерили. На этих восьми темах снова 0 ссылок без номера из 38.
+The new prompt's time is overstated: during this run the system was swapping 3 GB, and the safety
+question took 112 and 160 s. When recording the ready answers on eight topics it came to 24.1 s in
+English and 36.1 s in Russian on average, from 11 to 92 s. The prompt's cost was not measured
+separately. On those eight topics there were again 0 references without a number out of 38.
 
-Перевод просит не добавлять своих заметок: один ответ заканчивался рассуждением модели о
-том, что ссылки не совпадают. В словарь добавлено buoyant forces («буйные силы»).
+The translation asks not to add notes of its own: one answer ended with the model musing that the
+references did not match. buoyant forces was added to the glossary.
 
-**Что осталось.** Ministral всё ещё ошибается в терминах (`угасающие пожары` вместо тления,
-`погасание (extinction)`), один ответ о каплях вышел совсем без ссылки, а отказ на ловушку
-бывает с лишней ссылкой или пометкой. Выдуманных результатов по Saffire-IV нет ни в одном
-прогоне. Поэтому в подаче остаётся: проверять ответ по ссылке.
+**What remains.** Ministral still makes mistakes with terms in Russian, one droplet answer came out
+with no reference at all, and a refusal on the trap sometimes carries an extra reference or note.
+There are no made-up Saffire-IV results in any run. So the pitch keeps saying: check the answer
+against the reference.
 
 ---
 
-### 7.19. Моделью управляет сервис
+### 7.19. The service manages the model
 
-Роман открыл Anti-Fire с выгруженной моделью: программа только советовала команду, а в
-Bionic (приложение LM Studio на этой машине) кнопки загрузки нет. Хуже того, первый вопрос
-поднимал модель силами самого LM Studio с контекстом 262 144, и на 8 ГБ это своп (§ 11, п. 1).
+Roman opened Anti-Fire with the model unloaded: the program only suggested a command, and Bionic
+(the LM Studio app on this machine) has no load button. Worse, the first question brought the model
+up through LM Studio itself with context 262 144, and on 8 GB that means swapping (§ 11, item 1).
 
-- **`needs_load` проверяется раньше перевода вопроса.** Перевод первым обращается к
-  модели, так что позже было бы поздно. Работает для всех клиентов: Anti-Fire, Площадки,
-  `sfss ask`, стороннего ПО. Поток сообщает `stage: loading`.
-- **`POST /v1/llm/load`** нужен, чтобы загрузить заранее: кнопка в Anti-Fire, `sfss load`,
-  команда `load` в терминале программы, `sfss start --with-llm`. Загрузку делает один код.
-  Обратное действие: `POST /v1/llm/unload`, `sfss unload`.
-- **Подпроцесс с постоянными аргументами.** Имя модели берётся из настроек, из запроса в
-  команду не попадает ничего. Доступ как у остального API (§ 7.17).
-- **Блокировка на процесс.** Вторая модель рядом не поместится, поэтому параллельные
-  запросы ждут первую. `/health` на это время сообщает `model_loading`.
-- **Битые формулы не доходят до модели.** В отчётах символы шрифта теряются при
-  извлечении: в NTRS-20130014061 на стр. 7 формула стала `a = ( Wavof K 8Wf f g o ) 1 xo;∞`,
-  а на месте ρ стоит невидимый `\x1a`, куда модель дорисовывала `∧` или `⊞`. Просьба в промпте
-  не помогла. Теперь `strip_formulas` вырезает это из контекста, в индексе и в показанных
-  отрывках текст прежний. Правило задело 52 фрагмента из 1131.
+- **`needs_load` is checked before translating the question.** The translation is the first call to
+  the model, so later would be too late. It works for every client: Anti-Fire, the Playground,
+  `sfss ask`, third-party software. The stream reports `stage: loading`.
+- **`POST /v1/llm/load`** loads in advance: the button in Anti-Fire, `sfss load`, the `load` command
+  in the app terminal, `sfss start --with-llm`. One piece of code does the loading. The reverse:
+  `POST /v1/llm/unload`, `sfss unload`.
+- **A subprocess with fixed arguments.** The model name comes from the settings; nothing from the
+  request goes into the command. Access is the same as for the rest of the API (§ 7.17).
+- **A per-process lock.** A second model will not fit next to the first, so parallel requests wait
+  for the first one. Meanwhile `/health` reports `model_loading`.
+- **Broken formulas do not reach the model.** In the reports, font symbols are lost in extraction:
+  in NTRS-20130014061 on p. 7 a formula became `a = ( Wavof K 8Wf f g o ) 1 xo;∞`, and in place of ρ
+  there is an invisible `\x1a`, where the model drew `∧` or `⊞`. A request in the prompt did not
+  help. Now `strip_formulas` cuts this out of the context; the index and the shown excerpts keep the
+  original text. The rule touched 52 chunks of 1131.
 
-Замер на 9 ответах, 5 про плотность и 4 про формулу отношения диаметров:
+Measured on 9 answers, 5 about density and 4 about the diameter ratio formula:
 
-| | Ответов с формулой | С выдуманным символом |
+| | Answers with a formula | With a made-up symbol |
 |---|---|---|
-| было | 2 из 9 | 3 из 9 |
-| просьба в промпте | 1 из 9 | 4 из 9 |
-| вырезание формул | 1 из 9, это определение `Wav = average`, а не формула | 4 из 9 |
-| вырезание формул и символов | 0 из 9 | 0 из 9 |
+| before | 2 of 9 | 3 of 9 |
+| a request in the prompt | 1 of 9 | 4 of 9 |
+| cutting formulas | 1 of 9, the definition `Wav = average`, not a formula | 4 of 9 |
+| cutting formulas and symbols | 0 of 9 | 0 of 9 |
 
-Выборка маленькая, и правило эвристическое: редкую формулу оно может пропустить. Ссылка на
-страницу остаётся способом проверить ответ.
+The sample is small and the rule is heuristic: it may miss a rare formula. The page reference stays
+the way to check the answer.
 
-### 7.20. Anti-Fire запускает и останавливает SFSS
+### 7.20. Anti-Fire starts and stops SFSS
 
-Роман останавливал демон через Мониторинг системы. Выключенный сервис не ответит на запрос,
-поэтому запуск не может идти через API: команды `sfss_start` и `sfss_stop` живут в окне
-Tauri (`frontend/native/src-tauri/src/main.rs`) и просто вызывают `sfss`.
+Roman stopped the daemon through Activity Monitor. A stopped service cannot answer a request, so
+starting cannot go through the API: the `sfss_start` and `sfss_stop` commands live in the Tauri
+window (`apps/anti-fire/src-tauri/src/main.rs`) and simply call `sfss`.
 
-- **Эндпоинта остановки в API нет.** Управление процессом доступно только окну приложения:
-  остановить сервис запросом по сети нельзя, и ключ для этого не нужен.
-- **Адрес не передаётся, только порт из адреса подключения.** Сервис на другой машине кнопками
-  не управляется. Команда ищется в `~/.local/bin`, Homebrew и `PATH`: у приложения из Finder
-  свой короткий `PATH`.
-- **Остановка сначала выгружает модель.** Без сервиса модель из программы не выгрузить, а
-  память она держит. `sfss stop` в терминале модель не трогает.
-- **Демон переживает закрытие программы.** Остановка всегда явная.
-- **Запущенный не командой `sfss` сервис не останавливается:** `sfss stop` знает только свой
-  pid. Программа пишет об этом в терминал.
-- **Вывод `sfss` идёт в терминал программы построчно, по ходу команды.** Сначала окно ждало
-  выхода, и «Прогрев моделей...» появлялся, когда прогрев уже закончился. Теперь каждая строка
-  уходит странице событием `sfss-output`; для этого окну нужно разрешение `core:event:default`
-  (`capabilities/default.json`). Python пишет stdout в трубу блоками, поэтому команда идёт с
-  `PYTHONUNBUFFERED=1`.
+- **There is no stop endpoint in the API.** Process control is available only to the app window:
+  the service cannot be stopped by a network request, and no key is needed for it.
+- **The address is not passed, only the port from the connection address.** A service on another
+  machine is not controlled by the buttons. The command is looked for in `~/.local/bin`, Homebrew,
+  `%LOCALAPPDATA%\sfss\bin` and `PATH`: an app started from Finder has its own short `PATH`.
+- **Stopping unloads the model first.** Without the service the model cannot be unloaded from the
+  app, and it holds memory. `sfss stop` in a terminal does not touch the model.
+- **The daemon survives closing the app.** Stopping is always explicit.
+- **A service not started by `sfss` is not stopped:** `sfss stop` knows only its own pid. The app
+  writes this in its terminal.
+- **`sfss` output goes to the app terminal line by line, as the command runs.** At first the window
+  waited for the exit, and "Warming up..." appeared when the warm-up was already over. Now each line
+  goes to the page as an `sfss-output` event; for that the window needs the `core:event:default`
+  permission (`capabilities/default.json`). Python writes stdout into a pipe in blocks, so the
+  command runs with `PYTHONUNBUFFERED=1`.
 
-### 7.21. Рантайм и модель настраиваются отдельно, поддержана Ollama
+### 7.21. Runtime and model are set separately; Ollama is supported
 
-Адрес LM Studio и имя модели лежали только в `.env`, и менялись они перезапуском. Теперь это
-`GET` и `PATCH /v1/llm/config`, а над ними `sfss config`, окно «Настройки AI» в Anti-Fire и на
-Площадке и `config` в терминале Anti-Fire.
+The LM Studio address and the model name lived only in `.env` and changed with a restart. Now there
+are `GET` and `PATCH /v1/llm/config`, and on top of them `sfss config`, the "AI settings" window in
+Anti-Fire and the Playground, and `config` in the Anti-Fire terminal.
 
-- **Настройка в файле `data/llm.json`, а не в `.env`.** `.env` хранит значения по умолчанию,
-  и сервис в него не пишет. `sfss config reset` просто удаляет файл. Пока демон выключен, команда
-  правит файл сама: настроить порт можно и до первого `sfss start`.
-- **Применяется на ходу.** Сервис подменяет клиент OpenAI и выгружает прежнюю модель: на 8 ГБ две
-  рядом не поместятся. Во время загрузки модели настройка отклоняется кодом 409.
-- **Ответы у обоих рантаймов идут через `/v1`, разница вынесена в `llm_runtime.py`:** состояние,
-  список, загрузка, запуск сервера. Универсального «любого OpenAI-сервера» нет: без состояния и
-  загрузки он дал бы половину функций, а просили LM Studio и Ollama.
-- **Контекст Ollama отсюда не задаётся.** Документация Ollama прямо говорит, что через OpenAI API
-  контекст не передать. Поэтому поле контекста для Ollama скрыто, и модель с большим контекстом
-  сервис не перезагружает.
-- **Ollama может выгрузить модель через 5 минут после ответа.** Так документирован `keep_alive` по
-  умолчанию, а запросы через `/v1` его не передают. Как он сочетается с `keep_alive: -1` при
-  загрузке, надо посмотреть на настоящей Ollama. Вопрос после простоя загрузит модель сам.
-- **`lms server start --port` переносит работающий сервер на новый порт,** проверено вживую.
-  Смена порта в настройках двигает сервер при следующей загрузке, а не только адрес у клиента.
-  Если сервер и после запуска не отвечает (порт занят чужой программой), загрузка падает с
-  причиной, а не грузит модель туда, где её не спросят.
-- **Проверка `/health` с таймаутом 1 секунда на соединение.** Раньше она шла через клиент OpenAI с
-  таймаутом 120 с. Пока адрес был только в `.env`, это не мешало, но теперь опечатка в адресе
-  держала бы `/health`, и программа считала бы весь сервис мёртвым.
-- **Запрещённые модели скрыты и не принимаются** (§ 7.18): рантайм показывает всё, что лежит на
-  диске. Список по названиям заведомо неполный, это защита от случайного выбора, а не от обхода.
-  `.env` и сам файл настроек им не проверяются.
-- **Адрес и порт принимаются только от тех, кому доступен API** (`security.py`). Адрес проверяется
-  по шаблону, а имя модели не может начинаться с дефиса: оно уходит аргументом в `lms`.
+- **Settings live in `data/llm.json`, not in `.env`.** `.env` holds the defaults, and the service
+  never writes into it. `sfss config reset` simply deletes the file. While the daemon is off, the
+  command edits the file itself: the port can be set even before the first `sfss start`.
+- **Applied on the fly.** The service swaps the OpenAI client and unloads the previous model: two
+  will not fit side by side on 8 GB. While a model is loading, a setting is rejected with 409.
+- **Both runtimes answer through `/v1`; the differences live in `llm_runtime.py`:** state, list,
+  loading, starting the server. There is no universal "any OpenAI server": without state and loading
+  it would give half the features, and the request was for LM Studio and Ollama.
+- **Ollama's context is not set from here.** Ollama's documentation says plainly that the context
+  cannot be passed through the OpenAI API. So the context field is hidden for Ollama, and the
+  service does not reload a model with a large context.
+- **Ollama may unload the model 5 minutes after an answer.** That is the documented default
+  `keep_alive`, and requests through `/v1` do not pass it. How it combines with `keep_alive: -1` at
+  loading needs a look on a real Ollama. A question after idling loads the model itself.
+- **`lms server start --port` moves a running server to a new port,** checked live. Changing the
+  port in the settings moves the server on the next load, not only the client address. If the server
+  still does not answer after starting (the port is taken by another program), loading fails with
+  the reason instead of loading the model where nobody will ask.
+- **The `/health` check has a 1-second connection timeout.** It used to go through the OpenAI client
+  with a 120 s timeout. While the address was only in `.env` that did not matter, but now a typo in
+  the address would hold `/health` and the app would consider the whole service dead.
+- **Banned models are hidden and not accepted** (§ 7.18): a runtime shows everything on disk. The
+  name list is necessarily incomplete; it protects against an accidental choice, not against
+  getting around it. `.env` and the settings file itself are not checked against it.
+- **The address and port are accepted only from those who have API access** (`security.py`). The
+  address is checked against a pattern, and the model name cannot start with a hyphen: it goes as
+  an argument to `lms`.
 
-С настоящей Ollama не проверялось: на машине её нет. Проверены тесты и живой прогон `sfss` и окон
-на имитации её API по документации. LM Studio на другом порту проверен вживую, с настоящим ответом.
+Not checked against a real Ollama at the time: there was none on the machine. Checked with tests and
+a live run of `sfss` and the windows against an imitation of its API built from the documentation.
+LM Studio on another port was checked live, with a real answer. In November the installer found a
+real Ollama on Fedora (§ 7.24), but answers through it were not checked.
 
-### 7.22. Один репозиторий: SFSS-Dev
+### 7.22. One repository: SFSS-Dev
 
-По регламенту проект сдаётся одним репозиторием, а он лежал в двух: бэкенд
-`PlazmaRoma/Anti-Fire_backend_MVP` и фронт `heyyAzamat/space-fire-security-software`, склонированный
-внутрь бэкенда. 2026-11-14 оба собраны в `PlazmaRoma/SFSS-Dev` с чистой историей: бэкенд от `main`
-90a3334, фронт от `roman(main)` 1a04077. Прежние репозитории не менялись.
+By the rules the project is submitted as one repository, and it lived in two: the back end
+`PlazmaRoma/Anti-Fire_backend_MVP` and the front end `heyyAzamat/space-fire-security-software`,
+cloned inside the back end. On 2026-11-14 both were brought into `PlazmaRoma/SFSS-Dev` with a clean
+history: the back end from `main` 90a3334, the front end from `roman(main)` 1a04077. The old
+repositories were not changed.
 
-- **`sfss/` — сервис, Площадка внутри него, в `sfss/playground/`.** Площадка не отдельное
-  приложение: её открывает `sfss playground`, собранный файл лежит в `app/static/playground`.
-  Поэтому обёртка Tauri для Площадки не перенесена.
-- **`apps/anti-fire/` — программа, клиент сервиса.** Своя страница, своё окно Tauri, сборка
-  `build.sh`. Общий с Площадкой код (клиент API, типы, окно «Настройки AI», названия отчётов)
-  лежит один раз, в `sfss/playground/src/shared`, и подключается как `@sfss`. Копий нет, поэтому
-  код не разойдётся.
-- **Один `node_modules` в корне, npm workspaces.** Иначе общий код брал бы React из одной папки,
-  а Anti-Fire из другой, и хуки ломались бы на двух копиях React.
-- **Данные в git, кроме индекса** (CODEMAP, раздел `data/`). Отчёты NASA открыты, а без них клон
-  ни на что не отвечает.
-- **Снимки ответов Площадки лежат в одном месте,** `playground/src/shared/fixtures`. Раньше их
-  держали в двух папках и копировали между ними.
+- **`sfss/` is the service, with the Playground inside it, in `sfss/playground/`.** The Playground
+  is not a separate app: `sfss playground` opens it, and the built file is in
+  `app/static/playground`. So the Tauri wrapper for the Playground was not carried over.
+- **`apps/anti-fire/` is the app, a client of the service.** Its own page, its own Tauri window,
+  built by `build.sh`. The code shared with the Playground (the API client, types, the "AI
+  settings" window, report names) lives once, in `sfss/playground/src/shared`, and is imported as
+  `@sfss`. No copies, so the code cannot drift apart.
+- **One `node_modules` at the root, npm workspaces.** Otherwise the shared code would take React
+  from one folder and Anti-Fire from another, and hooks would break on two copies of React.
+- **The data is in git** (CODEMAP, the `data/` section). The NASA reports are open, and without them
+  a clone answers nothing.
+- **The Playground's recorded answers live in one place,** `playground/src/shared/fixtures`. They
+  used to be kept in two folders and copied between them.
 
-### 7.23. Лёгкая установка: поиск на ONNX, свой индекс, uv
+### 7.23. Light installation: search on ONNX, an own index, uv
 
-Первая версия установщика (§ 7.22, PR #2) ставила 115 пакетов, 1,7 ГБ на диске, и
-качала модель поиска на 470 МБ. На серверах GitHub это 2–4 минуты, дома по Wi-Fi —
-десятки минут, а pip молчал, и установка выглядела зависшей. На Windows ещё и Defender
-проверял каждый из десятков тысяч файлов. Около гигабайта из этого нужно было только
-затем, чтобы превращать текст в векторы.
+The first installer (§ 7.22, PR #2) installed 115 packages, 1.7 GB on disk, and downloaded a 470 MB
+search model. On GitHub's servers that took 2–4 minutes, at home over Wi-Fi tens of minutes, and pip
+said nothing, so the installation looked hung. On Windows, Defender also scanned each of tens of
+thousands of files. About a gigabyte of it was needed only to turn text into vectors.
 
-- **Модель поиска в ONNX вместо PyTorch.** Та же `paraphrase-multilingual-MiniLM-L12-v2`,
-  сборка Xenova в int8, 113 МБ вместо 470. Запуск через onnxruntime и tokenizers, без
-  torch, transformers, scipy-зависимостей sentence-transformers. Векторы совпадают с
-  прежними на 99,65–99,9 % по косинусу (26 вопросов, 200 фрагментов). Ревизия на
-  Hugging Face закреплена, файлы проверяются по sha256: индекс посчитан именно этой
-  моделью.
-- **Свой индекс вместо ChromaDB.** 1131 фрагмент по 384 числа — 1,7 МБ, точный перебор
-  numpy быстрее, чем дорога до HNSW. ChromaDB тянула kubernetes, grpc и opentelemetry.
-  Индекс — два файла в `data/index`, 3,5 МБ, лежит в git: при установке его больше не
-  собирают. API хранилища повторяет нужную часть коллекции Chroma, остальной код не менялся.
-- **CSV вместо parquet.** pyarrow весил 130 МБ ради четырёх таблиц на сотни строк. Значения
-  и типы после перехода сверены, совпали.
-- **uv вместо pip.** Один файл около 20 МБ: сам ставит Python 3.12, если его нет, без прав
-  администратора, качает пакеты параллельно и показывает ход загрузки. Ставится в `.tools`
-  внутри клона, файлы оболочки не трогает.
-- **Anti-Fire готовой сборкой.** Сборка из исходников требует Rust, сотни библиотек Rust,
-  Node, а на Windows ещё Visual Studio Build Tools на гигабайты и 10–20 минут компиляции.
-  Готовые файлы под три системы собирает GitHub Actions, они лежат в
-  `apps/anti-fire/release`, установщик ставит их сам.
+- **The search model in ONNX instead of PyTorch.** The same `paraphrase-multilingual-MiniLM-L12-v2`,
+  the Xenova int8 build, 113 MB instead of 470. It runs through onnxruntime and tokenizers, without
+  torch, transformers and the scipy dependencies of sentence-transformers. The vectors match the
+  previous ones to 99.65–99.9 % by cosine (26 questions, 200 chunks). The Hugging Face revision is
+  pinned and the files are checked by sha256: the index was computed by exactly this model.
+- **An own index instead of ChromaDB.** 1131 chunks of 384 numbers is 1.7 MB; an exact numpy scan is
+  faster than the way to HNSW. ChromaDB pulled in kubernetes, grpc and opentelemetry. The index is
+  two files in `data/index`, 3.5 MB, in git: installation no longer builds it. The store's API
+  repeats the needed part of a Chroma collection, so the rest of the code did not change.
+- **CSV instead of parquet.** pyarrow weighed 130 MB for four tables of hundreds of rows. Values and
+  types were compared after the switch and matched.
+- **uv instead of pip.** One file of about 20 MB: it installs Python 3.12 itself if needed, without
+  admin rights, downloads packages in parallel and shows the progress. It goes into `.tools` inside
+  the clone and does not touch shell startup files.
+- **Anti-Fire as a ready build.** Building from source needs Rust, hundreds of Rust libraries, Node,
+  and on Windows also Visual Studio Build Tools of several gigabytes and 10–20 minutes of
+  compiling. GitHub Actions builds the ready files for three systems; they are in
+  `apps/anti-fire/release`, and the installer installs them itself.
 
-Итог: 56 пакетов вместо 115, 330 МБ на диске вместо 1,7 ГБ, без нейросети около 400 МБ
-загрузки вместо 1,5 ГБ. Прогрев сервиса — 2,8 с вместо 12.
+Result: 56 packages instead of 115, 330 MB on disk instead of 1.7 GB, about 400 MB of downloads
+without a language model instead of 1.5 GB. The service warm-up is 2.8 s instead of 12.
 
-**Качество поиска сверено на 25 вопросах** (темы Площадки на двух языках, вопросы из
-SMOKE-TEST): в 21 итоговые три фрагмента те же, в четырёх сменился третий. Новые третьи
-фрагменты той же пограничной релевантности, что и прежние: где-то ближе к теме, где-то так
-же мимо. Из 20 ближайших по векторам в среднем совпадают 94 %. Часть расхождений — от
-точного перебора вместо приближённого HNSW, часть — от int8.
+**Search quality was compared on 25 questions** (the Playground topics in two languages, the
+SMOKE-TEST questions): in 21 the final three chunks are the same, in four the third one changed. The
+new third chunks are as borderline as the old ones: sometimes closer to the topic, sometimes just as
+far. Of the 20 nearest by vectors, 94 % match on average. Part of the difference comes from an exact
+scan instead of an approximate HNSW, part from int8.
 
-## 8. Окружение
+### 7.24. Checked on three systems; English main
 
-Проверенная рабочая конфигурация:
+The installer was run live on all three systems, and each found something CI did not.
+
+- **Windows 10.** Windows PowerShell 5 under `ErrorActionPreference = Stop` turns any stderr line of
+  a native command into an error once stderr is redirected: LM Studio's `lms ls` prints "Waking up
+  LM Studio service..." to stderr, and the installation broke off. Commands whose output is read
+  now run without that rule. A parameter named `$exe` in the helper function caught the `-e` from
+  `uv pip install -e`. A daemon started from an SSH session died with it: Windows OpenSSH kills the
+  session's job, so `sfss start` now leaves the job where the job allows it. `install.ps1` must keep
+  its BOM, otherwise PowerShell 5 reads it as ANSI and Cyrillic bytes become quotes (a test guards
+  this). From scratch: 106 seconds.
+- **Fedora 44, GNOME, Wayland, NVIDIA.** Under Wayland the window buttons are drawn by the app
+  itself, and with WebKitGTK on NVIDIA they did not respond; the window also stayed white for a long
+  time. Anti-Fire now opens through XWayland (`GDK_BACKEND=x11`) and without DMA-BUF rendering,
+  unless the user set these variables. Under X11 our own centring computed before the window was
+  shown missed: the window has no frame yet. GTK now centres it (`gtk_window_set_position`), the
+  way macOS does with `NSWindow center`. In `install.sh`, `command | grep -q` under `pipefail`
+  failed exactly when grep found the line and closed the pipe early: a false "WebKitGTK missing"
+  and possibly an already downloaded model not being recognised. From scratch: 44 seconds.
+- **macOS.** The window was created hidden and shown without focus, so its buttons were grey until
+  hovered: it now takes focus when shown.
+
+Installation and removal are documented per system in `docs/install/`.
+
+In November `main` moved to English: documentation, logs, command output and installer messages.
+The code comments were removed; the explanations they held are in `CODEMAP.md` and this document.
+Russian stays where it is part of the product: the interface translations, the prompts for Russian
+answers, the test questions. The Russian version of the repository is kept in the `dev(ru)` branch.
+
+---
+
+## 8. Environment
+
+The checked working configuration:
 
 | | |
 |---|---|
-| Python | 3.14.7 (ТЗ допускает 3.11+; на 3.14 все зависимости встали) |
-| FastAPI | 0.141.1 |
-| ChromaDB | 1.5.9 |
-| sentence-transformers | 6.1.0 (torch 2.14.0) |
-| scikit-learn | 1.9.1 |
-| pypdf | 6.19.0 |
-| LLM | Ministral 3B, MLX 4bit, контекст 8192, в LM Studio на `:1234` |
-| Эмбеддинги | `paraphrase-multilingual-MiniLM-L12-v2`, 384 измерения |
+| Python | 3.12, installed by uv (the specification allows 3.11+) |
+| FastAPI | 0.16x |
+| Search | onnxruntime, tokenizers, numpy; `paraphrase-multilingual-MiniLM-L12-v2` in ONNX int8, 384 dimensions |
+| scikit-learn | 1.9 |
+| pypdf | 7 |
+| LLM | Ministral 3B, MLX 4bit on a Mac, GGUF elsewhere, context 8192, in LM Studio on `:1234` or Ollama on `:11434` |
+| Front end | TypeScript, React 19, Vite, Tauri 2 |
 
-Объём кода: 2397 строк в `app/` и `tests/`, ещё 908 в `scripts/`.
+Systems checked live: macOS on Apple Silicon (8 GB), Windows 10, Fedora 44. GitHub Actions also
+checks installation, the service, the tests and removal on clean Ubuntu, macOS and Windows.
 
-**`.claude/settings.json`** содержит `worktree.bgIsolation: none` — фоновые сессии
-Claude Code работают прямо в этом каталоге, а не в изолированном worktree.
+**`.claude/settings.json`** has `worktree.bgIsolation: none`: background Claude Code sessions work
+right in this folder, not in an isolated worktree.
 
 ---
 
-## 9. Данные
+## 9. Data
 
-### Что уже скачано
+### What is downloaded
 
-16 PDF, ~1000 страниц, 137 МБ в `data/raw/`. Всё с NTRS — регистрация не нужна, отдаётся
-прямым HTTP по схеме `https://ntrs.nasa.gov/api/citations/<ID>/downloads/<файл>.pdf`.
+16 PDFs, about 1000 pages, 137 MB in `data/raw/`. All from NTRS: no registration needed, served
+over plain HTTP as `https://ntrs.nasa.gov/api/citations/<ID>/downloads/<file>.pdf`.
 
-| Тема | Документы |
+| Topic | Documents |
 |---|---|
-| **BASS / твёрдые материалы** | BASS-II Summary Report (144 стр.), Combustion of Solids BASS-II (21), Thickness & Preheating (58), PMMA Rods Concurrent Flow (10), PMMA Blowoff Limits (8), Solid Fuel Combustion Partial-g (11) |
+| **BASS / solid materials** | BASS-II Summary Report (144 pp.), Combustion of Solids BASS-II (21), Thickness & Preheating (58), PMMA Rods Concurrent Flow (10), PMMA Blowoff Limits (8), Solid Fuel Combustion Partial-g (11) |
 | **SoFIE** | Solid Fuel Ignition and Extinction Project on ISS (21) |
 | **ACME** | Gaseous Non-Premixed Flame Research for ISS (13) |
-| **FLEX / капли** | Detailed Results 2009–2011 (314), A Decisive Step Forward (44), Methanol Droplet Combustion (11) |
-| **Обзорные** | Microgravity Combustion Science 1995 (55), Overview of Microgravity Combustion (10), NASA/NEDO Cooperative Projects (210), MSG Overview (28), ISS Annual Highlights (40) |
+| **FLEX / droplets** | Detailed Results 2009–2011 (314), A Decisive Step Forward (44), Methanol Droplet Combustion (11) |
+| **Overviews** | Microgravity Combustion Science 1995 (55), Overview of Microgravity Combustion (10), NASA/NEDO Cooperative Projects (210), MSG Overview (28), ISS Annual Highlights (40) |
 
-Два основных отчёта ACME скачивались, но были удалены: одностраничные постеры-картинки
-без текстового слоя, при индексации дали бы ноль чанков.
+The two main ACME reports were downloaded but removed: one-page image posters without a text
+layer that would have given zero chunks.
 
-### Датасет BASS-II
+### The BASS-II dataset
 
-`data/processed/bass_ii.csv` — собирается `scripts/build_bass_dataset.py` из двух
-источников, оба уже на диске:
+`data/processed/bass_ii.csv` is built by `scripts/build_bass_dataset.py` from two sources, both on
+disk:
 
-| Источник | Что даёт |
+| Source | What it gives |
 |---|---|
-| `data/raw/PSI-25_BASS-II_test_matrix.csv` | числа: O₂/CO₂/CO, ограничитель потока (129 строк) |
-| Приложение A отчёта `NTRS-20210011385` | исход теста, конфигурация потока, метрические размеры |
+| `data/raw/PSI-25_BASS-II_test_matrix.csv` | numbers: O₂/CO₂/CO, the flow restrictor (129 rows) |
+| Appendix A of report `NTRS-20210011385` | the test outcome, flow configuration, metric sizes |
 
-Соединение по паре **(номер теста, номер образца)**. Одного номера теста мало:
-идентификатор `O2` неотличим от формулы кислорода в тексте.
+Joined on the **(test number, sample number)** pair. The test number alone is not enough: the id
+`O2` is indistinguishable from the oxygen formula in the text.
 
-Результат: **129 строк, из них 116 с размеченным исходом**.
+Result: **129 rows, 116 of them with a labelled outcome**.
 
-| Исход | Строк |
+| Outcome | Rows |
 |---|---|
 | extinction | 73 |
 | sustained_burn | 21 |
@@ -967,54 +969,54 @@ Claude Code работают прямо в этом каталоге, а не в
 | no_ignition | 6 |
 | unknown | 13 |
 
-Признаки — только условия **до** опыта: `oxygen_level`, `co2_initial`, `co_initial`,
-`flow_restrictor`, скорости потока (ниже), `thickness_mm`, `diameter_mm`, `width_cm`
-плюс one-hot по материалу, форме и конфигурации потока.
-Материалы: PMMA 84, SIBAL 24, Nomex 3, воск 1.
+Features are only conditions **before** the experiment: `oxygen_level`, `co2_initial`,
+`co_initial`, `flow_restrictor`, flow speeds (below), `thickness_mm`, `diameter_mm`, `width_cm`,
+plus one-hot by material, shape and flow configuration. Materials: PMMA 84, SIBAL 24, Nomex 3,
+wax 1.
 
-#### Скорость потока
+#### Flow speed
 
-Главная управляемая переменная опыта. В матрице она записана показаниями приборов,
-а не в см/с, поэтому пересчитывается через `Fan calibration data.xlsx` (скачан из
-Raw Data PSI-25, 24 КБ).
+The main controlled variable of the experiment. The matrix records it as instrument readings, not
+in cm/s, so it is converted with `Fan calibration data.xlsx` (downloaded from PSI-25 Raw Data,
+24 KB).
 
-Формула зафиксирована в самой калибровочной таблице: **U = 1.0066 × (Air Display)**,
-см/с. Коэффициент проверен на всех 15 контрольных парах листа — расхождение нулевое.
-Источник указан там же: калибровка SPICE, 56 мм ниже по потоку, 36 мм от дна.
+The formula is fixed in the calibration table itself: **U = 1.0066 × (Air Display)**, cm/s. The
+coefficient was checked on all 15 control pairs of the sheet, with zero difference. The source is
+given there too: the SPICE calibration, 56 mm downstream, 36 mm from the bottom.
 
-Калибровку переснимали почти каждый день, поэтому кривая Fan Display → см/с
-привязывается к GMT опыта: своя калибровка нашлась для 109 тестов из 129, для
-остальных берётся усреднённая по всем дням кривая того же числа ограничителей.
+The calibration was redone almost every day, so the Fan Display → cm/s curve is matched to the GMT
+of the experiment: an own calibration was found for 109 tests of 129; the rest use a curve averaged
+over all days for the same number of restrictors.
 
-Колонки `Fan display` и `Air display` у разных PI заполнены по-разному: где-то в них
-показания потенциометра, где-то единицы Fan Display, где-то уже см/с. Различаются по
-порогу: **вентилятор не крутится ниже 38 единиц Fan Display**, поэтому значение меньше
-38 однозначно означает скорость в см/с, а последовательность, где все значения ≥ 38, —
-единицы Fan Display, которые надо пересчитать.
+The `Fan display` and `Air display` columns are filled differently by different PIs: sometimes
+potentiometer readings, sometimes Fan Display units, sometimes already cm/s. They are told apart by
+a threshold: **the fan does not turn below 38 Fan Display units**, so a value under 38 is
+unambiguously a speed in cm/s, and a sequence where all values are ≥ 38 is Fan Display units to be
+converted.
 
-Признаки: `flow_initial_cms`, `flow_final_cms`, `flow_min_cms`, `flow_max_cms`,
-`flow_decreasing`. Заполнены у **123 строк из 129**.
+Features: `flow_initial_cms`, `flow_final_cms`, `flow_min_cms`, `flow_max_cms`, `flow_decreasing`.
+Filled in **123 rows of 129**.
 
-Физика в данных проявляется: у `blowoff` максимальная скорость 11.3 см/с против 7.5 у
-остальных, и поток в этих опытах в основном **повышали** (снижение лишь в 31 % случаев),
-а у `extinction` — снижали (61 %).
+The physics shows in the data: `blowoff` has a maximum speed of 11.3 cm/s versus 7.5 for the rest,
+and in these experiments the flow was mostly **raised** (lowered in only 31 % of cases), while for
+`extinction` it was lowered (61 %).
 
-Сверка с независимым источником — Table 7.1 отчёта, где скорости даны прямо в см/с:
-**совпало 23 из 27** по ключу (GMT, номер теста).
+A cross-check with an independent source, Table 7.1 of the report, where the speeds are given
+directly in cm/s: **23 of 27 matched** on the (GMT, test number) key.
 
-**Колонки `Final O2/CO2/CO` в признаки не входят намеренно** — это результаты опыта,
-а не условия. Высокий финальный CO₂ означает «много сгорело», то есть модель
-предсказывала бы исход по самому исходу.
+**The `Final O2/CO2/CO` columns are deliberately not features**: they are experiment results, not
+conditions. A high final CO₂ means "a lot burned", so the model would predict the outcome from the
+outcome itself.
 
-### Где брать данные на PSI
+### Where to get data on PSI
 
-**https://psi.nasa.gov/physci/repo/search**, фильтр Research Area → Combustion Science.
-Регистрация **не требуется** (в руководстве PSI ноль упоминаний account/login), но
-браузер проходит проверку. Весь раздел Combustion Science — 26 исследований; из них
-по теме: BASS-II (PSI-25), BASS (PSI-26), FLEX (PSI-69), FLEX-2 (PSI-68),
-SAFFIRE I-III (PSI-98/99/100). Семейство ACME и Ground Investigation — мимо.
+**https://psi.nasa.gov/physci/repo/search**, filter Research Area → Combustion Science.
+Registration is **not required** (the PSI guide never mentions an account or login), but the
+browser goes through a check. The whole Combustion Science section has 26 studies; on topic:
+BASS-II (PSI-25), BASS (PSI-26), FLEX (PSI-69), FLEX-2 (PSI-68), SAFFIRE I-III (PSI-98/99/100).
+The ACME family and Ground Investigation are off topic.
 
-Опись файлов исследования без скачивания:
+The file list of a study without downloading:
 
 ```bash
 curl -s -X POST https://psi.nasa.gov/geode-py/ws/files/v2 \
@@ -1022,269 +1024,260 @@ curl -s -X POST https://psi.nasa.gov/geode-py/ws/files/v2 \
   -d '{"studyId":"PSI-25","folder":"","fileType":"study","version":"3"}'
 ```
 
-Поля `key` и `bytes_size` дают полное дерево с размерами. Это единственный способ
-понять, что внутри, не выкачивая сотни гигабайт.
+The `key` and `bytes_size` fields give the full tree with sizes. It is the only way to see what is
+inside without pulling hundreds of gigabytes.
 
-### Запасной источник CSV
+### The FLEX table
 
-В уже скачанном FLEX-отчёте (`NTRS-20150023456.pdf`) на **страницах 26–34** лежит полная
-матрица тестов — 276 строк, парсится регулярно:
+The downloaded FLEX report (`NTRS-20150023456.pdf`) has the full test matrix on **pages 26–34**,
+276 rows, parsed with a regular expression:
 
 ```
 FLEX–140 C14M101 11/4/10 16:52:39 Methanol 533.5 .15 .35 .5 0 3.98 3.95 .2 1.3 Extinction
 ```
 
-Колонки: ID теста, дата, время, топливо, давление (мм рт. ст.), мольные доли O₂/N₂/CO₂/He,
-начальный диаметр капли, диаметр гашения, скорость горения, время горения, **исход**.
+Columns: test id, date, time, fuel, pressure (mmHg), mole fractions O₂/N₂/CO₂/He, initial droplet
+diameter, extinction diameter, burning rate, burn time, **outcome**.
 
-Исходы: Extinction 186, Disruption 62, Completion 28 — готовая целевая переменная для
-классификации. Мольная доля O₂ — это и есть `oxygen_level` из ТЗ.
+Outcomes: Extinction 186, Disruption 62, Completion 28. The O₂ mole fraction is the
+`oxygen_level` of the specification. This table is what fiery is trained on (§ 7.7).
 
 ---
 
-## 10. Запуск и проверка
+## 10. Running and checking
 
 ```bash
-# 1. LM Studio: загрузить Ministral 3B (MLX-сборку, контекст 8192) и Start Server
-curl -s localhost:1234/api/v0/models          # состояние моделей и контекст
+# 1. The service (the installer has already set up the environment and the index)
+sfss start --with-llm                          # the daemon and the model with context 8192
+sfss status
 
-# 2. Сервер
-.venv/bin/uvicorn app.main:app --reload       # http://localhost:8000/docs
+# 2. For development
+.venv/bin/uvicorn app.main:app --reload        # http://localhost:8000/docs
 
-# 3. Проверка
+# 3. Checks
 curl localhost:8000/health
-.venv/bin/python -m pytest -q                 # 5 passed
+.venv/bin/python -m pytest -q                  # 242 passed
 ```
 
-**Переиндексация после пополнения корпуса** — только полным сбросом, иначе старые два
-файла останутся в коллекции под прежними doc_id и разойдутся с новыми именами:
+**Re-indexing after adding to the corpus** goes through `--force`: the index is rebuilt from
+scratch, so old chunks do not remain under previous doc_ids:
 
 ```bash
-rm -rf data/chroma && .venv/bin/python scripts/ingest_documents.py
+.venv/bin/python scripts/ingest_documents.py --force
 ```
 
-Оценка: 1000 страниц → примерно 3500–4000 чанков, около пяти минут.
+16 reports, 1131 chunks, about 40 seconds. Commit the new `data/index/`.
 
-**Обучение fiery** (после появления CSV):
+**Training fiery:**
 
 ```bash
-.venv/bin/python scripts/train_model.py --dataset data/processed/bass_ii.csv \
-    --target outcome --group sample [--dry-run]
+.venv/bin/python scripts/train_model.py \
+    --dataset data/processed/flex.csv \
+    --target burn_rate_mm2s --group condition \
+    --exclude d_extinction_mm burn_time_s
 ```
 
 ---
 
-### Как считается качество fiery
+### How fiery's quality is measured
 
-Наивная схема «один случайный сплит + accuracy» на этих данных врёт, поэтому
-`scripts/train_model.py` считает иначе:
+A naive "one random split + a metric" scheme lies on this data, so `scripts/train_model.py`
+measures differently. The details below are from the first, BASS-II setup; the same machinery is
+used for FLEX with `--group condition`.
 
-* **Групповая кросс-валидация** по `--group sample`. Один образец жгли в нескольких
-  тестах (T28a и T28b — один кусок ткани), при случайном разбиении такие строки
-  расходятся по обучению и тесту и модель «угадывает» по памяти. Проверено:
-  пересечение групп между фолдами — ноль.
-* **Стратификация** — классы перекошены 73 к 6. Все четыре класса присутствуют
-  в каждом из 5 тестовых фолдов.
-* **Baseline большинства** печатается рядом с accuracy: константный ответ самым
-  частым классом даёт **62.9 %**, и всё, что ниже, означает «хуже заглушки».
-* **Per-class precision/recall/F1 и матрица ошибок** вместо общей accuracy:
-  важна способность ловить редкие исходы.
-* **Пропуски** (216 штук в 10 признаках) заполняются медианой внутри пайплайна.
-  У плёнки нет диаметра, у стержня нет толщины — это норма, но KMeans без
-  импьютера на таких данных падает.
-* `class_weight="balanced"` и `min_samples_leaf=2` — против перекоса классов и
-  переобучения при 4 строках на признак.
-
----
-
-## 11. Известные ограничения
-
-Ничего из перечисленного не сломано — это осознанные упрощения MVP или замеренные
-особенности, о которых надо знать.
-
-1. **Скорость `/query` — 33–46 с.** Было 66–70 с; ускорено снижением `top_k` с 5 до 3
-   и потолком `llm_max_tokens`. Русский вопрос стоит ещё около двух секунд на
-   перевод для поиска (§ 7.11), зато сам ответ через перевод быстрее прямого
-   русского (§ 7.12).
-
-   **Длина контекста в LM Studio.** При загрузке по запросу (JIT) LM Studio
-   подняла Ministral с контекстом 262 144 токена. На машине с 8 ГБ это загнало
-   систему в своп: занято 3.6 ГБ из 4, и длинный русский ответ не уложился в
-   240 с. После перезагрузки модели с контекстом 8192 своп упал до 2.3 ГБ;
-   промпту `/query` с запасом хватает 8192. Влияние на скорость одним замером
-   не установлено: часть ответов ускорилась (капля: 96 → 45 с), часть нет.
-   Задаётся в LM Studio при загрузке модели или командой
-   `lms load <модель> --context-length 8192`.
-
-   Замер показал, что **упирается не в генерацию, а в обработку промпта**: при
-   `max_tokens` 512 и 256 время одинаковое (45.8 и 39.1 с — разница в пределах шума),
-   а ответы до потолка не дотягивают и обрываются не по нему. Весь выигрыш дали
-   два убранных чанка контекста. Потолок оставлен как страховка от разрастания
-   ответа, но сейчас он не связывающее ограничение.
-
-   Следующие рычаги, если понадобится быстрее: уменьшить `chunk_size` (сейчас
-   ~500 слов, то есть ~650 токенов на чанк), взять модель поменьше или включить
-   стриминг — для дашборда он и есть настоящий ответ на задержку.
-
-2. **`risk_score` у классификатора берётся как `predict_proba[0][-1]`** — вероятность
-   последнего класса в алфавитном порядке sklearn. Текущая `fiery` — регрессия, её
-   `risk_score` считается иначе: предсказание нормируется по `target_range` (§ 5).
-   Ветка для классификации осталась в `MLService._score()` на случай переобучения.
-   Для бинарной задачи (0/1) она корректна. Для трёх классов FLEX
-   (Completion/Disruption/Extinction) последним окажется `Extinction`, что содержательно
-   осмысленно, но **на это нельзя полагаться молча** — при обучении на многоклассовой
-   разметке место нужно пересмотреть явно.
-
-3. **Чанкинг по словам, не по токенам** — см. раздел 6.
-
-4. **Ссылка на источник — это номер отчёта**, а не человекочитаемое название:
-   в тексте ответа `[NTRS-20000030678, стр. 97]`, в `sources` — полное имя файла.
-   Названия всех 16 отчётов есть во фронте (`src/shared/data/reports.ts`).
-
-5. **Значения по умолчанию у `/predict` — стандартный воздух, а не медианы
-   выборки.** Покоординатная медиана дала бы сумму долей газов 0.86, то есть
-   физически невозможную смесь: FLEX намеренно перебирал необычные атмосферы.
-   Поэтому дефолты заданы явной константой `FEATURE_DEFAULTS`, и при
-   переобучении модели на других признаках их придётся обновить руками —
-   признак без значения по умолчанию остаётся обязательным.
-
-6. **LM Studio подмешивает свой системный промпт** — на запрос «Say OK» приходит 537
-   prompt-токенов. Если начнёт конфликтовать с нашей инструкцией «отвечай только по
-   контексту», его убирают в настройках модели в LM Studio.
-
-7. **Текст PDF бывает недоступен или искажён.**
-
-   *Без текстового слоя* (скан) PDF молча даёт 0 чанков. В лог пишется
-   предупреждение, но ingest не падает. OCR не подключён.
-
-   *Сдвинутая кодировка* — так был сломан FLEX-отчёт `NTRS-20120015928`. Шрифты в нём
-   Type0/Identity-H без таблицы ToUnicode, а во встроенных подмножествах TrueType нет
-   ни `cmap`, ни имён глифов. pypdf отдаёт номера глифов вместо букв: «FLEX» читается
-   как `*0)<`. Номера шли по порядку ASCII, поэтому сдвиг одинаковый, −28, на всех
-   38 страницах с текстом и во всех 11 шрифтах. В индексе лежали 39 нечитаемых чанков:
-   поиск по документу не работал, а сами чанки засоряли выдачу.
-
-   Починка — обратный сдвиг с автоопределением (§ 6), без новых зависимостей.
-   Другой извлекатель (pdfminer, PyMuPDF) не помог бы: восстанавливать
-   соответствие ему не из чего. OCR дал бы и спецсимволы, но это Tesseract плюс
-   растеризация ради одного документа. Теперь у документа 52 читаемых чанка, и по
-   запросу «FLEX decisive step combustion research» он на первом месте.
-
-   Цена решения: 11 глифов вне ASCII (лигатуры fi/fl, типографские кавычки и
-   апостроф, °, тире, значки сносок; около 120 вхождений на 44 страницы)
-   заменяются пробелом. Например, «ﬂame» становится «ame». По контексту они
-   угадываются, но не выводятся, а таблица, подобранная под один файл, в общем
-   коде была бы обманчивой. Теряются и «<» с «&»: их номера совпадают с пробелом и
-   переводом строки, которые вставляет сам pypdf.
-
-   Остальные 15 PDF проверены той же эвристикой по каждой странице. Сдвига нет
-   ни у одной. Низкая доля служебных слов встречается только на таблицах (матрица
-   тестов FLEX в `NTRS-20150023456`) и в OCR-шуме подписей к графикам.
-
-8. **Целевая переменная `outcome` частично отражает протокол опыта, а не свойства
-   материала.** В BASS-II штатной процедурой было снижать поток до срыва пламени,
-   поэтому `extinction` получили 73 записи из 116 — это «как заканчивали тест», а не
-   «материал оказался пожароопасен». Видно по данным: средний O₂ у `no_ignition` 17.3 %
-   против 18.9 % у `sustained_burn` — разделение слабое, одного кислорода мало.
-   Физически осмысленная мишень — предельная скорость потока или предельный кислород
-   на срыве, но она требует разбора последовательностей скоростей внутри записи.
-   Для MVP четырёхклассовая метка приемлема, но выдавать её за оценку воспламеняемости
-   материала нельзя.
-
-9. **`flow_final_cms` — последняя уставка, а не скорость в момент гашения.** В колонке
-   `Air display` записаны дискретные значения, которые выставлял экипаж; отчёт же
-   приводит измеренную скорость на срыве. Отсюда расхождения вида «отчёт 2.2, у нас 1»
-   на четырёх тестах из 27. Для точной предельной скорости нужен разбор Table 7.1,
-   но она покрывает только тесты T'ien.
-
-10. **При переносе таблицы PSI в CSV потеряны значения в скобках.** Исходная вставка
-   содержала пары вида `1.7 (52)` — одно и то же в разных единицах; при подготовке CSV
-   скобки убирались, чтобы не ломать разбор. В большинстве строк это дубль и потери нет,
-   но в T21 (`11 max(47)`) скобка держала единственное число — восстановлено вручную.
-   Если появятся расхождения с отчётом, смотреть сюда в первую очередь.
-
-11. **Исход извлекается из свободного текста по ключевым словам** (`scripts/build_bass_dataset.py`,
-   `OUTCOME_RULES`). 13 записей из 129 остались `unknown`, ещё три теста (O20-O22)
-   отсутствуют в отчёте. Правила упорядочены: отсутствие поджига проверяется раньше
-   срыва и гашения.
-12. **Поиск всё ещё промахивается на редких формулировках.** Гибридный поиск
-   (§ 7.13) закрыл гелий и давление, но, например, «cold flames» вместо
-   «cool flames» не находит ничего: перевод вопроса выбирает слово, которого
-   нет в отчётах. На 16 новых вопросах в теме 41 фрагмент из 48.
+* **Grouped cross-validation** by `--group`. One sample was burned in several tests (T28a and T28b
+  are one piece of fabric); FLEX experiments with one condition code ran back to back in one
+  atmosphere. With a random split such rows end up on both sides and the model "guesses" from
+  memory. Checked: the overlap of groups between folds is zero.
+* **Stratification** for classification: classes are skewed 73 to 6. All four classes are present in
+  each of the 5 test folds.
+* **A baseline** is printed next to the metric: for classification the most frequent class, which
+  gives **62.9 %** on BASS-II; for regression a constant mean. Anything at or below it means "no
+  better than a stub".
+* **Per-class precision/recall/F1 and a confusion matrix** instead of overall accuracy: catching rare
+  outcomes matters.
+* **Missing values** are filled with the median inside the pipeline. A film has no diameter, a rod
+  has no thickness: that is normal, but KMeans without an imputer fails on such data.
+* `class_weight="balanced"` and `min_samples_leaf=2`: against class skew and overfitting with few
+  rows per feature.
 
 ---
 
-### 7.7. Классификация исхода BASS-II → регрессия скорости горения FLEX
+## 11. Known limitations
 
-Первая постановка — предсказывать исход опыта (`extinction` / `blowoff` /
-`no_ignition` / `sustained_burn`) по BASS-II — **провалилась на честной оценке**:
+None of this is broken: these are deliberate MVP simplifications or measured properties to be
+aware of.
 
-| | accuracy | baseline | итог |
+1. **`/query` takes 25–50 s on an 8 GB Mac.** It was 66–70 s; sped up by lowering `top_k` from 5 to
+   3 and capping `llm_max_tokens`. A Russian question costs about two more seconds of translation
+   for search (§ 7.11), while the answer itself through translation is faster than a direct Russian
+   one (§ 7.12).
+
+   **Context length in LM Studio.** When loading on demand (JIT), LM Studio brought Ministral up with
+   a context of 262 144 tokens. On an 8 GB machine that pushed the system into swap: 3.6 GB of 4
+   used, and a long Russian answer did not fit into 240 s. After reloading the model with context
+   8192 swap fell to 2.3 GB; 8192 is plenty for the `/query` prompt. The service now always loads
+   the model with 8192 itself (§ 7.19).
+
+   Measurement showed that **the limit is prompt processing, not generation**: with `max_tokens` 512
+   and 256 the time is the same (45.8 and 39.1 s, within the noise), and answers never reach the cap.
+   The whole gain came from the two removed context chunks. The cap stays as insurance against a
+   growing answer, but it is not the binding limit now.
+
+   Further levers if needed: a smaller `chunk_size` (now about 500 words, about 650 tokens per
+   chunk) or a smaller model. Streaming (§ 7.14) is the real answer to the delay for a UI.
+
+2. **For a classifier, `risk_score` is `predict_proba[0][-1]`**, the probability of the last class
+   in sklearn's alphabetical order. The current `fiery` is a regression, and its `risk_score` is
+   computed differently: the prediction is scaled over `target_range` (§ 5). The classification
+   branch stays in `MLService._score()` in case of retraining. For a binary task (0/1) it is
+   correct. For FLEX's three classes (Completion/Disruption/Extinction) the last one would be
+   `Extinction`, which makes sense, but **this must not be relied on silently**: when training on
+   multi-class labels, revisit it explicitly.
+
+3. **Chunking by words, not tokens**: see section 6.
+
+4. **The source reference is the report number**, not a human-readable title: in the answer text
+   `[NTRS-20000030678, p. 97]`, in `sources` the full file name. The titles of all 16 reports are in
+   the front end (`sfss/playground/src/shared/data/reports.ts`).
+
+5. **`/predict` defaults are standard air, not sample medians.** A per-coordinate median would give
+   a gas sum of 0.86, a physically impossible mixture: FLEX deliberately went through unusual
+   atmospheres. So the defaults are an explicit `FEATURE_DEFAULTS` constant, and if the model is
+   retrained on other features they must be updated by hand: a feature without a default stays
+   required.
+
+6. **LM Studio mixes in its own system prompt**: a "Say OK" request takes 537 prompt tokens. If it
+   starts conflicting with our "answer only from the context" instruction, remove it in the model
+   settings in LM Studio.
+
+7. **PDF text may be unavailable or garbled.**
+
+   *Without a text layer* (a scan) a PDF silently gives 0 chunks. A warning goes to the log, but
+   ingest does not fail. There is no OCR.
+
+   *A shifted encoding*: that is how the FLEX report `NTRS-20120015928` was broken. Its fonts are
+   Type0/Identity-H without a ToUnicode table, and the embedded TrueType subsets have neither a
+   `cmap` nor glyph names. pypdf returns glyph numbers instead of letters: "FLEX" reads as `*0)<`.
+   The numbers went in ASCII order, so the shift is the same, −28, on all 38 pages with text and in
+   all 11 fonts. The index held 39 unreadable chunks: search in the document did not work, and the
+   chunks themselves cluttered the results.
+
+   The fix is a reverse shift with automatic detection (§ 6), without new dependencies. Another
+   extractor (pdfminer, PyMuPDF) would not help: there is nothing to restore the mapping from. OCR
+   would also give the special characters, but that is Tesseract plus rasterisation for one
+   document. Now the document has 52 readable chunks and is first for "FLEX decisive step combustion
+   research".
+
+   The price: 11 glyphs outside ASCII (the fi/fl ligatures, typographic quotes and apostrophe, °,
+   dashes, footnote marks; about 120 occurrences on 44 pages) are replaced with a space. For
+   example, "ﬂame" becomes "ame". They can be guessed from context but not derived, and a table
+   tuned to one file would be misleading in shared code. "<" and "&" are lost too: their numbers
+   coincide with the space and newline that pypdf inserts itself.
+
+   The other 15 PDFs were checked with the same heuristic page by page. None is shifted. A low share
+   of stop words appears only on tables (the FLEX test matrix in `NTRS-20150023456`) and in OCR noise
+   of chart captions.
+
+8. **The BASS-II `outcome` target partly reflects the experiment protocol, not the material
+   properties.** In BASS-II the standard procedure was to lower the flow until blowoff, so 73 of 116
+   records got `extinction`: that is "how the test was ended", not "the material turned out to be a
+   fire hazard". The data shows it: the mean O₂ for `no_ignition` is 17.3 % versus 18.9 % for
+   `sustained_burn`, a weak separation; oxygen alone is not enough. A physically meaningful target
+   would be the limiting flow speed or limiting oxygen at blowoff, but that requires parsing the
+   speed sequences inside a record. This is why fiery is trained on FLEX instead (§ 7.7).
+
+9. **`flow_final_cms` is the last setpoint, not the speed at extinction.** The `Air display` column
+   holds the discrete values the crew set, while the report gives the measured speed at blowoff.
+   Hence differences like "report 2.2, ours 1" in four tests of 27. An exact limiting speed needs
+   Table 7.1, but it covers only T'ien's tests.
+
+10. **Values in parentheses were lost when moving the PSI table into CSV.** The original paste had
+    pairs like `1.7 (52)`, the same value in different units; when preparing the CSV the parentheses
+    were removed so as not to break parsing. In most rows it is a duplicate and nothing is lost, but
+    in T21 (`11 max(47)`) the parenthesis held the only number; restored by hand. If differences
+    with the report appear, look here first.
+
+11. **The outcome is extracted from free text by keywords** (`scripts/build_bass_dataset.py`,
+    `OUTCOME_RULES`). 13 records of 129 stayed `unknown`, and three tests (O20-O22) are missing from
+    the report. The rules are ordered: no ignition is checked before blowoff and extinction.
+
+12. **Search still misses rare wordings.** Hybrid search (§ 7.13) covered helium and pressure, but,
+    for example, "cold flames" instead of "cool flames" finds nothing: the question translation picks
+    a word that is not in the reports. On 16 new questions, 41 of 48 chunks are on topic.
+
+---
+
+### 7.7. BASS-II outcome classification → FLEX burning rate regression
+
+The first setup, predicting the experiment outcome (`extinction` / `blowoff` / `no_ignition` /
+`sustained_burn`) on BASS-II, **failed an honest evaluation**:
+
+| | accuracy | baseline | result |
 |---|---|---|---|
-| 4 класса, как есть | 50.0 % | 62.9 % | −12.9 п.п. |
-| extinction+sustained → `burned` | 81.9 % | 81.0 % | +0.9 п.п. |
-| бинарно blowoff / прочее | 82.8 % | 86.2 % | −3.4 п.п. |
+| 4 classes, as is | 50.0 % | 62.9 % | −12.9 pp |
+| extinction+sustained → `burned` | 81.9 % | 81.0 % | +0.9 pp |
+| binary blowoff / other | 82.8 % | 86.2 % | −3.4 pp |
 
-Ни одна не даёт осмысленного выигрыша. **34 ошибки из 58** — путаница
-`extinction` ↔ `sustained_burn`, то есть ровно той пары, которая различается не
-свойствами материала, а тем, как экипаж завершил опыт.
+None gives a meaningful gain. **34 errors of 58** are `extinction` ↔ `sustained_burn` confusion,
+exactly the pair that differs not by material properties but by how the crew ended the experiment.
 
-Попытка перейти к регрессии на самих данных BASS-II тоже не прошла: единственная
-непрерывная величина, `flow_final_cms`, квантована по уставкам экипажа — 32 %
-значений это ровно 5.0 см/с, четыре значения покрывают 65 % выборки, а корреляция
-с кислородом имеет **физически неверный знак** (+0.24 вместо отрицательной).
-Измеренную скорость гашения из текста наблюдений вытащить не удалось: число перед
-словом о гашении есть лишь в 20 записях из 126, и половина — значения мелкого
-потенциометра, не отображаемого в калибровочную шкалу.
+Switching to regression on the BASS-II data itself did not work either: the only continuous value,
+`flow_final_cms`, is quantised by the crew's setpoints: 32 % of the values are exactly 5.0 cm/s,
+four values cover 65 % of the sample, and the correlation with oxygen has the **physically wrong
+sign** (+0.24 instead of negative). The measured extinction speed could not be pulled from the
+observation text: a number before the word about extinction exists in only 20 records of 126, and
+half of them are fine potentiometer values that do not map onto the calibration scale.
 
-Решение: взять FLEX, где величины **измерены прибором**. Скорость горения имеет
-60 уникальных значений на 259 строк (самое частое — 6 %), а её корреляция с
-кислородом равна +0.55, что физически верно.
+Solution: take FLEX, where the values are **measured by an instrument**. The burning rate has 60
+unique values over 259 rows (the most frequent is 6 %), and its correlation with oxygen is +0.55,
+which is physically right.
 
-Проверка, что модель не сводится к угадыванию топлива: тип топлива даёт лишь 3.4 %
-важности (кислород — 34.9 %), и внутри каждого топлива по отдельности модель
-работает: R² 0.53 у гептана и 0.80 у метанола.
+A check that the model does not reduce to guessing the fuel: the fuel type gives only 3.4 % of the
+importance (oxygen 34.9 %), and the model works within each fuel separately: R² 0.53 for heptane
+and 0.80 for methanol.
 
-Единственный настоящий сигнал, найденный в BASS-II, — `blowoff` (recall 75 %,
-модель ловит его по высокой скорости потока). Датасет и сборщик оставлены в
-репозитории: он пригодится, если появятся измеренные пределы.
+The only real signal found in BASS-II is `blowoff` (recall 75 %, the model catches it by the high
+flow speed). The dataset and its builder stay in the repository: useful if measured limits appear.
 
 ---
 
-## 12. Тупики — что пробовали и почему не сработало
+## 12. Dead ends: what was tried and why it did not work
 
-Список, чтобы не переделывать провалившееся. Каждый пункт стоил времени.
+A list so as not to redo what failed. Every item cost time.
 
-| Что пробовали | Чем кончилось |
+| What was tried | How it ended |
 |---|---|
-| **GGUF-сборка Ministral** | ~120 с на запрос на Apple Silicon, упиралась в таймаут клиента. Перешли на MLX — 3-7 с |
-| **Скачать Raw Data PSI-25 целиком** | 274.6 ГБ, из них 99.94 % — 266 архивов и 296 видео. Нужное весило 150 КБ. Браузер съедал память, строя дерево |
-| **Прямые ссылки S3 из API PSI** | `NoSuchKey` на 14 файлах из 14: записи в каталоге есть, объектов в хранилище нет |
-| **Классификация исхода BASS-II** | Accuracy 50.0 % против baseline 62.9 % — хуже константы. 34 ошибки из 58 — путаница пары, которую различает протокол опыта, а не материал |
-| **Регрессия по `flow_final_cms`** | Цель квантована уставками экипажа: 32 % значений ровно 5.0 см/с, корреляция с кислородом с неверным знаком |
-| **Измеренная скорость гашения из текста Приложения A** | Число перед словом о гашении есть в 20 записях из 126, половина — значения мелкого потенциометра вне калибровочной шкалы |
-| **`max_tokens` как рычаг задержки** | Не связывающее ограничение: при 512 и 256 время одинаковое, ответы до потолка не дотягивают. Упирается в обработку промпта |
-| **gemma-3-1b как рабочая модель** | Нарушает регламент: выдумывает факты с поддельными ссылками (§ 7.8) |
+| **The GGUF build of Ministral on a Mac** | ~120 s per request on Apple Silicon, hit the client timeout. Moved to MLX: 3-7 s |
+| **Downloading PSI-25 Raw Data whole** | 274.6 GB, 99.94 % of it 266 archives and 296 videos. What was needed weighed 150 KB. The browser ate the memory building the tree |
+| **Direct S3 links from the PSI API** | `NoSuchKey` on 14 files of 14: the catalogue has the entries, the storage has no objects |
+| **BASS-II outcome classification** | Accuracy 50.0 % versus a 62.9 % baseline, worse than a constant. 34 errors of 58 confuse a pair that the protocol distinguishes, not the material |
+| **Regression on `flow_final_cms`** | The target is quantised by the crew's setpoints: 32 % of values exactly 5.0 cm/s, correlation with oxygen of the wrong sign |
+| **The measured extinction speed from the Appendix A text** | A number before the word about extinction exists in 20 records of 126, half of them fine potentiometer values outside the calibration scale |
+| **`max_tokens` as a latency lever** | Not the binding limit: the time is the same at 512 and 256, answers never reach the cap. The limit is prompt processing |
+| **gemma-3-1b as the working model** | Breaks the rules: invents facts with fake references (§ 7.8) |
+| **PyTorch, ChromaDB and pip in the installer** | 1.7 GB and tens of minutes at home, looked hung on Windows. Replaced with ONNX, an own index and uv (§ 7.23) |
+| **Building Anti-Fire from source on the user's machine** | Rust, Node, on Windows Visual Studio Build Tools, 10–20 minutes of compiling. Ready builds instead (§ 7.23) |
 
-Общий урок: **сначала измерить, потом строить.** Три из восьми пунктов —
-это построенное и выброшенное, потому что проверку цели отложили на потом.
+The general lesson: **measure first, then build.** Several items on this list were built and thrown
+away because checking the goal was postponed.
 
 ---
 
-## 13. Что дальше
+## 13. What next
 
-Критический путь пройден: `GET /dashboard`, смягчение контракта `/predict`
-и раздел для фронта в `API.md` сделаны — фронтенд разблокирован.
+1. **A model comparison script** for the presentation: latency and the share of answers where the
+   cited source really was in the search results.
+2. **A second target, `d_extinction_mm`** (198 rows): the droplet diameter at extinction, physically
+   a combustion limit.
+3. **Carry the approach over to solid materials**: SAFFIRE (PSI-98/99/100) is closer to fire safety
+   than droplet combustion.
+4. **Answers through a real Ollama**: the installer finds it, but answers through it were not
+   checked (§ 7.21).
+5. **Signed builds** of Anti-Fire for macOS and Windows, so that Gatekeeper and SmartScreen do not
+   warn.
 
-1. **Скрипт сравнения моделей** для презентации: латентность и доля ответов,
-   где процитированный источник действительно был в выдаче поиска.
-2. **Вторая цель — `d_extinction_mm`** (198 строк): диаметр капли в момент
-   погасания, физически это предел горения.
-3. **Перенести подход на твёрдые материалы** — SAFFIRE (PSI-98/99/100) ближе
-   к пожарной безопасности, чем горение капель.
+Done since the MVP: streamed answers (§ 7.14), Anti-Fire starting and stopping the service
+(§ 7.20), installation with Python and the libraries for three systems (§ 7.23, § 7.24).
 
-Отложено осознанно: стриминг ответов (настоящий ответ на задержку `/query`,
-но фронт до него ещё не дошёл), автозапуск бэкенда из десктопного фронта,
-мастер первого запуска с установкой Python и LLM-рантайма.
-
-Вне скоупа MVP по ТЗ: десктопная обёртка и файн-тюнинг модели.
+Out of scope: fine-tuning the model.
