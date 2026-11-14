@@ -82,15 +82,82 @@ fn sfss_stop(window: Window) -> Result<String, String> {
     run_installed(&window, &["stop".to_string()])
 }
 
+/// Отступ от краёв рабочей области, если окно в неё не помещается
+const SCREEN_MARGIN: f64 = 24.0;
+/// Заголовок окна поверх внутренней высоты: на macOS 28, на Windows около 32
+const TITLE_BAR: f64 = 32.0;
+
+/// Внутренний размер окна, который помещается в рабочую область: экран без Дока, меню
+/// и панели задач. На 13-дюймовом Mac с Доком справа видно 1337 точек, а окно было 1360:
+/// система ставила его с отрицательным отступом, и оно съезжало влево. Меньше
+/// минимального размера окно не становится, даже если экран ещё меньше.
+fn fit_size(wanted: (f64, f64), min: (f64, f64), area: (f64, f64)) -> (f64, f64) {
+    let max_w = area.0 - 2.0 * SCREEN_MARGIN;
+    let max_h = area.1 - 2.0 * SCREEN_MARGIN - TITLE_BAR;
+    (wanted.0.min(max_w).max(min.0), wanted.1.min(max_h).max(min.1))
+}
+
+/// Левый верхний угол окна по центру рабочей области, в физических пикселях. Если окно
+/// больше области, угол прижимается к её началу: заголовок не уходит за край экрана.
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+fn center_in(area_pos: (i32, i32), area_size: (u32, u32), window: (u32, u32)) -> (i32, i32) {
+    let x = area_pos.0 + (area_size.0 as i32 - window.0 as i32).max(0) / 2;
+    let y = area_pos.1 + (area_size.1 as i32 - window.1 as i32).max(0) / 2;
+    (x, y)
+}
+
+/// Центр окна. На macOS — силами системы, `NSWindow center`: она сама учитывает Док с любой
+/// стороны, меню и выбранный экран. На Linux и Windows ставим сами, по рабочей области
+/// монитора, на котором окно открылось.
+fn center(window: &tauri::WebviewWindow) -> tauri::Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        use objc2::{msg_send, runtime::AnyObject};
+        let ns_window = window.ns_window()? as *mut AnyObject;
+        // setup идёт в главном потоке, а AppKit только его и принимает
+        if let Some(ns_window) = unsafe { ns_window.as_ref() } {
+            let _: () = unsafe { msg_send![ns_window, center] };
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let monitor = match window.current_monitor()? {
+            Some(monitor) => Some(monitor),
+            None => window.primary_monitor()?,
+        };
+        if let Some(monitor) = monitor {
+            let area = monitor.work_area();
+            let size = window.outer_size()?;
+            let (x, y) = center_in(
+                (area.position.x, area.position.y),
+                (area.size.width, area.size.height),
+                (size.width, size.height),
+            );
+            window.set_position(tauri::PhysicalPosition::new(x, y))?;
+        }
+    }
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![sfss_start, sfss_stop])
         .setup(|app| {
             let config = app.config().app.windows[0].clone();
-            // Файл попадает в «Загрузки», и одноимённые файлы не перезаписываются
-            WebviewWindowBuilder::from_config(app.handle(), &config)?
+            let mut size = (config.width, config.height);
+            if let Some(monitor) = app.primary_monitor()? {
+                let area = monitor.work_area().size.to_logical::<f64>(monitor.scale_factor());
+                let min = (config.min_width.unwrap_or(0.0), config.min_height.unwrap_or(0.0));
+                size = fit_size(size, min, (area.width, area.height));
+            }
+            // Окно создаётся скрытым ("visible": false) и показывается уже на месте,
+            // без прыжка. Файл попадает в «Загрузки», одноимённые файлы не перезаписываются.
+            let window = WebviewWindowBuilder::from_config(app.handle(), &config)?
+                .inner_size(size.0, size.1)
                 .on_download(|_, _| true)
                 .build()?;
+            center(&window)?;
+            window.show()?;
             Ok(())
         })
         .run(tauri::generate_context!())
@@ -150,5 +217,32 @@ mod tests {
         assert_eq!(seen[0].0, "warming");
         assert!(seen[0].1 < std::time::Duration::from_millis(700), "warming came at {:?}", seen[0].1);
         fs::remove_dir_all(home).unwrap();
+    }
+
+    #[test]
+    fn window_shrinks_to_the_screen_without_dock() {
+        // 13-дюймовый Mac, Док справа: видно 1337 × 851
+        assert_eq!(fit_size((1360.0, 860.0), (1024.0, 680.0), (1337.0, 851.0)), (1289.0, 771.0));
+    }
+
+    #[test]
+    fn window_keeps_its_size_on_a_big_screen() {
+        assert_eq!(fit_size((1360.0, 860.0), (1024.0, 680.0), (1920.0, 1050.0)), (1360.0, 860.0));
+    }
+
+    #[test]
+    fn window_never_goes_below_minimum() {
+        assert_eq!(fit_size((1360.0, 860.0), (1024.0, 680.0), (800.0, 600.0)), (1024.0, 680.0));
+    }
+
+    #[test]
+    fn center_counts_from_the_work_area() {
+        // Панель задач слева шириной 100: центр сдвигается вместе с областью
+        assert_eq!(center_in((100, 0), (1820, 1040), (1360, 900)), (330, 70));
+    }
+
+    #[test]
+    fn oversized_window_sticks_to_the_corner() {
+        assert_eq!(center_in((0, 25), (1000, 700), (1200, 800)), (0, 25));
     }
 }
