@@ -24,7 +24,7 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 |---|---|---|---|
 | Установка | `./install.sh` | `./install.sh` | `install.ps1` |
 | Anti-Fire | в «Программы» | `~/.local/share/anti-fire`, ярлык в меню | `%LOCALAPPDATA%\Programs\Anti-Fire`, ярлык в «Пуске» |
-| Проверено | вживую, с чистой установки | в GitHub Actions, Ubuntu | в GitHub Actions |
+| Проверено | вживую, с чистой установки | в GitHub Actions, Ubuntu | вживую на Windows 10, без нейросети; GitHub Actions |
 
 ## 1. Что скачивается
 
@@ -184,7 +184,10 @@ npm run page -w anti-fire && cd apps/anti-fire/src-tauri && cargo test     # о�
 
 ## 8. Что не проверено
 
-- **Windows и Linux вживую.** Установка, сервис, Anti-Fire и удаление проверяются в GitHub
-  Actions на чистых машинах, без нейросети. Окно Anti-Fire там не открывается.
+- **Linux вживую.** Установка, сервис, Anti-Fire и удаление проверяются в GitHub Actions на
+  чистой Ubuntu, без нейросети. Окно Anti-Fire там не открывается.
+- **Нейросеть на Windows.** Установка на Windows 10 проверена вживую: 106 секунд с нуля,
+  Anti-Fire открывается из «Пуска» и подключается к сервису. Ответы нейросети там не
+  проверялись: видеокарта не тянет модель.
 - **Скачивание нейросети установщиком** на чистой машине: на машине разработки модель уже была.
 - **Ollama** на настоящей установке: поддержка проверена тестами и на имитации её API.

@@ -117,10 +117,17 @@ def is_ours(pid: int) -> bool:
     return "app.main:app" in (process_command(pid) or "")
 
 
-def detached() -> dict:
+# Выйти из «задания» Windows, в котором живёт терминал. Иначе демон умирает вместе с
+# сеансом, который закрывает своё задание: так делают SSH и терминалы некоторых программ
+CREATE_BREAKAWAY_FROM_JOB = 0x01000000
+
+
+def detached(breakaway: bool = True) -> dict:
     """Параметры Popen, с которыми демон переживает закрытие терминала."""
     if WINDOWS:
         flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+        if breakaway:
+            flags |= CREATE_BREAKAWAY_FROM_JOB
         return {"creationflags": flags}
     return {"start_new_session": True}
 
@@ -194,18 +201,17 @@ def cmd_start(args: argparse.Namespace) -> int:
 
 def spawn_daemon(host: str, port: int, url: str) -> None:
     run_dir().mkdir(parents=True, exist_ok=True)
+    command = [
+        sys.executable, "-m", "uvicorn", "app.main:app",
+        "--host", host, "--port", str(port), "--app-dir", str(BASE_DIR),
+    ]
     with log_path().open("ab") as log:
-        process = subprocess.Popen(
-            [
-                sys.executable, "-m", "uvicorn", "app.main:app",
-                "--host", host, "--port", str(port), "--app-dir", str(BASE_DIR),
-            ],
-            cwd=BASE_DIR,
-            stdin=subprocess.DEVNULL,
-            stdout=log,
-            stderr=subprocess.STDOUT,
-            **detached(),
-        )
+        options = dict(cwd=BASE_DIR, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
+        try:
+            process = subprocess.Popen(command, **options, **detached())
+        except PermissionError:
+            # Задание запрещает выход из себя: запускаемся в нём, как раньше
+            process = subprocess.Popen(command, **options, **detached(breakaway=False))
     state_path().write_text(json.dumps({"pid": process.pid, "host": host, "port": port}))
 
     print("Warming up...", file=sys.stderr)
