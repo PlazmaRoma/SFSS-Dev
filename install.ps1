@@ -184,9 +184,12 @@ if (-not $NoApp) {
         $Unpack = Join-Path $env:TEMP "anti-fire-unpack"
         if (Test-Path $Unpack) { Remove-Item $Unpack -Recurse -Force }
         Expand-Archive -Path $Zip -DestinationPath $Unpack
+        # На чистой Windows папки Programs в LOCALAPPDATA ещё нет
+        New-Item -ItemType Directory -Force (Split-Path $AppDir) | Out-Null
         Move-Item (Join-Path $Unpack "Anti-Fire") $AppDir
         Remove-Item $Unpack -Recurse -Force
         $Exe = Join-Path $AppDir "Anti-Fire.exe"
+        New-Item -ItemType Directory -Force (Split-Path $Shortcut) | Out-Null
         $link = (New-Object -ComObject WScript.Shell).CreateShortcut($Shortcut)
         $link.TargetPath = $Exe
         $link.WorkingDirectory = $AppDir
