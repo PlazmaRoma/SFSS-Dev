@@ -57,7 +57,10 @@ if ($Uninstall) {
 
 Step "Ищу Python 3.10 или новее"
 $Python = $null
-foreach ($candidate in @(@("py", "-3"), @("python"), @("python3"))) {
+# Сначала python из PATH, потом проверенные версии: под самый новый Python библиотек
+# может ещё не быть, а py -3 выбирает именно его
+$candidates = @(@("python"), @("py", "-3.13"), @("py", "-3.12"), @("py", "-3.11"), @("py", "-3.10"), @("py", "-3"), @("python3"))
+foreach ($candidate in $candidates) {
     $exe = $candidate[0]
     $rest = @($candidate | Select-Object -Skip 1)
     if (-not (Get-Command $exe -ErrorAction SilentlyContinue)) { continue }
@@ -80,7 +83,7 @@ if (-not (Test-Path $VenvPython)) {
 }
 # Как и на Linux: без этого адреса pip может взять PyTorch с CUDA, это гигабайты
 & $VenvPython -m pip install --quiet --disable-pip-version-check --extra-index-url https://download.pytorch.org/whl/cpu -e $Sfss
-if ($LASTEXITCODE -ne 0) { Fail "Библиотеки не поставились. Проверьте сеть и запустите установку снова." }
+if ($LASTEXITCODE -ne 0) { Fail "Библиотеки не поставились. Проверьте сеть. Если pip пишет о конфликте версий, поставьте Python 3.12: под самый новый Python библиотек может ещё не быть." }
 Note "готово: $Venv"
 
 # --- 3. Настройки ------------------------------------------------------------

@@ -95,7 +95,7 @@ PIP_LOG="$(mktemp)"
 if ! { "$VENV/bin/python" -m pip install "${PIP_ARGS[@]}" --upgrade pip \
     && "$VENV/bin/python" -m pip install "${PIP_ARGS[@]}" -e "$SFSS"; } >"$PIP_LOG" 2>&1; then
   tail -20 "$PIP_LOG" >&2
-  fail "Библиотеки не поставились. Проверьте сеть и запустите установку снова. Весь вывод: $PIP_LOG"
+  fail "Библиотеки не поставились. Проверьте сеть. Если pip пишет о конфликте версий, поставьте Python 3.12: под самый новый Python библиотек может ещё не быть. Весь вывод: $PIP_LOG"
 fi
 rm -f "$PIP_LOG"
 note "готово: $VENV"
