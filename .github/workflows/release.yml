@@ -1,0 +1,87 @@
+# Сборка Anti-Fire под три системы. Приложение собирается только на той системе, под
+# которую идёт, поэтому каждое собирает своя машина GitHub.
+#
+# По кнопке: файлы лежат в артефактах запуска. По тегу v*: ещё и в GitHub Release.
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  anti-fire:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macos
+          - os: ubuntu-22.04
+            name: linux
+          - os: windows-latest
+            name: windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.name == 'macos' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/anti-fire/src-tauri
+
+      - name: Библиотеки для окна (Linux)
+        if: matrix.name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev
+
+      - run: npm ci
+
+      - name: macOS, универсальный .dmg
+        if: matrix.name == 'macos'
+        run: |
+          bash apps/anti-fire/build.sh --universal
+          mkdir out
+          cp apps/anti-fire/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg out/Anti-Fire-macos-universal.dmg
+
+      - name: Linux, tar.gz
+        if: matrix.name == 'linux'
+        run: |
+          npm run page -w anti-fire
+          (cd apps/anti-fire && npx tauri build --no-bundle)
+          mkdir -p out Anti-Fire
+          cp apps/anti-fire/src-tauri/target/release/anti-fire Anti-Fire/
+          cp apps/anti-fire/packaging/README-linux.txt Anti-Fire/README.txt
+          tar -czf out/Anti-Fire-linux-x86_64.tar.gz Anti-Fire
+
+      - name: Windows, zip
+        if: matrix.name == 'windows'
+        shell: bash
+        run: |
+          npm run page -w anti-fire
+          (cd apps/anti-fire && npx tauri build --no-bundle)
+          mkdir -p out Anti-Fire
+          cp apps/anti-fire/src-tauri/target/release/anti-fire.exe Anti-Fire/Anti-Fire.exe
+          cp apps/anti-fire/packaging/README-windows.txt Anti-Fire/README.txt
+          7z a out/Anti-Fire-windows-x64.zip Anti-Fire
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: anti-fire-${{ matrix.name }}
+          path: out/*
+
+      - name: В релиз
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*

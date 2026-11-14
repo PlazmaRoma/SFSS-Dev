@@ -16,26 +16,51 @@ const NOT_FOUND: &str = "sfss-not-found";
 /// Событие на каждую строку вывода: страница печатает её сразу, а не после прогрева
 const OUTPUT_EVENT: &str = "sfss-output";
 
+/// Имена команды: на Windows установщик кладёт sfss.cmd, pip — sfss.exe
+#[cfg(windows)]
+const SFSS_NAMES: &[&str] = &["sfss.cmd", "sfss.exe"];
+#[cfg(not(windows))]
+const SFSS_NAMES: &[&str] = &["sfss"];
+
 /// У приложения из Finder в PATH нет ни ~/.local/bin, ни Homebrew: там команду и ищем.
+/// На Windows установщик кладёт её в %LOCALAPPDATA%\sfss\bin.
 fn find_sfss(home: Option<PathBuf>, path: Option<String>) -> Option<PathBuf> {
     let mut places: Vec<PathBuf> = Vec::new();
     if let Some(home) = home {
         places.push(home.join(".local/bin"));
+        places.push(home.join("AppData/Local/sfss/bin"));
     }
     places.push(PathBuf::from("/opt/homebrew/bin"));
     places.push(PathBuf::from("/usr/local/bin"));
     if let Some(path) = path {
         places.extend(std::env::split_paths(&path));
     }
-    places.into_iter().map(|dir| dir.join("sfss")).find(|file| file.is_file())
+    places
+        .into_iter()
+        .flat_map(|dir| SFSS_NAMES.iter().map(move |name| dir.join(name)))
+        .find(|file| file.is_file())
+}
+
+/// Домашняя папка: HOME на macOS и Linux, USERPROFILE на Windows
+fn home_dir() -> Option<PathBuf> {
+    std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).map(PathBuf::from)
 }
 
 /// Строки команды по мере появления, из stdout и stderr вперемешку, как в терминале.
 /// Раньше вывод приходил целиком после выхода: «Прогрев моделей...» появлялся, когда прогрев
 /// уже закончился. Возвращается весь текст. Пустой вывод не считается ошибкой.
 fn run(sfss: &Path, args: &[String], on_line: &(dyn Fn(&str) + Sync)) -> Result<String, String> {
-    let mut child = Command::new(sfss)
+    let mut command = Command::new(sfss);
+    // Без этого на Windows при каждом запуске мелькало бы чёрное окно консоли
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    let mut child = command
         .args(args)
+        // sfss печатает по-русски, а труба на Windows иначе была бы в кодировке системы
+        .env("PYTHONUTF8", "1")
         // В трубу Python пишет stdout блоками, а не построчно: строки опаздывали бы до выхода
         .env("PYTHONUNBUFFERED", "1")
         .stdin(Stdio::null())
@@ -62,9 +87,8 @@ fn run(sfss: &Path, args: &[String], on_line: &(dyn Fn(&str) + Sync)) -> Result<
 }
 
 fn run_installed(window: &Window, args: &[String]) -> Result<String, String> {
-    let home = std::env::var_os("HOME").map(PathBuf::from);
     let path = std::env::var("PATH").ok();
-    let sfss = find_sfss(home, path).ok_or(NOT_FOUND)?;
+    let sfss = find_sfss(home_dir(), path).ok_or(NOT_FOUND)?;
     run(&sfss, args, &|line| {
         let _ = window.emit(OUTPUT_EVENT, line);
     })
@@ -167,6 +191,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Тесты запуска подделывают команду sfss скриптом sh: это есть только на Unix
+    #[cfg(unix)]
+    mod with_fake_command {
+    use super::super::*;
     use std::fs;
     use std::os::unix::fs::PermissionsExt;
 
@@ -217,6 +246,7 @@ mod tests {
         assert_eq!(seen[0].0, "warming");
         assert!(seen[0].1 < std::time::Duration::from_millis(700), "warming came at {:?}", seen[0].1);
         fs::remove_dir_all(home).unwrap();
+    }
     }
 
     #[test]

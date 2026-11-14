@@ -18,16 +18,12 @@ RAG + ML сервис по данным NASA о горении в невесом
 управляется командой `sfss`:
 
 ```bash
-cd sfss                                          # из корня SFSS-Dev
-python3 -m venv .venv
-.venv/bin/pip install -e .                       # один раз: появится команда sfss
-cp .env.example .env
-.venv/bin/python scripts/ingest_documents.py     # один раз: индекс, около минуты
-mkdir -p ~/.local/bin
-ln -sf "$PWD/.venv/bin/sfss" ~/.local/bin/sfss   # один раз: sfss из любой папки
+./install.sh                   # из корня SFSS-Dev, один раз; Windows: install.ps1
 sfss start --with-llm          # демон и модель с контекстом 8192
 sfss status
 ```
+
+Что делает установщик и как поставить вручную: [`../INSTALL.md`](../INSTALL.md).
 
 Модель загружается сама при первом вопросе. Заранее: `sfss load`, кнопка в Anti-Fire
 или `POST /v1/llm/load`. Выгрузить: `sfss unload` или кнопка там же. LM Studio открывать
@@ -169,6 +165,7 @@ curl -s localhost:1234/api/v0/models   # состояние всех модел�
 ## Тесты
 
 ```bash
+.venv/bin/pip install pytest      # один раз
 .venv/bin/python -m pytest -q
 ```
 
@@ -185,7 +182,7 @@ curl -s localhost:1234/api/v0/models   # состояние всех модел�
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -e .
 ```
 
 **Переиндексация документов** (`data/raw/` → векторная база):

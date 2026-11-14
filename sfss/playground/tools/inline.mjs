@@ -1,7 +1,7 @@
 // Склеивает сборку программы в один HTML: скрипт и стили внутрь файла.
 // Так программа открывается двойным кликом, без сервера и без npm.
-import { readFileSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const dir = process.argv[2];
 const out = process.argv[3];
@@ -21,6 +21,7 @@ if (/src="\.?\/?program\.js"|href="\.?\/?program\.css"/.test(html)) {
   process.exit(1);
 }
 
+mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, html);
 rmSync(dir, { recursive: true, force: true });
 console.log(`→ ${out}  (${Math.round(Buffer.byteLength(html) / 1024)} КБ)`);

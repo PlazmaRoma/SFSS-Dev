@@ -89,16 +89,40 @@ def clear_state() -> None:
     state_path().unlink(missing_ok=True)
 
 
+WINDOWS = sys.platform == "win32"
+
+
+def process_command(pid: int) -> str | None:
+    """Командная строка процесса или None, если его нет."""
+    if WINDOWS:
+        # ps там нет, а tasklist показывает только имя файла, без аргументов
+        query = f'(Get-CimInstance Win32_Process -Filter "ProcessId={pid}").CommandLine'
+        command = ["powershell", "-NoProfile", "-NonInteractive", "-Command", query]
+    else:
+        command = ["ps", "-p", str(pid), "-o", "command="]
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, timeout=15)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    text = result.stdout.strip()
+    return text if result.returncode == 0 and text else None
+
+
 def is_ours(pid: int) -> bool:
     """Жив ли процесс и наш ли это uvicorn.
 
     Одной проверки pid мало: после перезагрузки номер мог достаться чужому
     процессу, и sfss stop убил бы его.
     """
-    result = subprocess.run(
-        ["ps", "-p", str(pid), "-o", "command="], capture_output=True, text=True
-    )
-    return result.returncode == 0 and "app.main:app" in result.stdout
+    return "app.main:app" in (process_command(pid) or "")
+
+
+def detached() -> dict:
+    """Параметры Popen, с которыми демон переживает закрытие терминала."""
+    if WINDOWS:
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+        return {"creationflags": flags}
+    return {"start_new_session": True}
 
 
 def base_url(args: argparse.Namespace) -> str:
@@ -180,8 +204,7 @@ def spawn_daemon(host: str, port: int, url: str) -> None:
             stdin=subprocess.DEVNULL,
             stdout=log,
             stderr=subprocess.STDOUT,
-            # Отдельная сессия: демон переживает закрытие терминала
-            start_new_session=True,
+            **detached(),
         )
     state_path().write_text(json.dumps({"pid": process.pid, "host": host, "port": port}))
 
@@ -240,7 +263,8 @@ def cmd_stop(_: argparse.Namespace) -> int:
     deadline = time.monotonic() + STOP_TIMEOUT
     while time.monotonic() < deadline and is_ours(pid):
         time.sleep(0.2)
-    if is_ours(pid):
+    # На Windows SIGTERM уже завершает процесс без спроса, а SIGKILL там нет
+    if not WINDOWS and is_ours(pid):
         os.kill(pid, signal.SIGKILL)
     clear_state()
     print("SFSS остановлен")
@@ -735,6 +759,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Консоль Windows по умолчанию не в UTF-8: «мм²/с» и «×» роняли бы print
+    for stream in (sys.stdout, sys.stderr):
+        if WINDOWS and hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = build_parser()
     args = parser.parse_args(argv)
     if not args.command:

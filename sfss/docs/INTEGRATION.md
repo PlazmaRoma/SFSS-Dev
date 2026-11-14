@@ -6,8 +6,7 @@ SFSS — сервис, который работает в фоне и счита
 ## От нуля до первого ответа
 
 ```bash
-.venv/bin/pip install -e . --no-deps   # один раз
-ln -sf "$PWD/.venv/bin/sfss" ~/.local/bin/sfss   # один раз: sfss из любой папки
+./install.sh                # один раз, из корня репозитория: INSTALL.md
 sfss start --with-llm
 curl -X POST http://127.0.0.1:8000/v1/predict -H 'Content-Type: application/json' \
   -d '{"parameters": {"oxygen_level": 0.30, "n2": 0.70}}'

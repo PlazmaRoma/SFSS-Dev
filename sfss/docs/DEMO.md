@@ -31,8 +31,7 @@ sfss status      # модель загружена, контекст 8192
 Команда `sfss` на новой машине ставится один раз:
 
 ```bash
-.venv/bin/pip install -e . --no-deps
-ln -sf "$PWD/.venv/bin/sfss" ~/.local/bin/sfss
+./install.sh      # из корня репозитория, подробности в INSTALL.md
 ```
 
 - Закрыть всё тяжёлое: на 8 ГБ модель и своп не уживаются.
