@@ -1,103 +1,105 @@
-# Сценарий питча: 3 минуты и 2 минуты вопросов
+# Pitch script: 3 minutes plus 2 minutes of questions
 
-Питч и судейство 15 ноября 2026. Проект надо отправить на сайте до 23:59 того же дня.
+Pitch and judging on 15 November 2026. The project must be submitted on the website by 23:59
+the same day.
 
-**Одна фраза:** SFSS — сервис, который считает горение в невесомости по данным NASA и
-отвечает по её отчётам, а подключиться к нему может любое ПО. Anti-Fire — рабочая
-программа на нём: так, по-нашему, это могло бы выглядеть в настоящей работе. Площадка —
-чтобы поиграться.
+**One sentence:** SFSS is a service that calculates combustion in microgravity from NASA data and
+answers from NASA reports, and any software can connect to it. Anti-Fire is a working app on top
+of it: this is how, in our view, it could look in real work. The Playground is for playing with
+the idea.
 
-Показываем три вещи именно в этом порядке: сервис, рабочая программа, площадка.
-Прошлый раз мы проиграли подачей и сложностью, поэтому ни одного экрана сверх этого.
+We show three things in exactly this order: the service, the working app, the Playground. Last
+time we lost on delivery and complexity, so not a single extra screen.
 
-## Слайды
+## Slides
 
-Обязательное содержание задано организаторами. Логотипов, флагов и знаков NASA на слайдах
-нет, шрифт крупный, слов мало.
+The required content is set by the organisers. No NASA logos, flags or insignia on the slides,
+large font, few words.
 
-| Слайд | Что на нём |
+| Slide | Content |
 |---|---|
-| 1 | TwinByte, имена участников, задача Flame in Freefall, одна фраза |
-| 2 | снимок Anti-Fire и опыт пользователя: вбил условия, получил ответ, спросил, открыл страницу отчёта |
-| 3 | как данные делают решение возможным: 259 опытов FLEX обучают модель, 16 отчётов NASA дают ответы и ссылки |
+| 1 | TwinByte, team members, the Flame in Freefall challenge, the one sentence |
+| 2 | an Anti-Fire screenshot and the user experience: enter conditions, get an answer, ask, open the report page |
+| 3 | how the data makes the solution possible: 259 FLEX experiments train the model, 16 NASA reports give the answers and references |
 
-## За пять минут до выхода
+## Five minutes before going on
 
 ```bash
 sfss start --with-llm
-sfss status      # модель загружена, контекст 8192
+sfss status      # model loaded, context 8192
 ```
 
-Команда `sfss` на новой машине ставится один раз:
+On a new machine the `sfss` command is installed once:
 
 ```bash
-./install.sh      # из корня репозитория, подробности в docs/install
+./install.sh      # from the repository root, details in docs/install
 ```
 
-- Закрыть всё тяжёлое: на 8 ГБ модель и своп не уживаются.
-- Один раз задать вопрос в Anti-Fire: первый ответ после загрузки модели самый долгий.
-- Открыть Anti-Fire и терминал рядом. Очистить терминал программы: `clear`.
-- Включить запись экрана: она же запасной вариант.
+- Close everything heavy: on 8 GB the model and swapping do not get along.
+- Ask one question in Anti-Fire: the first answer after loading the model is the slowest.
+- Open Anti-Fire and a terminal side by side. Clear the app terminal: `clear`.
+- Start screen recording: it is also the fallback.
 
-## Сценарий
+## Script
 
-| Время | Что делаем | Что говорим |
+| Time | What we do | What we say |
 |---|---|---|
-| 0:00 | Слайд 1 | Кто мы, какая задача, одна фраза |
-| 0:15 | В обычном терминале: `sfss status` | Программа — это сервис, он работает в фоне. Всё считается здесь |
-| 0:25 | Anti-Fire: O₂ 30, давление 8,2 psi | Вбил условия, сразу ответ: в 1,33 раза быстрее обычного воздуха |
-| 0:40 | O₂ 40 | Модель честно говорит, что здесь опытов нет и она вышла на плато |
-| 0:50 | «Загрузить CSV»: `examples/runs.csv`, 20 строк; «Выгрузить CSV» | Вот импорт. Плохая строка помечена, остальные посчитаны |
-| 1:05 | Вопрос: «Как гелий в атмосфере влияет на горение?» | AI не надо искать, он всегда открыт. Отвечает только по отчётам |
-| 1:10 | Пока модель пишет, показать терминал снизу, кнопку `curl` | Каждый запрос виден. Программа всего лишь клиент API, ваша может так же |
-| 1:40 | Клик по ссылке в ответе | Вот страница отчёта, откуда это взято |
-| 2:00 | В терминале: `python examples/telemetry_monitor.py --delay 1 --no-ask` | Стороннее ПО: монитор станции подключился по API и поднял тревогу |
-| 2:20 | `sfss playground` | А это площадка: посмотреть идею и поиграться |
-| 2:30 | Слайд 2, слайд 3 | Что получает пользователь и почему без данных NASA этого не было бы |
+| 0:00 | Slide 1 | Who we are, the challenge, the one sentence |
+| 0:15 | In a regular terminal: `sfss status` | The program is a service running in the background. Everything is calculated here |
+| 0:25 | Anti-Fire: O₂ 30, pressure 8.2 psi | Enter conditions, get the answer at once: 1.33 times faster than normal air |
+| 0:40 | O₂ 40 | The model honestly says there are no experiments here and it has plateaued |
+| 0:50 | "Load CSV": `examples/runs.csv`, 20 rows; "Save CSV" | That is the import. The bad row is flagged, the others are calculated |
+| 1:05 | Question: "How does helium in the atmosphere affect combustion?" | No need to look for the AI, it is always open. It answers only from the reports |
+| 1:10 | While the model writes, show the terminal at the bottom and the `curl` button | Every request is visible. The app is just an API client; yours can be too |
+| 1:40 | Click a reference in the answer | Here is the report page it came from |
+| 2:00 | In the terminal: `python examples/telemetry_monitor.py --delay 1 --no-ask` | Third-party software: a station monitor connected over the API and raised an alarm |
+| 2:20 | `sfss playground` | And this is the Playground: see the idea and play with it |
+| 2:30 | Slide 2, slide 3 | What the user gets and why it would not exist without NASA data |
 
-Ответ по-русски занимает в среднем 36 с, а в свопе до полутора минут: это честная цена
-локальной модели на 8 ГБ. Паузу заполняет шаг 1:10. Если времени в обрез, вопрос можно задать по-английски: это быстрее.
+An answer in English takes about 26 s, a Russian one about 36 s, and up to a minute and a half
+when swapping: the honest price of a local model on 8 GB. Step 1:10 fills the pause.
 
-## На вопросы судей, 2 минуты
+## Judges' questions, 2 minutes
 
-Вопросы идут по критериям: влияние, креативность, обоснованность, актуальность, подача.
-Заготовка ответов — в таблице критериев в `ROADMAP.md`.
+Questions follow the criteria: impact, creativity, validity, relevance, presentation. Prepared
+answers are in the criteria table in `ROADMAP.md`.
 
-## Что сказать сразу, не дожидаясь вопроса
+## What to say up front, without waiting for a question
 
-- Модель считает **скорость горения капель топлива** по опытам FLEX. Материалов (ткань,
-  пластик, кабели) в ней нет. Это сравнение атмосфер, а не прогноз пожара на станции.
-- Качество: средняя ошибка 0.055 мм²/с против 0.106 у константы, R² 0.65 на
-  кросс-валидации по условиям, 259 опытов.
-- Ответы пишет маленькая локальная модель. Поэтому у каждого есть ссылка на страницу,
-  и проверять надо по ней. В русском тексте бывают неточные термины.
-- Телеметрия и порог в мониторе вымышленные.
+- The model predicts the **burning rate of fuel droplets** from the FLEX experiments. Materials
+  (fabric, plastic, cables) are not in it. It compares atmospheres; it does not forecast a fire
+  on a station.
+- Quality: mean error 0.055 mm²/s versus 0.106 for a constant, R² 0.65 in cross-validation by
+  condition, 259 experiments.
+- Answers are written by a small local model. That is why each has a page reference, and that is
+  what to check against.
+- The telemetry and the threshold in the monitor are made up.
 
-## Если что-то пошло не так
+## If something goes wrong
 
-| Что случилось | Что делать |
+| What happened | What to do |
 |---|---|
-| `sfss start`: порт занят | на 8000 висит другой сервер: `lsof -nP -iTCP:8000 -sTCP:LISTEN` |
-| Anti-Fire: «SFSS не запущен» | кнопка «Запустить SFSS» в самой программе; причина сбоя в её терминале и в `sfss logs`; адрес меняется кликом по индикаторам |
-| Модель не загружена | кнопка «Загрузить модель» в Anti-Fire или `sfss load`; иначе загрузится при первом вопросе |
-| Вопрос идёт дольше двух минут | «Стоп», закрыть лишнее, показать запись экрана |
-| LM Studio упал | расчёт, CSV и монитор с `--no-ask` работают без него |
-| Приложение не открывается | правый клик → «Открыть»: сборка без подписи Apple |
+| `sfss start`: port taken | another server holds 8000: `lsof -nP -iTCP:8000 -sTCP:LISTEN` |
+| Anti-Fire: "SFSS is not running" | the "Start SFSS" button in the app itself; the reason is in its terminal and in `sfss logs`; click the indicators to change the address |
+| The model is not loaded | the "Load model" button in Anti-Fire or `sfss load`; otherwise it loads on the first question |
+| A question takes more than two minutes | "Stop", close extra apps, show the screen recording |
+| The model runtime crashed | calculations, CSV and the monitor with `--no-ask` work without it |
+| The app does not open | right-click → Open: the build is not signed by Apple |
 
-## Прогон перед показом
+## Run-through before the show
 
-Последний прогон: 2026-11-14, MacBook на 8 ГБ, без перезагрузки.
+Last run: 2026-11-14, an 8 GB MacBook, without a reboot.
 
-| Шаг | Результат |
+| Step | Result |
 |---|---|
-| `sfss start --with-llm` | 38 с вместе с загрузкой модели |
-| O₂ 30, 8,2 psi | 0.676 мм²/с, ×1.33 |
-| O₂ 40 | ×1.38 и предупреждение, что опытов выше 34 % нет |
-| `examples/runs.csv` | 19 из 20 посчитаны, строка `0.3x` помечена |
-| Вопрос про гелий по-русски | 35 с, две ссылки; ссылка открывает страницу 5 отчёта NTRS-20130014061 |
-| Тот же вопрос по-английски | 26 с |
-| Монитор `--delay 1 --no-ask` | 6 с, тревога на 20-й минуте в шлюзе, ×1.33 |
-| `sfss playground` | открывается, вопрос к AI на виду |
+| `sfss start --with-llm` | 38 s including loading the model |
+| O₂ 30, 8.2 psi | 0.676 mm²/s, ×1.33 |
+| O₂ 40 | ×1.38 and a warning that there are no experiments above 34 % |
+| `examples/runs.csv` | 19 of 20 calculated, the `0.3x` row flagged |
+| Helium question in Russian | 35 s, two references; a reference opens page 5 of report NTRS-20130014061 |
+| The same question in English | 26 s |
+| Monitor `--delay 1 --no-ask` | 6 s, alarm at minute 20 in the airlock, ×1.33 |
+| `sfss playground` | opens, the AI question is in view |
 
-Пройти дважды с чистой перезагрузки машины, с секундомером. В LM Studio перед этим удалить
-китайские модели: они запрещены регламентом, и в списке на экране их быть не должно.
+Go through it twice from a clean reboot, with a stopwatch. Before that, remove Chinese models from
+LM Studio: the rules ban them, and they must not appear in the list on screen.

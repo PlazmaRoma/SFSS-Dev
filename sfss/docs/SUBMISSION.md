@@ -1,85 +1,87 @@
-# Черновик страницы сдачи
+# Submission page draft
 
-Проект надо отправить на сайте Space Apps до 15 ноября 2026, 23:59 по местному времени.
-Требования — в `ROADMAP.md`. Что должен дополнить человек, помечено **[дополнить]**.
+The project must be submitted on the Space Apps website by 15 November 2026, 23:59 local time.
+The requirements are in `ROADMAP.md`. What a person still has to fill in is marked **[to fill]**.
 
-## Команда и задача
+## Team and challenge
 
-- **Команда:** TwinByte.
-- **Участники:** **[дополнить]**.
-- **Задача:** Flame in Freefall.
+- **Team:** TwinByte.
+- **Members:** **[to fill]**.
+- **Challenge:** Flame in Freefall.
 
-## Что делает проект
+## What the project does
 
-SFSS — сервис, который работает в фоне и делает две вещи: считает скорость горения капли
-топлива при заданной атмосфере и отвечает на вопросы только по отчётам NASA, со ссылкой на
-страницу. Подключиться к нему может любая программа, по API или из терминала.
+SFSS is a service that runs in the background and does two things: it calculates the burning rate
+of a fuel droplet in a given atmosphere and answers questions only from NASA reports, with a page
+reference. Any program can connect to it, over the API or from a terminal.
 
-Anti-Fire — рабочая программа на этом сервисе: один экран, расчёт, импорт CSV, вопросы по
-отчётам и терминал. SFSS Playground — площадка, чтобы посмотреть идею.
+Anti-Fire is a working app on this service: one screen with calculations, CSV import, questions
+to the reports and a terminal. SFSS Playground is a place to explore the idea.
 
-## Как работает
+## How it works
 
-- **Расчёт.** Случайный лес, обученный на 259 опытах FLEX с МКС. На вход состав атмосферы,
-  давление, размер капли и топливо. Ответ приходит за десятки миллисекунд, вместе с
-  предупреждением, если условия вне диапазона обучения.
-- **Вопросы.** Гибридный поиск по 1131 фрагменту из 16 отчётов и локальная модель, которой
-  разрешено отвечать только по найденному. Всё работает на одном ноутбуке, без сети.
-- **Подключение.** HTTP API `/v1`, пакетный расчёт, загрузка PDF, команда `sfss`. Пример
-  стороннего ПО — монитор атмосферы на вымышленной телеметрии: он поднимает тревогу и
-  спрашивает отчёты.
+- **Calculation.** A random forest trained on 259 FLEX experiments from the ISS. Input:
+  atmosphere composition, pressure, droplet size and fuel. The answer comes in tens of
+  milliseconds, with a warning if the conditions are outside the training range.
+- **Questions.** Hybrid search over 1131 chunks from 16 reports and a local model allowed to
+  answer only from what was found. Everything runs on one laptop, with no network.
+- **Connection.** An HTTP API under `/v1`, batch calculation, PDF upload, the `sfss` command. A
+  third-party example is an atmosphere monitor on made-up telemetry: it raises an alarm and asks
+  the reports.
+- **Installation.** One script per system installs the service and the app without admin rights,
+  on macOS, Linux and Windows.
 
-## Преимущества
+## Advantages
 
-- Ответ можно проверить: у него есть ссылка на страницу отчёта NASA.
-- Работает без сети и не отправляет данные наружу.
-- Не заменяет чужие программы, а подключается к ним.
+- Every answer can be checked: it links to a NASA report page.
+- Works offline and sends no data out.
+- It does not replace other programs; it connects to them.
 
-## Чего хотим достичь
+## What we want to achieve
 
-Дать инженеру, выбирающему атмосферу для корабля или базы, быстрое сравнение вариантов и
-прямой путь к первоисточнику.
+Give an engineer choosing an atmosphere for a spacecraft or a base a quick comparison of the
+options and a direct path to the primary source.
 
-**Ограничения.** Модель считает капли топлива, материалов в ней нет: это сравнение атмосфер,
-а не прогноз пожара на станции. Средняя ошибка 0.055 мм²/с, R² 0.65 на кросс-валидации по
-условиям. Ответы пишет маленькая модель, поэтому их надо проверять по ссылке.
+**Limitations.** The model covers fuel droplets, not materials: it compares atmospheres and does
+not forecast a fire on a station. Mean error 0.055 mm²/s, R² 0.65 in cross-validation by
+condition. Answers are written by a small model, so they should be checked against the reference.
 
-## Данные
+## Data
 
-| Данные | Источник | Где используются |
+| Data | Source | Used for |
 |---|---|---|
-| 16 отчётов NASA | NASA NTRS, https://ntrs.nasa.gov/ | корпус для ответов |
-| Опыты FLEX, 259 строк | NTRS-20150023456, стр. 26–34 | обучение модели |
-| Опыты BASS-II, 129 строк | NASA PSI, PSI-25, https://psi.nasa.gov/ | Площадка |
-| Манифест BASS | NASA PSI, PSI-26 | сверка опытов |
+| 16 NASA reports | NASA NTRS, https://ntrs.nasa.gov/ | the corpus for answers |
+| FLEX experiments, 259 rows | NTRS-20150023456, pp. 26–34 | training the model |
+| BASS-II experiments, 129 rows | NASA PSI, PSI-25, https://psi.nasa.gov/ | the Playground |
+| BASS manifest | NASA PSI, PSI-26 | cross-checking experiments |
 
-Телеметрия в `examples/station_telemetry.csv` вымышленная, написана нами.
+The telemetry in `examples/station_telemetry.csv` is made up, written by us.
 
-## Инструменты
+## Tools
 
-- **Бэкенд:** Python, FastAPI, uvicorn, onnxruntime, tokenizers, scikit-learn, pandas,
-  NumPy, pypdf, httpx, клиент openai.
-- **Фронтенд:** TypeScript, React, Vite, Tauri.
-- **Локальный запуск моделей:** LM Studio, MLX.
-- **Установка:** uv (Astral), bash, PowerShell.
-- **Оборудование:** MacBook на Apple Silicon, 8 ГБ памяти.
+- **Back end:** Python, FastAPI, uvicorn, onnxruntime, tokenizers, scikit-learn, pandas, NumPy,
+  pypdf, httpx, the openai client.
+- **Front end:** TypeScript, React, Vite, Tauri.
+- **Running models locally:** LM Studio, MLX, Ollama.
+- **Installation:** uv (Astral), bash, PowerShell, GitHub Actions.
+- **Hardware:** a MacBook with Apple Silicon and 8 GB of memory.
 
-## Где и как использован ИИ
+## Where and how AI was used
 
-| Инструмент | Разработчик | Где и как |
+| Tool | Developer | Where and how |
 |---|---|---|
-| Ministral 3B | Mistral AI, Франция | в продукте: пишет ответы по найденным фрагментам и переводит на русский |
-| paraphrase-multilingual-MiniLM-L12-v2 | sentence-transformers, сборка ONNX от Xenova | в продукте: векторный поиск |
-| Claude Code | Anthropic, США | разработка: код бэкенда и Anti-Fire, тесты, документация |
-| **[дополнить]** | | что использовали остальные участники, для кода, текстов и изображений |
+| Ministral 3B | Mistral AI, France | in the product: writes answers from the found chunks and translates into Russian |
+| paraphrase-multilingual-MiniLM-L12-v2 | sentence-transformers, ONNX build by Xenova | in the product: vector search |
+| Claude Code | Anthropic, USA | development: back-end and Anti-Fire code, tests, installers, documentation |
+| **[to fill]** | | what the other members used, for code, text and images |
 
-Модель расчёта обучена нами на данных FLEX и сторонней не является.
+The prediction model was trained by us on the FLEX data and is not third-party.
 
-Логотипов, флагов и знаков NASA в проекте нет. В подвале лендинга есть логотип Space Apps и
-оговорка, что проект не связан с NASA.
+There are no NASA logos, flags or insignia in the project. The landing page footer has the Space
+Apps logo and a note that the project is not affiliated with NASA.
 
-До 1 ноября 2026 ответы писала локальная модель Qwen3-4B. После изменения регламента она
-заменена, ответы пересняты заново, в продукте её нет.
+Until 1 November 2026 answers were written by the local Qwen3-4B model. After the rules changed it
+was replaced, the recorded answers were redone, and it is not in the product.
 
-**[дополнить]** Проверить происхождение остального: `demo.mp4`, логотип TwinByte и прочие
-изображения фронта. Если что-то создано с ИИ, добавить строкой в таблицу.
+**[to fill]** Check the origin of everything else: `demo.mp4`, the TwinByte logo and other front-end
+images. If something was made with AI, add it as a row in the table.
