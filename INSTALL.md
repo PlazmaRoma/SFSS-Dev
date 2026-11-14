@@ -116,7 +116,9 @@ sfss config model ministral-3:3b
 | Windows x64 | `Anti-Fire-windows-x64.zip` | `%LOCALAPPDATA%\Programs\Anti-Fire`, ярлык в «Пуске» |
 
 - **Linux:** окну нужен WebKitGTK 4.1. Установщик проверит и подскажет команду:
-  `sudo dnf install webkit2gtk4.1` или `sudo apt install libwebkit2gtk-4.1-0`.
+  `sudo dnf install webkit2gtk4.1` или `sudo apt install libwebkit2gtk-4.1-0`. Под Wayland
+  программа сама открывает окно через XWayland: иначе на картах NVIDIA не нажимались кнопки
+  окна и окно долго оставалось белым. Вернуть Wayland: `GDK_BACKEND=wayland anti-fire`.
 - **Windows:** нужен WebView2, в Windows 10 и 11 он уже есть. SmartScreen может предупредить
   о неизвестном издателе: «Подробнее» → «Выполнить в любом случае».
 
@@ -160,6 +162,11 @@ Anti-Fire уходит в Корзину. Остаются клон с отчё�
 (470 МБ в `~/.cache/huggingface`), установщик предложит удалить и её.
 
 Нейросеть в LM Studio или Ollama не трогается: она может быть нужна не только SFSS.
+
+Из меню программ GNOME или из «Программ и компонентов» Windows Anti-Fire не удаляется: эти
+кнопки есть только у того, что поставил сам менеджер пакетов. Наша программа — файлы в
+домашней папке, поэтому её убирает та же команда, что и ставила. Клон после неё можно
+удалить обычным способом: `rm -rf ~/SFSS-Dev`.
 
 ## 6. Тесты
 
