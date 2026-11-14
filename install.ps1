@@ -43,11 +43,23 @@ function Ask($text) {
     return ($answer -eq "" -or $answer -match "^(д|да|y|yes)$")
 }
 function UserPath { [Environment]::GetEnvironmentVariable("Path", "User") }
-function Run($exe) {
-    # Внешняя команда: ошибка — по коду выхода, а не по строкам в stderr
-    $ErrorActionPreference = "Continue"
-    # Вывод сразу на экран: иначе он смешался бы с кодом выхода в ответе функции
-    & $exe @args | Out-Host
+function Run {
+    # Внешняя команда: ошибка — по коду выхода, а не по строкам в stderr. Именованных
+    # параметров нет намеренно: иначе PowerShell принимает ключи вроде -e из
+    # «uv pip install -e» за свои и подменяет ими саму команду
+    $exe = $args[0]
+    $rest = @($args | Select-Object -Skip 1)
+    $global:LASTEXITCODE = 0
+    try {
+        # Stop: «команда не найдена» становится ошибкой, а не строкой в выводе.
+        # stderr внешней команды не перенаправлен, поэтому его строки ошибкой не считаются
+        $ErrorActionPreference = "Stop"
+        # Вывод сразу на экран: иначе он смешался бы с кодом выхода в ответе функции
+        & $exe @rest | Out-Host
+    } catch {
+        Write-Host "    $_" -ForegroundColor Red
+        return 1
+    }
     return $LASTEXITCODE
 }
 

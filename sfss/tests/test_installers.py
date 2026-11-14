@@ -20,3 +20,11 @@ def test_installers_pin_the_same_versions():
     ps1 = (ROOT / "install.ps1").read_text(encoding="utf-8-sig")
     for value in ('3.12', '0.12.5', 'ministral-3:3b', 'ministral-3-3b-instruct-2512'):
         assert value in sh and value in ps1, value
+
+
+def test_powershell_run_has_no_named_parameters():
+    # С param($exe) PowerShell принял «-e» из «uv pip install -e» за -exe и запустил
+    # вместо uv папку sfss: установка шла дальше без библиотек
+    ps1 = (ROOT / "install.ps1").read_text(encoding="utf-8-sig")
+    assert "function Run {" in ps1
+    assert "function Run(" not in ps1
