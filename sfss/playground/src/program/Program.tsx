@@ -221,6 +221,9 @@ export default function Program() {
               module={current}
               materials={mats[selected] ?? []}
               oxygenPct={atmos[selected].oxygen_level * 100}
+              pressurePsi={atmos[selected].pressure_psi}
+              dropletMm={atmos[selected].droplet_mm}
+              value={results[selected]?.predicted_value ?? null}
               ratio={ratios[selected] ?? 1}
               lang={lang}
             />
