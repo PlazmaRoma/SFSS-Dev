@@ -227,6 +227,95 @@ def test_lmstudio_missing_model_is_short(monkeypatch):
         LMStudioRuntime(RuntimeConfig(), 10).load("x", 8192)
 
 
+# --- LM Studio: несколько сборок одной модели ---------------------------------
+
+SHORT = "ministral-3-3b-instruct-2512"
+MLX = {"id": f"mlx-community/{SHORT}", "type": "vlm", "state": "not-loaded", "compatibility_type": "mlx"}
+GGUF = {"id": f"mistralai/{SHORT}", "type": "vlm", "state": "not-loaded", "compatibility_type": "gguf"}
+
+
+def lmstudio_with(monkeypatch, *items, native="mlx"):
+    monkeypatch.setattr(llm_runtime.httpx, "get", lambda *a, **k: answer({"data": [dict(item) for item in items]}))
+    monkeypatch.setattr(llm_runtime, "native_format", lambda: native)
+    return LMStudioRuntime(RuntimeConfig(), 10)
+
+
+def test_lmstudio_short_name_finds_a_build_with_publisher(monkeypatch):
+    runtime = lmstudio_with(monkeypatch, {**GGUF, "state": "loaded", "loaded_context_length": 8192})
+    assert runtime.state(SHORT) == (True, 8192)
+    assert runtime.resolved(SHORT) == GGUF["id"]
+
+
+def test_lmstudio_two_builds_prefer_the_loaded_one(monkeypatch):
+    runtime = lmstudio_with(monkeypatch, MLX, {**GGUF, "state": "loaded", "loaded_context_length": 4096})
+    assert runtime.state(SHORT) == (True, 4096)
+    assert runtime.resolved(SHORT) == GGUF["id"]
+
+
+@pytest.mark.parametrize("native, build", [("mlx", MLX), ("gguf", GGUF)])
+def test_lmstudio_two_builds_prefer_the_native_format(monkeypatch, native, build):
+    runtime = lmstudio_with(monkeypatch, GGUF, MLX, native=native)
+    assert runtime.state(SHORT) == (False, None)
+    assert runtime.resolved(SHORT) == build["id"]
+
+
+def test_lmstudio_exact_name_wins(monkeypatch):
+    runtime = lmstudio_with(monkeypatch, MLX, {"id": SHORT, "type": "llm", "state": "not-loaded"})
+    runtime.state(SHORT)
+    assert runtime.resolved(SHORT) == SHORT
+
+
+def test_lmstudio_full_name_does_not_take_another_publisher(monkeypatch):
+    runtime = lmstudio_with(monkeypatch, {**GGUF, "state": "loaded"})
+    assert runtime.state(MLX["id"]) == (False, None)
+    assert runtime.resolved(MLX["id"]) == MLX["id"]
+
+
+def test_lmstudio_short_name_skips_embeddings(monkeypatch):
+    runtime = lmstudio_with(monkeypatch, {"id": f"nomic/{SHORT}", "type": "embeddings", "state": "loaded"})
+    assert runtime.state(SHORT) == (False, None)
+    assert runtime.resolved(SHORT) == SHORT
+
+
+def test_lmstudio_forgets_a_build_that_is_gone(monkeypatch):
+    runtime = lmstudio_with(monkeypatch, MLX)
+    runtime.state(SHORT)
+    monkeypatch.setattr(llm_runtime.httpx, "get", lambda *a, **k: answer({"data": []}))
+    runtime.state(SHORT)
+    assert runtime.resolved(SHORT) == SHORT
+
+
+def test_lmstudio_loads_and_unloads_the_found_build(monkeypatch):
+    calls = []
+    runtime = lmstudio_with(monkeypatch, GGUF, MLX)
+    monkeypatch.setattr(llm_runtime, "find_lms", lambda: "/bin/lms")
+    monkeypatch.setattr(
+        subprocess, "run",
+        lambda command, **_: calls.append(command[1:]) or SimpleNamespace(returncode=0, stdout="", stderr=""),
+    )
+    runtime.state(SHORT)
+    runtime.load(SHORT, 8192)
+    runtime.unload(SHORT)
+    assert calls == [["load", MLX["id"], "--context-length", "8192", "--yes"], ["unload", MLX["id"]]]
+
+
+def test_lmstudio_matches(monkeypatch):
+    runtime = LMStudioRuntime(RuntimeConfig(), 10)
+    assert runtime.matches(MLX["id"], SHORT)
+    assert runtime.matches(SHORT, SHORT)
+    assert not runtime.matches(MLX["id"], GGUF["id"])
+    assert not runtime.matches(f"x/{SHORT}-q8", SHORT)
+
+
+def test_requests_go_to_the_found_build(settings, monkeypatch):
+    llm = LLMService(settings)
+    monkeypatch.setattr(llm_runtime.httpx, "get", lambda *a, **k: answer({"data": [{**MLX, "state": "loaded"}]}))
+    llm.config.model.name = SHORT
+    llm.model_state()
+    assert llm.model_id == MLX["id"]
+    assert llm._answer_request("q", [], "en")["model"] == MLX["id"]
+
+
 # --- Ollama --------------------------------------------------------------------
 
 
@@ -380,6 +469,20 @@ def test_models_endpoint(api):
     body = api.get("/v1/llm/models").json()
     assert body["runtime"] == "lmstudio"
     assert body["models"][0]["loaded"] is False
+
+
+def test_models_endpoint_marks_the_build_found_by_short_name(client, settings, monkeypatch):
+    llm = LLMService(settings)
+    llm.config.model.name = SHORT
+    monkeypatch.setattr(llm_runtime.httpx, "get", lambda *a, **k: answer({"data": [GGUF, MLX]}))
+    monkeypatch.setattr(llm_runtime, "native_format", lambda: "mlx")
+    app.dependency_overrides[get_llm_service] = lambda: llm
+    models = client.get("/v1/llm/models").json()["models"]
+    llm.runtime.ping = lambda: True
+    available = client.get("/v1/llm/config").json()["model"]["available"]
+    app.dependency_overrides.pop(get_llm_service, None)
+    assert {entry["id"]: entry["selected"] for entry in models} == {GGUF["id"]: False, MLX["id"]: True}
+    assert available is True
 
 
 def test_models_endpoint_when_runtime_is_down(client, settings, monkeypatch):

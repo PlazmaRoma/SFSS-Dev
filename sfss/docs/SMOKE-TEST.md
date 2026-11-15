@@ -14,7 +14,9 @@
 
 **1. Поднять LM Studio** (нужен только для `/query`): вкладка Developer →
 загрузить `mlx-community/Ministral-3-3B-Instruct-2512-4bit` с контекстом 8192 →
-Start Server.
+Start Server. Или просто `sfss load`. Не на Mac с Apple Silicon — GGUF `Q4_K_M` из
+`mistralai/Ministral-3-3B-Instruct-2512-GGUF` или `lmstudio-community`; эти проверки она прошла
+15 ноября 2026 ([`TEST-RUN-2026-11-15-GGUF.md`](TEST-RUN-2026-11-15-GGUF.md)).
 
 **2. Прогреть модель.** LM Studio выгружает её из памяти по таймауту, и первый
 запрос иначе будет дольше на 12-20 секунд:

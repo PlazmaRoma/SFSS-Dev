@@ -40,6 +40,7 @@ class LLMModelEntry(BaseModel):
     id: str
     loaded: bool
     max_context_length: int | None
+    selected: bool = Field(False, description="Это модель из настроек: найдена по полному или короткому имени")
 
 
 class LLMModelsResponse(BaseModel):
@@ -49,7 +50,7 @@ class LLMModelsResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str = Field(description="ok | degraded")
-    chroma: bool = Field(description="ChromaDB доступна")
+    chroma: bool = Field(description="Индекс по отчётам на месте. Имя поля прежнее ради совместимости")
     lm_studio: bool = Field(description="Рантайм нейросети отвечает. Имя старое: раньше он был один")
     runtime: str = Field(default="lmstudio", description="lmstudio | ollama")
     runtime_name: str = Field(default="LM Studio", description="Название рантайма для человека")

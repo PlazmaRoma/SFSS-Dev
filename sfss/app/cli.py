@@ -431,7 +431,8 @@ def cmd_config_models(args: argparse.Namespace) -> int:
     if not models:
         print("The runtime has no models available")
     for model in models:
-        marks = [mark for mark, on in (("selected", model["id"] == current), ("loaded", model["loaded"])) if on]
+        selected = model.get("selected", model["id"] == current)
+        marks = [mark for mark, on in (("selected", selected), ("loaded", model["loaded"])) if on]
         print(f"{model['id']}{'  (' + ', '.join(marks) + ')' if marks else ''}")
     return 0
 

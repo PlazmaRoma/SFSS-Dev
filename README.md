@@ -53,9 +53,20 @@ Anti-Fire — в меню «Пуск», команда `sfss` — в новом 
 
 ### Нейросеть
 
-Ответы на вопросы пишет Ministral 3B в [LM Studio](https://lmstudio.ai) или
+Ответы на вопросы пишет Ministral 3 3B Instruct 2512 в [LM Studio](https://lmstudio.ai) или
 [Ollama](https://ollama.com) на этом же компьютере. Установщик находит их и предлагает скачать
 модель, около 3 ГБ. Без нейросети работает всё остальное: расчёт, CSV, Площадка.
+
+| Где | Сборка | Скачать самому |
+|---|---|---|
+| Mac на Apple Silicon | MLX 4bit: [mlx-community/Ministral-3-3B-Instruct-2512-4bit](https://huggingface.co/mlx-community/Ministral-3-3B-Instruct-2512-4bit) | `lms get https://huggingface.co/mlx-community/Ministral-3-3B-Instruct-2512-4bit` |
+| Windows, Linux, Mac на Intel | GGUF `Q4_K_M`, ближайшая к MLX 4bit: [mistralai/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF) или та же квантизация в [lmstudio-community](https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF) | `lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF`, вариант `Q4_K_M` |
+| Ollama, любая система | [`ministral-3:3b`](https://ollama.com/library/ministral-3), тот же `Q4_K_M` | `ollama pull ministral-3:3b` |
+
+Обе сборки могут лежать в LM Studio рядом: SFSS загрузит родную для машины или ту, что уже
+загружена. Чтобы закрепить сборку, укажите её полное имя, например
+`sfss config model mlx-community/ministral-3-3b-instruct-2512`. Как выбирали и проверяли GGUF:
+[`sfss/docs/TEST-RUN-2026-11-15-GGUF.md`](sfss/docs/TEST-RUN-2026-11-15-GGUF.md).
 
 ## Как пользоваться
 

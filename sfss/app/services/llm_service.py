@@ -222,6 +222,11 @@ class LLMService:
         """Проверка, что сервер рантайма поднят."""
         return self.runtime.ping()
 
+    @property
+    def model_id(self) -> str:
+        """Настроенная модель так, как её зовёт рантайм: для запросов к нему."""
+        return self.runtime.resolved(self.config.model.name)
+
     def model_state(self) -> tuple[bool | None, int | None]:
         """Загружена ли модель и с каким контекстом; ping этого не знает."""
         return self.runtime.state(self.config.model.name)
@@ -287,7 +292,7 @@ class LLMService:
             return question
         try:
             response = self._client.chat.completions.create(
-                model=self.config.model.name,
+                model=self.model_id,
                 messages=[
                     {"role": "system", "content": TRANSLATE_PROMPT},
                     {"role": "user", "content": f"Query: {question}"},
@@ -404,7 +409,7 @@ class LLMService:
 
     def _translate_request(self, text: str) -> dict:
         return {
-            "model": self.config.model.name,
+            "model": self.model_id,
             "messages": [
                 {"role": "system", "content": TRANSLATE_ANSWER_PROMPT},
                 {"role": "user", "content": f"Text:\n{text}"},
@@ -438,7 +443,7 @@ class LLMService:
             if language in LANGUAGE_INSTRUCTIONS:
                 user_prompt += " " + LANGUAGE_INSTRUCTIONS[language]
         return {
-            "model": self.config.model.name,
+            "model": self.model_id,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},

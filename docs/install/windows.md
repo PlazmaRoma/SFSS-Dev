@@ -86,9 +86,20 @@ sfss playground
 **LM Studio.** Установить с [lmstudio.ai](https://lmstudio.ai) и один раз открыть.
 
 ```powershell
-lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF
+lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF   # выбрать Q4_K_M
 sfss load
 ```
+
+Берите вариант `Q4_K_M`, 2,15 ГБ: он ближе всего к сборке MLX 4bit на Mac, и проверяли именно его.
+`Q6_K` и `Q8_0` точнее, но занимают больше памяти. Оригинал от Mistral с той же квантизацией —
+[mistralai/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF);
+как скачать его вручную и что проверено: [TEST-RUN-2026-11-15-GGUF](../../sfss/docs/TEST-RUN-2026-11-15-GGUF.md).
+`ministral-3:3b` в Ollama — тот же `Q4_K_M`.
+
+Если в LM Studio несколько сборок модели, SFSS берёт уже загруженную, иначе GGUF. Чтобы закрепить
+сборку, укажите её полное имя, например
+`sfss config model lmstudio-community/ministral-3-3b-instruct-2512`; все имена — в
+`sfss config models`.
 
 **Ollama.** Установить с [ollama.com](https://ollama.com).
 

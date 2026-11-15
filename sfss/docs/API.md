@@ -164,11 +164,15 @@ curl -X PATCH http://localhost:8000/v1/llm/config -H 'Content-Type: application/
 
 ```json
 {"runtime": "lmstudio", "models": [
-  {"id": "ministral-3-3b-instruct-2512", "loaded": false, "max_context_length": 262144}
+  {"id": "mlx-community/ministral-3-3b-instruct-2512", "loaded": true, "max_context_length": 262144, "selected": true},
+  {"id": "mistralai/ministral-3-3b-instruct-2512", "loaded": false, "max_context_length": 262144, "selected": false}
 ]}
 ```
 
 Без моделей эмбеддингов и без запрещённых регламентом. 503, если рантайм не отвечает.
+`selected` отмечает модель из настроек. Короткое имя вроде `ministral-3-3b-instruct-2512`
+подходит к сборке с любым издателем; из нескольких сборок выбирается загруженная, затем родной
+формат: MLX на Apple Silicon, GGUF везде ещё.
 
 ---
 
