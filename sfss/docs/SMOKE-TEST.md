@@ -15,7 +15,9 @@ used Russian questions; the quotes are translated.
 
 **1. Start LM Studio** (needed only for `/query`): the Developer tab → load
 `mlx-community/Ministral-3-3B-Instruct-2512-4bit` with context 8192 → Start Server. Or simply
-`sfss load`.
+`sfss load`. Not on a Mac with Apple Silicon: GGUF `Q4_K_M` from
+`mistralai/Ministral-3-3B-Instruct-2512-GGUF` or `lmstudio-community`; it passed these checks on
+15 November 2026 ([`TEST-RUN-2026-11-15-GGUF.md`](TEST-RUN-2026-11-15-GGUF.md)).
 
 **2. Warm up the model.** LM Studio unloads it on a timeout, and the first request would otherwise
 take 12-20 seconds longer:

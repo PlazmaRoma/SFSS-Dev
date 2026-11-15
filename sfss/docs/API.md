@@ -164,11 +164,15 @@ Forgets the settings and goes back to the values from `.env`. Same response as `
 
 ```json
 {"runtime": "lmstudio", "models": [
-  {"id": "ministral-3-3b-instruct-2512", "loaded": false, "max_context_length": 262144}
+  {"id": "mlx-community/ministral-3-3b-instruct-2512", "loaded": true, "max_context_length": 262144, "selected": true},
+  {"id": "mistralai/ministral-3-3b-instruct-2512", "loaded": false, "max_context_length": 262144, "selected": false}
 ]}
 ```
 
 Without embedding models and without banned ones. 503 if the runtime does not answer.
+`selected` marks the model from the settings. A short name such as `ministral-3-3b-instruct-2512`
+matches a build with any publisher; of several builds the loaded one is chosen, then the native
+format: MLX on Apple Silicon, GGUF elsewhere.
 
 ---
 

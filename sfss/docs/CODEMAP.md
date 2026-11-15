@@ -240,6 +240,12 @@ answering, which models it has, how to load and unload a model and how to start 
 for LM Studio, `ollama serve` and `keep_alive` for Ollama). It looks for the commands in standard
 places too, because the daemon does not start from a shell and `PATH` may lack them.
 
+LM Studio names a model `publisher/name` once two builds of it are downloaded, for example MLX and
+GGUF. `LMStudioRuntime` then finds a short name from the settings among them: the loaded build
+first, then the native format (`native_format()`: MLX on Apple Silicon, GGUF elsewhere). Each
+`state()` remembers the found id, and `resolved()` gives it to loading, unloading and
+`LLMService.model_id` for the requests themselves.
+
 ### `ml_service.py`
 
 Prediction. The model is called `fiery` and lives in `data/models/fiery.joblib`.
@@ -367,7 +373,7 @@ in `app/static/playground`. The built file is in git, so the service needs no No
 
 ## tests/
 
-242 tests in a couple of seconds.
+254 tests in a couple of seconds.
 
 `conftest.py` replaces the services with stubs through `app.dependency_overrides`. So the tests
 **need neither a model runtime, nor the search model, nor a trained model**: they check the HTTP

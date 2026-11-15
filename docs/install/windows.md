@@ -87,9 +87,21 @@ of video memory or RAM.
 **LM Studio.** Install it from [lmstudio.ai](https://lmstudio.ai) and open it once.
 
 ```powershell
-lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF
+lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF   # choose Q4_K_M
 sfss load
 ```
+
+Take the `Q4_K_M` variant, 2.15 GB: it is the closest to the MLX 4bit build used on a Mac, and the
+one that was tested. `Q6_K` and `Q8_0` are more accurate but need more memory. The original from
+Mistral, with the same quant, is
+[mistralai/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF);
+how to download it by hand and what was checked: [TEST-RUN-2026-11-15-GGUF](../../sfss/docs/TEST-RUN-2026-11-15-GGUF.md).
+Ollama's `ministral-3:3b` is the same `Q4_K_M` too.
+
+If LM Studio has several builds of the model, SFSS takes the one already loaded, otherwise the
+GGUF. To pin a build, give its full name, for example
+`sfss config model lmstudio-community/ministral-3-3b-instruct-2512`; all names are in
+`sfss config models`.
 
 **Ollama.** Install it from [ollama.com](https://ollama.com).
 
