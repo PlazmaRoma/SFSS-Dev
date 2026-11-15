@@ -24,6 +24,7 @@ apps/anti-fire/src-tauri/target/
 apps/anti-fire/src-tauri/gen/
 
 .DS_Store
+presentation/
 .idea/
 .vscode/*
 !.vscode/extensions.json

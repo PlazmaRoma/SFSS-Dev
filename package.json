@@ -1,6 +1,7 @@
 {
   "name": "sfss-dev",
   "private": true,
+  "license": "MIT",
   "workspaces": [
     "sfss/playground",
     "apps/anti-fire"
