@@ -32,36 +32,89 @@ const parseRgb = (css: string, into: THREE.Color) => {
   return into;
 };
 
-const fresnelMaterial = (color: THREE.Color, power: number, opacity: number) =>
+const flameMaterial = (color: THREE.Color) =>
   new THREE.ShaderMaterial({
-    uniforms: {
-      uColor: { value: color },
-      uPower: { value: power },
-      uOpacity: { value: opacity },
-      uTime: { value: 0 },
-    },
+    uniforms: { uColor: { value: color }, uSoot: { value: 0.2 }, uTime: { value: 0 } },
     vertexShader: `
-      varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      varying vec3 vPos; varying vec3 vCam;
       void main() {
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        vN = normalize(normalMatrix * normal);
-        vV = normalize(-mv.xyz);
-        vP = position;
-        gl_Position = projectionMatrix * mv;
+        vPos = position;
+        vCam = (inverse(modelMatrix) * vec4(cameraPosition, 1.0)).xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }`,
     fragmentShader: `
-      uniform vec3 uColor; uniform float uPower; uniform float uOpacity; uniform float uTime;
-      varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      uniform vec3 uColor; uniform float uSoot; uniform float uTime;
+      varying vec3 vPos; varying vec3 vCam;
+      float hash(vec3 p) {
+        p = fract(p * 0.3183099 + 0.1); p *= 17.0;
+        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+      }
+      float noise(vec3 x) {
+        vec3 i = floor(x); vec3 f = fract(x); f = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(mix(hash(i), hash(i + vec3(1, 0, 0)), f.x), mix(hash(i + vec3(0, 1, 0)), hash(i + vec3(1, 1, 0)), f.x), f.y),
+          mix(mix(hash(i + vec3(0, 0, 1)), hash(i + vec3(1, 0, 1)), f.x), mix(hash(i + vec3(0, 1, 1)), hash(i + vec3(1, 1, 1)), f.x), f.y),
+          f.z);
+      }
+      float fbm(vec3 p) {
+        float a = 0.5; float s = 0.0;
+        for (int i = 0; i < 4; i++) { s += a * noise(p); p = p * 2.02 + vec3(7.1); a *= 0.5; }
+        return s;
+      }
       void main() {
-        float f = pow(1.0 - abs(dot(vN, vV)), uPower);
-        float n = 0.85 + 0.15 * sin(vP.x * 9.0 + uTime * 2.3) * sin(vP.y * 11.0 - uTime * 1.7);
-        gl_FragColor = vec4(uColor * (1.0 + f * 1.4), (0.08 + f * 0.95) * uOpacity * n);
+        vec3 ro = vCam;
+        vec3 rd = normalize(vPos - vCam);
+        float b = dot(ro, rd);
+        float h = b * b - (dot(ro, ro) - 1.0);
+        if (h < 0.0) discard;
+        h = sqrt(h);
+        float t0 = max(-b - h, 0.0);
+        float t1 = -b + h;
+        const int N = 30;
+        float dt = (t1 - t0) / float(N);
+        float jitter = hash(vec3(gl_FragCoord.xy, fract(uTime) * 10.0));
+        vec3 tint = uColor / max(max(uColor.r, max(uColor.g, uColor.b)), 0.001);
+        vec3 col = vec3(0.0);
+        for (int i = 0; i < N; i++) {
+          vec3 p = ro + rd * (t0 + (float(i) + jitter) * dt);
+          float r = length(p);
+          float n = fbm(p * 2.6 + vec3(0.0, 0.0, uTime * 0.35));
+          float w = fbm(p * 5.5 - vec3(uTime * 0.6, 0.0, uTime * 0.3));
+          float rr = r + (n - 0.5) * 0.17;
+          float sheet = exp(-pow((rr - 0.78) / 0.05, 2.0));
+          float veil = exp(-pow((rr - 0.86) / 0.09, 2.0)) * 0.22;
+          float fill = smoothstep(0.8, 0.15, r) * 0.05;
+          float soot = uSoot * exp(-pow((rr - 0.47) / 0.085, 2.0)) * (0.15 + 2.2 * w * w);
+          float core = exp(-r * r / 0.018);
+          col += (tint * (sheet * 2.1 + veil + fill)
+            + vec3(1.0, 0.5, 0.12) * soot * 0.75
+            + vec3(1.0, 0.8, 0.55) * core * 0.45) * dt;
+        }
+        col += vec3(dot(max(col - 1.0, 0.0), vec3(0.2)));
+        gl_FragColor = vec4(col, 1.0);
+        #include <colorspace_fragment>
       }`,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     side: THREE.FrontSide,
   });
+
+function glowTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d")!;
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, "rgba(255,255,255,0.9)");
+  grad.addColorStop(0.25, "rgba(255,255,255,0.35)");
+  grad.addColorStop(0.6, "rgba(255,255,255,0.08)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+
+const EMBERS = 90;
 
 function box(w: number, h: number, d: number, color: number, x: number, y: number, z: number, edges = true) {
   const g = new THREE.Group();
@@ -393,12 +446,29 @@ export function Room3D({ moduleId, flame, materials, fallback }: {
     };
 
     const flameColor = parseRgb(state.current.color, new THREE.Color());
-    const sheet = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), fresnelMaterial(flameColor, 2.6, 1.0));
-    const sootColor = new THREE.Color(0xf3a84a);
-    const soot = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), fresnelMaterial(sootColor, 1.6, 0.6));
-    const halo = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 32, 24),
-      new THREE.MeshBasicMaterial({ color: flameColor, transparent: true, opacity: 0.035, depthWrite: false, blending: THREE.AdditiveBlending }),
+    const volume = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), flameMaterial(flameColor));
+    const halo = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: glowTexture(), color: flameColor, transparent: true, opacity: 0.4,
+        depthWrite: false, blending: THREE.AdditiveBlending,
+      }),
+    );
+    const emberGeo = new THREE.BufferGeometry();
+    const emberPos = new Float32Array(EMBERS * 3);
+    const emberCol = new Float32Array(EMBERS * 3);
+    const emberSeed = Array.from({ length: EMBERS }, (_, i) => {
+      const th = rnd(i, 21) * Math.PI * 2;
+      const z = rnd(i, 22) * 2 - 1;
+      const q = Math.sqrt(1 - z * z);
+      return { x: q * Math.cos(th), y: q * Math.sin(th), z, sp: 0.12 + rnd(i, 23) * 0.2, ph: rnd(i, 24), tw: rnd(i, 25) * 6 };
+    });
+    emberGeo.setAttribute("position", new THREE.BufferAttribute(emberPos, 3));
+    emberGeo.setAttribute("color", new THREE.BufferAttribute(emberCol, 3));
+    const embers = new THREE.Points(
+      emberGeo,
+      new THREE.PointsMaterial({
+        size: 0.03, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      }),
     );
     const droplet = new THREE.Mesh(
       new THREE.SphereGeometry(1, 32, 24),
@@ -415,7 +485,7 @@ export function Room3D({ moduleId, flame, materials, fallback }: {
     ghost.computeLineDistances();
     const flameLight = new THREE.PointLight(flameColor, 3, 6, 1.4);
     const flame = new THREE.Group();
-    flame.add(halo, sheet, soot, droplet, ghost, flameLight);
+    flame.add(droplet, halo, volume, embers, ghost, flameLight);
     flame.position.copy(CENTER);
     scene.add(flame);
 
@@ -460,14 +530,28 @@ export function Room3D({ moduleId, flame, materials, fallback }: {
       const t = clock.getElapsedTime();
       const s = state.current;
       parseRgb(s.color, flameColor);
-      const flick = reduce ? 1 : 1 + Math.sin(t * 7.3) * 0.015 + Math.sin(t * 13.1) * 0.01;
+      const flick = reduce ? 1 : 1 + Math.sin(t * 7.3) * 0.012 + Math.sin(t * 13.1) * 0.008 + Math.sin(t * 2.1) * 0.01;
       const rad = s.radius * scale * 1.32 * flick;
-      sheet.scale.setScalar(rad);
-      (sheet.material as THREE.ShaderMaterial).uniforms.uTime.value = t;
-      soot.scale.setScalar(s.radius * scale * 0.78 * flick);
-      (soot.material as THREE.ShaderMaterial).uniforms.uOpacity.value = s.soot * 0.9;
-      (soot.material as THREE.ShaderMaterial).uniforms.uTime.value = t + 3;
-      halo.scale.setScalar(rad * 1.7);
+      volume.scale.setScalar(rad / 0.78);
+      const vm = volume.material as THREE.ShaderMaterial;
+      vm.uniforms.uTime.value = reduce ? 0 : t;
+      vm.uniforms.uSoot.value = s.soot;
+      halo.scale.setScalar(rad * 5.2);
+      const sootR = (rad / 0.78) * 0.47;
+      for (let i = 0; i < EMBERS; i++) {
+        const e = emberSeed[i];
+        const k = i * 3;
+        const life = reduce ? e.ph : (t * e.sp + e.ph) % 1;
+        const d = sootR + (rad * 1.9 - sootR) * life;
+        const sw = Math.sin(t * 1.3 + e.tw) * 0.04 * life;
+        emberPos[k] = e.x * d + sw;
+        emberPos[k + 1] = e.y * d + sw * 0.6;
+        emberPos[k + 2] = e.z * d - sw;
+        const glow = i < EMBERS * (0.25 + s.soot * 0.75) ? Math.pow(1 - life, 1.6) * (0.35 + s.soot) : 0;
+        emberCol[k] = glow; emberCol[k + 1] = glow * 0.55; emberCol[k + 2] = glow * 0.15;
+      }
+      emberGeo.attributes.position.needsUpdate = true;
+      emberGeo.attributes.color.needsUpdate = true;
       droplet.scale.setScalar(s.droplet * 0.035);
       ghost.scale.setScalar(s.baseRadius * scale * 1.32);
       ghost.quaternion.copy(camera.quaternion);
