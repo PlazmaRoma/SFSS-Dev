@@ -6,8 +6,10 @@ API нет: загружена ли модель, как её загрузить
 
 import logging
 import os
+import platform
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -32,6 +34,11 @@ def find_lms() -> str | None:
     folder = Path.home() / ".lmstudio" / "bin"
     places = (folder / "lms", folder / "lms.exe")
     return shutil.which("lms") or next((str(place) for place in places if place.exists()), None)
+
+
+def native_format() -> str:
+    """Формат, в котором LM Studio здесь работает лучше: MLX на Apple Silicon, GGUF везде ещё."""
+    return "mlx" if sys.platform == "darwin" and platform.machine() == "arm64" else "gguf"
 
 
 def find_ollama() -> str | None:
@@ -77,6 +84,14 @@ class Runtime:
         """Загружена ли модель и с каким контекстом. None — рантайм не сообщает."""
         raise NotImplementedError
 
+    def matches(self, model_id: str, model: str) -> bool:
+        """Это ли настроенная модель: id из models()."""
+        return model_id == model
+
+    def resolved(self, model: str) -> str:
+        """Под каким id рантайм знает настроенную модель; его находит последний вызов state()."""
+        return model
+
     def models(self) -> list[dict]:
         """Модели на диске у рантайма, без запрещённых и без эмбеддингов."""
         raise NotImplementedError
@@ -95,7 +110,36 @@ class Runtime:
 
 
 class LMStudioRuntime(Runtime):
+    """LM Studio зовёт модель коротким именем, пока скачана одна её сборка, и «издатель/имя»,
+    как только их две, например MLX и GGUF. Короткое имя из настроек находит любую; если их
+    несколько, побеждает загруженная, затем родной для этой машины формат."""
+
     name = "LM Studio"
+
+    def __init__(self, config: RuntimeConfig, load_timeout: float) -> None:
+        super().__init__(config, load_timeout)
+        self._ids: dict[str, str] = {}
+
+    def matches(self, model_id: str, model: str) -> bool:
+        return model_id == model or ("/" not in model and model_id.rsplit("/", 1)[-1] == model)
+
+    def resolved(self, model: str) -> str:
+        return self._ids.get(model, model)
+
+    def _find(self, model: str, items: list[dict]) -> dict | None:
+        exact = next((item for item in items if item.get("id") == model), None)
+        if exact is not None or "/" in model:
+            return exact
+        same = [
+            item for item in items
+            if item.get("type") != "embeddings" and self.matches(item.get("id", ""), model)
+        ]
+        native = native_format() if self.is_local else None
+        return min(
+            same,
+            key=lambda item: (item.get("state") != "loaded", item.get("compatibility_type") != native, item["id"]),
+            default=None,
+        )
 
     def _models(self) -> list[dict]:
         response = httpx.get(f"{self.root}/api/v0/models", timeout=PROBE_TIMEOUT)
@@ -111,10 +155,12 @@ class LMStudioRuntime(Runtime):
             models = self._models()
         except Exception:
             return None, None
-        for item in models:
-            if item.get("id") == model:
-                return item.get("state") == "loaded", item.get("loaded_context_length")
-        return False, None
+        item = self._find(model, models)
+        if item is None:
+            self._ids.pop(model, None)
+            return False, None
+        self._ids[model] = item["id"]
+        return item.get("state") == "loaded", item.get("loaded_context_length")
 
     def models(self) -> list[dict]:
         try:
@@ -135,10 +181,10 @@ class LMStudioRuntime(Runtime):
         self._lms("server", "start", "--port", str(self.config.port))
 
     def load(self, model: str, context_length: int) -> None:
-        self._lms("load", model, "--context-length", str(context_length), "--yes")
+        self._lms("load", self.resolved(model), "--context-length", str(context_length), "--yes")
 
     def unload(self, model: str) -> None:
-        self._lms("unload", model)
+        self._lms("unload", self.resolved(model))
 
     def _lms(self, *args: str) -> None:
         if not self.is_local:
@@ -168,6 +214,9 @@ class OllamaRuntime(Runtime):
     @staticmethod
     def _same(name: str, model: str) -> bool:
         return name in (model, f"{model}:latest")
+
+    def matches(self, model_id: str, model: str) -> bool:
+        return self._same(model_id, model)
 
     def state(self, model: str) -> tuple[bool | None, int | None]:
         try:

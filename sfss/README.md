@@ -156,9 +156,20 @@ sfss config reset                           # назад к значениям �
 curl -s localhost:1234/api/v0/models   # состояние всех моделей
 ```
 
-**Берите MLX-сборку, а не GGUF.** На этой машине замеряли: GGUF Q4_K_M отвечает
-~120 с и упирается в таймаут, MLX — 3-7 с. Имя загруженной модели должно
-совпадать с `LM_STUDIO_MODEL` в `.env`.
+**Какую сборку брать.** На Mac с Apple Silicon — MLX. Везде ещё — GGUF `Q4_K_M`, ближайшую к
+MLX 4bit:
+[mistralai/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF)
+или ту же квантизацию в
+[lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF).
+В сентябре GGUF отвечала на Mac около 120 с и упиралась в таймаут. На ноябрьском рантайме LM Studio
+она проходит ручную проверку за 32-36 с на `/query`, MLX — за 24-36 с:
+[`docs/TEST-RUN-2026-11-15-GGUF.md`](docs/TEST-RUN-2026-11-15-GGUF.md).
+
+Модель — та, что в `LM_STUDIO_MODEL` в `.env` или в `sfss config model`. Пока скачана одна сборка,
+LM Studio зовёт её `ministral-3-3b-instruct-2512`. Когда их две, к имени добавляется издатель:
+`mlx-community/…` или `mistralai/…`. Короткое имя работает и так: SFSS берёт загруженную сборку,
+иначе родную (MLX на Apple Silicon, GGUF везде ещё), и загружает, выгружает и спрашивает именно
+её. Полное имя закрепляет одну сборку.
 
 ---
 
@@ -169,7 +180,7 @@ uv pip install --python .venv/bin/python pytest      # один раз; uv из 
 .venv/bin/python -m pytest -q
 ```
 
-238 тестов, проходят за пару секунд. Сервисы подменены заглушками, поэтому
+254 теста, проходят за пару секунд. Сервисы подменены заглушками, поэтому
 **ни LM Studio, ни модель поиска для тестов не нужны**.
 
 ---

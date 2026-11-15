@@ -84,6 +84,24 @@ lms get https://huggingface.co/mlx-community/Ministral-3-3B-Instruct-2512-4bit
 sfss load
 ```
 
+Это сборка MLX, 4 бита, 2,75 ГБ: на Mac с Apple Silicon она самая быстрая. На Mac с Intel MLX не
+работает, там берите сборку GGUF `Q4_K_M`, ближайшую к ней:
+
+```bash
+lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF   # выбрать Q4_K_M
+sfss load
+```
+
+Оригинал от Mistral —
+[mistralai/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF);
+как скачать его вручную и что проверено: [TEST-RUN-2026-11-15-GGUF](../../sfss/docs/TEST-RUN-2026-11-15-GGUF.md).
+На Apple Silicon GGUF тоже работает, примерно на четверть медленнее MLX.
+
+Обе сборки могут лежать в LM Studio рядом: SFSS берёт уже загруженную, иначе MLX на Apple Silicon
+и GGUF на Intel. Чтобы закрепить сборку, укажите её полное имя, например
+`sfss config model mlx-community/ministral-3-3b-instruct-2512`; все имена — в
+`sfss config models`.
+
 **Ollama.** Установить с [ollama.com](https://ollama.com).
 
 ```bash
