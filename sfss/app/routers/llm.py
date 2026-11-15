@@ -41,10 +41,7 @@ def _config_answer(llm: LLMService, settings: Settings) -> LLMConfigResponse:
     available = None
     if reachable:
         try:
-            available = any(
-                entry["id"] in (llm.config.model.name, f"{llm.config.model.name}:latest")
-                for entry in llm.models()
-            )
+            available = any(llm.runtime.matches(entry["id"], llm.config.model.name) for entry in llm.models())
         except ModelLoadError:
             pass
     return LLMConfigResponse.model_validate({
@@ -105,4 +102,9 @@ def list_models(llm: LLMService = Depends(get_llm_service)) -> LLMModelsResponse
         models = llm.models()
     except ModelLoadError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    llm.model_state()
+    selected = llm.model_id
+    if not any(entry["id"] == selected for entry in models):
+        selected = next((entry["id"] for entry in models if llm.runtime.matches(entry["id"], llm.config.model.name)), None)
+    models = [{**entry, "selected": entry["id"] == selected} for entry in models]
     return LLMModelsResponse.model_validate({"runtime": llm.config.runtime.kind, "models": models})

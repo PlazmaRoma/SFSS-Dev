@@ -53,10 +53,21 @@ Details: [`docs/install/windows.md`](docs/install/windows.md).
 
 ### Language model
 
-Answers are written by Ministral 3B in [LM Studio](https://lmstudio.ai) or
+Answers are written by Ministral 3 3B Instruct 2512 in [LM Studio](https://lmstudio.ai) or
 [Ollama](https://ollama.com) on the same computer. The installer finds them and offers to
 download the model, about 3 GB. Everything else works without a model: calculations, CSV, the
 Playground.
+
+| Where | Build | Download it yourself |
+|---|---|---|
+| Mac with Apple Silicon | MLX 4bit: [mlx-community/Ministral-3-3B-Instruct-2512-4bit](https://huggingface.co/mlx-community/Ministral-3-3B-Instruct-2512-4bit) | `lms get https://huggingface.co/mlx-community/Ministral-3-3B-Instruct-2512-4bit` |
+| Windows, Linux, Intel Mac | GGUF `Q4_K_M`, the closest to MLX 4bit: [mistralai/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF) or the same quant in [lmstudio-community](https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF) | `lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF`, variant `Q4_K_M` |
+| Ollama, any system | [`ministral-3:3b`](https://ollama.com/library/ministral-3), the same `Q4_K_M` | `ollama pull ministral-3:3b` |
+
+Both builds can sit in LM Studio side by side: SFSS loads the one native to the machine, or the
+one already loaded. To pin a build, give its full name, for example
+`sfss config model mlx-community/ministral-3-3b-instruct-2512`. How the GGUF was chosen and
+checked: [`sfss/docs/TEST-RUN-2026-11-15-GGUF.md`](sfss/docs/TEST-RUN-2026-11-15-GGUF.md).
 
 ## Usage
 

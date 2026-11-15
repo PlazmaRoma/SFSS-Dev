@@ -35,6 +35,7 @@ class LLMModelEntry(BaseModel):
     id: str
     loaded: bool
     max_context_length: int | None
+    selected: bool = Field(False, description="This is the model in the settings, found by its full or short name")
 
 
 class LLMModelsResponse(BaseModel):

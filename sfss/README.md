@@ -156,9 +156,20 @@ Check:
 curl -s localhost:1234/api/v0/models   # state of all models
 ```
 
-**Take the MLX build, not GGUF, on a Mac.** Measured on the development machine: GGUF Q4_K_M
-answers in about 120 s and hits the timeout, MLX in 3-7 s. The loaded model name must match
-`LM_STUDIO_MODEL` in `.env`.
+**Which build.** On a Mac with Apple Silicon take MLX. Everywhere else take GGUF `Q4_K_M`, the
+closest to MLX 4bit:
+[mistralai/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF)
+or the same quant in
+[lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF).
+In September GGUF answered in about 120 s on a Mac and hit the timeout. On the November LM Studio
+runtime it passes the smoke test in 32-36 s per `/query`, while MLX takes 24-36 s:
+[`docs/TEST-RUN-2026-11-15-GGUF.md`](docs/TEST-RUN-2026-11-15-GGUF.md).
+
+The model is the one in `LM_STUDIO_MODEL` in `.env` or `sfss config model`. While one build is
+downloaded, LM Studio calls it `ministral-3-3b-instruct-2512`. With two, the names get the
+publisher in front, `mlx-community/…` or `mistralai/…`. The short name still works: SFSS takes the
+loaded build, otherwise the native one (MLX on Apple Silicon, GGUF elsewhere), and loads,
+unloads and asks exactly it. A full name pins one build.
 
 ---
 
@@ -169,7 +180,7 @@ uv pip install --python .venv/bin/python pytest      # once; uv from PATH or ../
 .venv/bin/python -m pytest -q
 ```
 
-242 tests, a couple of seconds. Services are replaced with stubs, so **neither a model runtime
+254 tests, a couple of seconds. Services are replaced with stubs, so **neither a model runtime
 nor the search model is needed for the tests**.
 
 ---

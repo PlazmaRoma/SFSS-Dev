@@ -37,7 +37,7 @@ Against the readiness criteria from section 7 of the specification:
 | `/health` returns 200 with the model runtime and the index up | ✅ checked |
 | At least 1 document indexed, `/query` answers with a source reference | ✅ 1131 chunks from 16 reports |
 | At least 1 dataset processed, `/predict` gives a non-stub result | ✅ fiery trained on FLEX, R² 0.65 |
-| Endpoints covered by pytest (happy path) | ✅ 242 tests |
+| Endpoints covered by pytest (happy path) | ✅ 254 tests |
 | A README with startup instructions | ✅ plus installers for three systems |
 
 **All MVP criteria are met.** No more data is expected: everything needed is on disk (§ 7.6).
@@ -253,6 +253,12 @@ GGUF hit the 120 s client timeout, and `/query` kept returning 503. The first hy
 inflated context of 262144 tokens, **was not confirmed**: the MLX build has exactly the same context
 and is fast. It is the GGUF runtime itself on this hardware. The GGUF version was later removed
 from LM Studio.
+
+**Re-checked on 15 November 2026:** the official `mistralai/Ministral-3-3B-Instruct-2512-GGUF`,
+`Q4_K_M`, on the llama.cpp 2.73.0 runtime passes the smoke test in 32-36 s per `/query`, against
+24-36 s for MLX; generation is 11-12 tokens/s against 15-20. The 120 s no longer reproduces.
+MLX stays the choice on a Mac, GGUF `Q4_K_M` is the build for Windows, Linux and Intel Macs:
+[`TEST-RUN-2026-11-15-GGUF.md`](TEST-RUN-2026-11-15-GGUF.md).
 
 ### 7.3. all-MiniLM-L6-v2 → paraphrase-multilingual-MiniLM-L12-v2
 **Why:** the NASA corpus is in English, and questions are asked in Russian. A monolingual model
@@ -792,6 +798,12 @@ Anti-Fire and the Playground, and `config` in the Anti-Fire terminal.
 - **Both runtimes answer through `/v1`; the differences live in `llm_runtime.py`:** state, list,
   loading, starting the server. There is no universal "any OpenAI server": without state and loading
   it would give half the features, and the request was for LM Studio and Ollama.
+- **A short model name finds the build with any publisher** (November 2026). With MLX and GGUF
+  both downloaded, LM Studio calls them `mlx-community/…` and `mistralai/…`, and the short name
+  from `.env` matched neither: `sfss load` loaded the GGUF, the service kept saying "not loaded"
+  and tried to load a second copy. Now the loaded build wins, then the native format. The
+  alternative, asking people to put the full name in `.env`, breaks again as soon as a second
+  build is downloaded: [`TEST-RUN-2026-11-15-GGUF.md`](TEST-RUN-2026-11-15-GGUF.md).
 - **Ollama's context is not set from here.** Ollama's documentation says plainly that the context
   cannot be passed through the OpenAI API. So the context field is hidden for Ollama, and the
   service does not reload a model with a large context.
@@ -917,7 +929,7 @@ The checked working configuration:
 | Search | onnxruntime, tokenizers, numpy; `paraphrase-multilingual-MiniLM-L12-v2` in ONNX int8, 384 dimensions |
 | scikit-learn | 1.9 |
 | pypdf | 7 |
-| LLM | Ministral 3B, MLX 4bit on a Mac, GGUF elsewhere, context 8192, in LM Studio on `:1234` or Ollama on `:11434` |
+| LLM | Ministral 3B, MLX 4bit on a Mac, GGUF `Q4_K_M` elsewhere, context 8192, in LM Studio on `:1234` or Ollama on `:11434` |
 | Front end | TypeScript, React 19, Vite, Tauri 2 |
 
 Systems checked live: macOS on Apple Silicon (8 GB), Windows 10, Fedora 44. GitHub Actions also
@@ -1248,7 +1260,7 @@ A list so as not to redo what failed. Every item cost time.
 
 | What was tried | How it ended |
 |---|---|
-| **The GGUF build of Ministral on a Mac** | ~120 s per request on Apple Silicon, hit the client timeout. Moved to MLX: 3-7 s |
+| **The GGUF build of Ministral on a Mac** | ~120 s per request on Apple Silicon, hit the client timeout. Moved to MLX: 3-7 s. In November 2026, on a newer runtime, GGUF `Q4_K_M` passes, but MLX is still faster (§ 7.2) |
 | **Downloading PSI-25 Raw Data whole** | 274.6 GB, 99.94 % of it 266 archives and 296 videos. What was needed weighed 150 KB. The browser ate the memory building the tree |
 | **Direct S3 links from the PSI API** | `NoSuchKey` on 14 files of 14: the catalogue has the entries, the storage has no objects |
 | **BASS-II outcome classification** | Accuracy 50.0 % versus a 62.9 % baseline, worse than a constant. 34 errors of 58 confuse a pair that the protocol distinguishes, not the material |

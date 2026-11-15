@@ -84,6 +84,24 @@ lms get https://huggingface.co/mlx-community/Ministral-3-3B-Instruct-2512-4bit
 sfss load
 ```
 
+That is the MLX build, 4 bit, 2.75 GB: on a Mac with Apple Silicon it is the fastest. On an
+Intel Mac MLX does not run; take the GGUF `Q4_K_M` build, the closest to it:
+
+```bash
+lms get https://huggingface.co/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF   # choose Q4_K_M
+sfss load
+```
+
+The original from Mistral is
+[mistralai/Ministral-3-3B-Instruct-2512-GGUF](https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF);
+how to download it by hand and what was checked: [TEST-RUN-2026-11-15-GGUF](../../sfss/docs/TEST-RUN-2026-11-15-GGUF.md).
+On Apple Silicon GGUF works too, about a quarter slower than MLX.
+
+Both builds can sit in LM Studio side by side: SFSS takes the one already loaded, otherwise MLX
+on Apple Silicon and GGUF on Intel. To pin a build, give its full name, for example
+`sfss config model mlx-community/ministral-3-3b-instruct-2512`; all names are in
+`sfss config models`.
+
 **Ollama.** Install it from [ollama.com](https://ollama.com).
 
 ```bash
