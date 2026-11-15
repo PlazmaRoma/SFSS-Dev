@@ -121,5 +121,14 @@ A Russian version of the repository lives in the `dev(ru)` branch.
 The project used to live in two repositories: `PlazmaRoma/Anti-Fire_backend_MVP` (service) and
 `heyyAzamat/space-fire-security-software` (interface). Their history stays there.
 
-This project is not affiliated with or endorsed by NASA. The data comes from open NASA sources:
-NTRS and PSI.
+## License
+
+The code is under the [MIT License](LICENSE), copyright Azamat Serik and Roman Bushuyev, team
+TwinByte.
+
+The NASA documents and data in `sfss/data/raw` are not covered by this license: they come as
+published on [NTRS](https://ntrs.nasa.gov) and [PSI](https://psi.nasa.gov) and keep the terms of
+their source. The index, tables and model in `sfss/data` are derived from them. The Space Apps logo
+in the Playground footer belongs to its owner.
+
+This project is not affiliated with or endorsed by NASA.

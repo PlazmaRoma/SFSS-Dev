@@ -3,6 +3,7 @@ name = "anti-fire"
 version = "1.0.0"
 description = "Anti-Fire: a client of the SFSS service"
 authors = ["Azamat Serik", "Roman Bushuyev"]
+license = "MIT"
 edition = "2021"
 
 [build-dependencies]

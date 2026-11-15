@@ -7,6 +7,7 @@ name = "sfss"
 version = "0.2.0"
 description = "Space Fire Security Software: fire behavior in microgravity from NASA data, as a local service"
 requires-python = ">=3.10"
+license = { text = "MIT" }
 dynamic = ["dependencies"]
 
 [project.optional-dependencies]
