@@ -17,10 +17,11 @@ import { TimeToAct } from "./TimeToAct";
 import { RoomView } from "./RoomView";
 import { Explain } from "./Explain";
 import { ModelQuality } from "./ModelQuality";
+import { NextExperiment } from "./NextExperiment";
 import "../shared/app.css";
 import { useLang } from "../shared/lib/lang";
 
-const TABS = ["time", "mats", "trust"] as const;
+const TABS = ["time", "mats", "trust", "next"] as const;
 type Tab = (typeof TABS)[number];
 
 const initialAtmospheres = () =>
@@ -261,6 +262,7 @@ export default function Program() {
                   <MirCase lang={lang} />
                 </>
               )}
+              {tab === "next" && <NextExperiment lang={lang} />}
             </div>
           </div>
         </div>
