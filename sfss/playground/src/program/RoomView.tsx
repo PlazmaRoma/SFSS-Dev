@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { Lang } from "../shared/types";
 import type { Module } from "../shared/data/habitat";
 import { MATERIAL_LABEL } from "../shared/data/habitat";
@@ -7,33 +8,51 @@ import { flameColor } from "../shared/lib/risk";
 import { tr } from "../shared/i18n";
 import { useTween } from "../shared/lib/tween";
 import { ModuleIcon } from "./ModuleIcon";
-import { RoomDecor } from "./RoomDecor";
-
-const W = 620;
-const H = 300;
+import { Room3D } from "./Room3D";
 
 export function RoomView({
-  module, materials, oxygenPct, ratio, lang,
+  module, materials, oxygenPct, pressurePsi, dropletMm, value, ratio, lang,
 }: {
   module: Module;
   materials: MaterialKey[];
   oxygenPct: number;
+  pressurePsi: number;
+  dropletMm: number;
+  value: number | null;
   ratio: number;
   lang: Lang;
 }) {
   const shown = useTween(ratio);
   const color = flameColor(shown);
-  const r = 20 * Math.pow(Math.max(shown, 0.4), 1.4);
-  const rBase = 20;
+  const radius = 20 * Math.pow(Math.max(shown, 0.4), 1.4);
+  const burnout = value && value > 0 ? (dropletMm * dropletMm) / value : null;
 
-  const rnd = (i: number, salt: number) => {
-    const v = Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453;
-    return v - Math.floor(v);
+  const flame = {
+    color,
+    radius,
+    baseRadius: 20,
+    soot: Math.min(Math.max((shown - 0.95) / 0.5, 0.12), 0.9),
+    droplet: dropletMm,
+    o2Share: oxygenPct / 100,
+    density: Math.min(Math.max(pressurePsi / 14.7, 0.35), 1.1) / 1.1,
+    intensity: Math.max(shown - 0.6, 0.2),
   };
-  const dots = Array.from({ length: Math.round(oxygenPct * 2.6) }, (_, i) => ({
-    x: 44 + rnd(i, 1) * (W - 88),
-    y: 62 + rnd(i, 2) * 168,
-  })).filter((p) => Math.hypot(p.x - W / 2, (p.y - 148) * 1.8) > r * 1.7);
+
+  const mats = useMemo(
+    () =>
+      materials.map((k) => {
+        const ev = evidenceFor(k, oxygenPct);
+        const kept = ev.near ? ev.burned / ev.near : 0;
+        return {
+          key: k,
+          label: MATERIAL_LABEL[k][lang].replace(/\s*\(.*\)/, ""),
+          kept,
+          none: ev.near === 0,
+          color: flameColor(1 + kept * 0.5),
+        };
+      }),
+    [materials, oxygenPct, lang],
+  );
 
   return (
     <div className="panel room">
@@ -43,56 +62,45 @@ export function RoomView({
         <em>{module.role[lang]}</em>
       </h3>
 
-      <svg className="room-plan" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={module.name[lang]}>
-        <rect x="18" y="40" width={W - 36} height="216" rx="42" className="hull" />
-        <line x1="42" y1="236" x2={W - 42} y2="236" className="hull" />
-        <line x1="70" y1="256" x2="58" y2="278" className="hull" />
-        <line x1={W - 70} y1="256" x2={W - 58} y2="278" className="hull" />
-        <line x1="20" y1="278" x2={W - 20} y2="278" className="regolith" />
+      <div className="room-3d" role="img" aria-label={module.name[lang]}>
+        <Room3D
+          moduleId={module.id}
+          fallback={tr("room3dOff", lang)}
+          flame={flame}
+          materials={mats.map(({ label, kept, color: c }) => ({ label, kept, color: c }))}
+        />
 
-        {dots.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="1.4" className="air" />
-        ))}
+        <div className="room-hud">
+          <b>O₂ {oxygenPct.toFixed(0)}%</b>
+          <span>{pressurePsi.toFixed(1)} psi</span>
+          <span>{tr("roomDroplet", lang, { d: dropletMm.toFixed(1) })}</span>
+          <i><em style={{ width: `${Math.min(oxygenPct / 40, 1) * 100}%`, background: color }} /></i>
+        </div>
 
-        <RoomDecor id={module.id} />
+        {mats.length > 0 && (
+          <ul className="room-mats">
+            {mats.map((m) => (
+              <li key={m.key}>
+                <span>{m.label}</span>
+                {m.none ? (
+                  <i className="none" />
+                ) : (
+                  <i><em style={{ width: `${m.kept * 100}%`, background: m.color }} /></i>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
 
-        <g className="crew">
-          <circle cx="74" cy="196" r="6" />
-          <line x1="74" y1="202" x2="74" y2="222" />
-          <line x1="74" y1="208" x2="65" y2="215" />
-          <line x1="74" y1="208" x2="83" y2="215" />
-          <line x1="74" y1="222" x2="67" y2="236" />
-          <line x1="74" y1="222" x2="81" y2="236" />
-        </g>
+        {value !== null && (
+          <div className="room-readout">
+            <b style={{ color }}>K {value.toFixed(3)}</b> mm²/s
+            {burnout !== null && <span> · {tr("roomBurnout", lang, { t: burnout.toFixed(1) })}</span>}
+          </div>
+        )}
 
-        {materials.map((k, i) => {
-          const ev = evidenceFor(k, oxygenPct);
-          const kept = ev.near ? ev.burned / ev.near : 0;
-          const x = W - 138;
-          const y = 76 + i * 46;
-          return (
-            <g key={k}>
-              <rect x={x} y={y} width="96" height="26" rx="3" className="mat" />
-              <text x={x + 48} y={y + 17} className="mat-label">
-                {MATERIAL_LABEL[k][lang].replace(/\s*\(.*\)/, "")}
-              </text>
-              {ev.near === 0 ? (
-                <line x1={x} x2={x + 96} y1={y + 31.5} y2={y + 31.5} className="mat-none" />
-              ) : (
-                <>
-                  <rect x={x} y={y + 30} width="96" height="3" rx="1.5" className="mat-track" />
-                  <rect x={x} y={y + 30} width={96 * kept} height="3" rx="1.5" fill={flameColor(1 + kept * 0.5)} />
-                </>
-              )}
-            </g>
-          );
-        })}
-
-        <circle cx={W / 2} cy="148" r={r * 2.1} fill={color} opacity="0.1" />
-        <circle cx={W / 2} cy="148" r={r} fill={color} opacity="0.85" />
-        <circle cx={W / 2} cy="148" r={r * 0.4} fill="#fff" opacity="0.75" />
-        <circle cx={W / 2} cy="148" r={rBase} className="ghost" />
-      </svg>
+        <div className="room-hint">{tr("roomDrag", lang)}</div>
+      </div>
 
       <div className="room-key">
         <span><i className="k-ghost" />{tr("roomBase", lang)}</span>
@@ -104,6 +112,9 @@ export function RoomView({
               ? tr("roomSlower", lang, { r: ratio.toFixed(2) })
               : tr("roomSame", lang)}
         </span>
+        <span><i className="k-o2" />{tr("roomO2", lang)}</span>
+        <span><i className="k-n2" />{tr("roomN2", lang)}</span>
+        <span><i className="k-soot" />{tr("roomSoot", lang)}</span>
       </div>
     </div>
   );
